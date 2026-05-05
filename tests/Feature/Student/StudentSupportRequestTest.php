@@ -213,6 +213,8 @@ class StudentSupportRequestTest extends TestCase
         $response->assertRedirect();
 
         $this->assertSame(SupportRequest::STATUS_CANCELLED, $supportRequest->refresh()->status);
+        $this->assertSame(SupportRequest::CANCELLED_BY_STUDENT, $supportRequest->cancelled_by);
+        $this->assertSame(SupportRequest::CANCEL_REASON_NO_LONGER_NEEDED, $supportRequest->cancel_reason);
     }
 
     public function test_student_cancel_refreshes_without_error_when_request_was_already_assigned(): void
@@ -236,6 +238,50 @@ class StudentSupportRequestTest extends TestCase
 
         $this->assertSame(SupportRequest::STATUS_ASSIGNED, $supportRequest->status);
         $this->assertSame($teacher->id, $supportRequest->assigned_teacher_id);
+    }
+
+    public function test_student_can_cancel_assigned_request_after_confirmation(): void
+    {
+        $student = User::factory()->create();
+        $teacher = User::factory()->teacher()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'assigned_teacher_id' => $teacher->id,
+            'assigned_at' => now(),
+            'status' => SupportRequest::STATUS_ASSIGNED,
+        ]);
+
+        Livewire::actingAs($student)
+            ->test(ActiveRequests::class)
+            ->call('confirmAssignedCancellation', $supportRequest->id)
+            ->assertSee("Cette demande est déjà prise en charge par un enseignant. Voulez-vous vraiment l'annuler ?")
+            ->assertSee('Annuler ma demande')
+            ->call('cancelAssignedRequest')
+            ->assertSee('Demande annulee.');
+
+        $supportRequest->refresh();
+
+        $this->assertSame(SupportRequest::STATUS_CANCELLED, $supportRequest->status);
+        $this->assertSame($teacher->id, $supportRequest->assigned_teacher_id);
+        $this->assertSame(SupportRequest::CANCELLED_BY_STUDENT, $supportRequest->cancelled_by);
+        $this->assertSame(SupportRequest::CANCEL_REASON_NO_LONGER_NEEDED, $supportRequest->cancel_reason);
+    }
+
+    public function test_student_assigned_cancellation_button_is_icon_only_and_discreet(): void
+    {
+        $student = User::factory()->create();
+        SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'assigned_teacher_id' => User::factory()->teacher()->create()->id,
+            'assigned_at' => now(),
+            'status' => SupportRequest::STATUS_ASSIGNED,
+        ]);
+
+        Livewire::actingAs($student)
+            ->test(ActiveRequests::class)
+            ->assertSee('aria-label="Annuler la demande"', false)
+            ->assertSee('text-gray-300', false)
+            ->assertDontSee('Annuler ma demande');
     }
 
     public function test_student_active_requests_component_polls_only_when_active_request_exists(): void

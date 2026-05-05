@@ -50,6 +50,8 @@ class ClassroomController extends Controller
                 'status' => SupportRequest::STATUS_CANCELLED,
                 'assigned_teacher_id' => null,
                 'assigned_at' => null,
+                'cancelled_by' => SupportRequest::CANCELLED_BY_STUDENT,
+                'cancel_reason' => SupportRequest::CANCEL_REASON_CHANGED_CLASSROOM,
             ]);
 
             $changeMarker = app(SupportRequestChangeMarker::class);

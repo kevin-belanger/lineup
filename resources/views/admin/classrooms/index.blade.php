@@ -94,13 +94,30 @@
                                                 </x-secondary-button>
                                             </form>
 
-                                            <form method="POST" action="{{ route('admin.classrooms.destroy', $classroom) }}" onsubmit="return confirm('Supprimer ce local? Les demandes associees afficheront N/A.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <x-danger-button>
-                                                    {{ __('Supprimer') }}
-                                                </x-danger-button>
-                                            </form>
+                                            <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-classroom-{{ $classroom->id }}')">
+                                                {{ __('Supprimer') }}
+                                            </x-danger-button>
+
+                                            <x-modal name="delete-classroom-{{ $classroom->id }}" maxWidth="md" focusable>
+                                                <x-confirmation-panel
+                                                    :title="__('Supprimer le local')"
+                                                    :message="__('Les demandes associées resteront dans l’historique, mais le local affichera N/A. Voulez-vous supprimer ce local ?')"
+                                                >
+                                                    <x-slot name="actions">
+                                                        <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                                                            {{ __('Retour') }}
+                                                        </x-secondary-button>
+
+                                                        <form method="POST" action="{{ route('admin.classrooms.destroy', $classroom) }}">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <x-danger-button>
+                                                                {{ __('Supprimer') }}
+                                                            </x-danger-button>
+                                                        </form>
+                                                    </x-slot>
+                                                </x-confirmation-panel>
+                                            </x-modal>
                                         </div>
                                     </td>
                                 </tr>

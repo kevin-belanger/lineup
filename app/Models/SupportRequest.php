@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'comment',
     'assigned_at',
     'completed_at',
+    'cancelled_by',
+    'cancel_reason',
 ])]
 class SupportRequest extends Model
 {
@@ -40,6 +42,20 @@ class SupportRequest extends Model
     public const STATUS_COMPLETED = 'completed';
 
     public const STATUS_CANCELLED = 'cancelled';
+
+    public const CANCELLED_BY_STUDENT = 'student';
+
+    public const CANCELLED_BY_TEACHER = 'teacher';
+
+    public const CANCELLED_BY_SYSTEM = 'system';
+
+    public const CANCEL_REASON_NO_LONGER_NEEDED = 'no_longer_needed';
+
+    public const CANCEL_REASON_CHANGED_CLASSROOM = 'changed_classroom';
+
+    public const CANCEL_REASON_TEACHER_CANCELLED = 'teacher_cancelled';
+
+    public const CANCEL_REASON_END_OF_DAY = 'end_of_day';
 
     /** @use HasFactory<SupportRequestFactory> */
     use HasFactory;

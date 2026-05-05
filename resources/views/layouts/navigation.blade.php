@@ -5,8 +5,11 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
+                        <x-application-logo class="block h-9 w-9 object-contain" />
+                        <span class="text-lg font-semibold text-gray-900">
+                            {{ app(\App\Services\ApplicationSettings::class)->displayName() }}
+                        </span>
                     </a>
                 </div>
 
@@ -47,6 +50,9 @@
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.subjects.index')">
                                 {{ __('Matieres') }}
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.settings.edit')">
+                                {{ __('Parametres') }}
                             </x-dropdown-link>
                         </x-slot>
                     </x-dropdown>
@@ -121,6 +127,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">
                     {{ __('Matieres') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.settings.edit')" :active="request()->routeIs('admin.settings.*')">
+                    {{ __('Parametres') }}
                 </x-responsive-nav-link>
             @endif
         </div>

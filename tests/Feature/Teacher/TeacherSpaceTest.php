@@ -145,9 +145,12 @@ class TeacherSpaceTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
-            ->call('cancel', $localRequest->id)
+            ->call('confirmCancel', $localRequest->id)
+            ->assertSee('Annuler la demande')
+            ->call('cancel')
             ->assertDispatched('toast')
-            ->call('cancel', $otherRequest->id)
+            ->call('confirmCancel', $otherRequest->id)
+            ->call('cancel')
             ->assertDispatched('toast');
 
         $this->assertSame(SupportRequest::STATUS_CANCELLED, $localRequest->refresh()->status);

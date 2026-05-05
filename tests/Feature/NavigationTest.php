@@ -45,7 +45,8 @@ class NavigationTest extends TestCase
             ->assertSee('Administration')
             ->assertSee('Utilisateurs')
             ->assertSee('Locaux')
-            ->assertSee('Matieres');
+            ->assertSee('Matieres')
+            ->assertSee('Parametres');
     }
 
     public function test_dashboard_logo_destination_prioritizes_teacher_before_admin(): void

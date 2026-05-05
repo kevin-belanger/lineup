@@ -113,6 +113,8 @@ class SupportRequestController extends Controller
             ->where('status', SupportRequest::STATUS_WAITING)
             ->update([
                 'status' => SupportRequest::STATUS_CANCELLED,
+                'cancelled_by' => SupportRequest::CANCELLED_BY_STUDENT,
+                'cancel_reason' => SupportRequest::CANCEL_REASON_NO_LONGER_NEEDED,
                 'updated_at' => now(),
             ]);
 

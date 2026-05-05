@@ -125,13 +125,30 @@
                                                 </x-secondary-button>
                                             </form>
 
-                                            <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}" onsubmit="return confirm('Supprimer cette matiere? Les demandes associees afficheront N/A.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <x-danger-button>
-                                                    {{ __('Supprimer') }}
-                                                </x-danger-button>
-                                            </form>
+                                            <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-subject-{{ $subject->id }}')">
+                                                {{ __('Supprimer') }}
+                                            </x-danger-button>
+
+                                            <x-modal name="delete-subject-{{ $subject->id }}" maxWidth="md" focusable>
+                                                <x-confirmation-panel
+                                                    :title="__('Supprimer la matière')"
+                                                    :message="__('Les demandes associées resteront dans l’historique, mais la matière affichera N/A. Voulez-vous supprimer cette matière ?')"
+                                                >
+                                                    <x-slot name="actions">
+                                                        <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                                                            {{ __('Retour') }}
+                                                        </x-secondary-button>
+
+                                                        <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <x-danger-button>
+                                                                {{ __('Supprimer') }}
+                                                            </x-danger-button>
+                                                        </form>
+                                                    </x-slot>
+                                                </x-confirmation-panel>
+                                            </x-modal>
                                         </div>
                                     </td>
                                 </tr>

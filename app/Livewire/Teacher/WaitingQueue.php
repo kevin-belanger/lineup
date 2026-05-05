@@ -11,6 +11,8 @@ use Livewire\Component;
 
 class WaitingQueue extends Component
 {
+    public ?int $confirmingCancellationId = null;
+
     public function assign(int $supportRequestId): void
     {
         $classroomId = $this->currentClassroomId();
@@ -39,20 +41,34 @@ class WaitingQueue extends Component
         $this->dispatchRefresh();
     }
 
-    public function cancel(int $supportRequestId): void
+    public function confirmCancel(int $supportRequestId): void
+    {
+        $this->confirmingCancellationId = $supportRequestId;
+    }
+
+    public function dismissCancel(): void
+    {
+        $this->confirmingCancellationId = null;
+    }
+
+    public function cancel(): void
     {
         $classroomId = $this->currentClassroomId();
 
         $updated = SupportRequest::query()
-            ->whereKey($supportRequestId)
+            ->whereKey($this->confirmingCancellationId)
             ->where('classroom_id', $classroomId)
             ->where('status', SupportRequest::STATUS_WAITING)
             ->update([
                 'assigned_teacher_id' => null,
                 'assigned_at' => null,
                 'status' => SupportRequest::STATUS_CANCELLED,
+                'cancelled_by' => SupportRequest::CANCELLED_BY_TEACHER,
+                'cancel_reason' => SupportRequest::CANCEL_REASON_TEACHER_CANCELLED,
                 'updated_at' => now(),
             ]);
+
+        $this->confirmingCancellationId = null;
 
         if ($updated === 0) {
             $this->toast('info', 'Cette demande ne peut plus etre annulee depuis la file.');

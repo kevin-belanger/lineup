@@ -11,6 +11,8 @@ class ActiveRequests extends Component
 {
     public ?string $notice = null;
 
+    public ?int $confirmingAssignedCancellationId = null;
+
     public function cancel(int $supportRequestId): void
     {
         $this->notice = null;
@@ -25,9 +27,51 @@ class ActiveRequests extends Component
             ->where('status', SupportRequest::STATUS_WAITING)
             ->update([
                 'status' => SupportRequest::STATUS_CANCELLED,
+                'cancelled_by' => SupportRequest::CANCELLED_BY_STUDENT,
+                'cancel_reason' => SupportRequest::CANCEL_REASON_NO_LONGER_NEEDED,
                 'updated_at' => now(),
             ]);
 
+        $this->notice = $updated === 1
+            ? 'Demande annulee.'
+            : 'La demande a ete mise a jour.';
+
+        if ($updated === 1) {
+            app(SupportRequestChangeMarker::class)->touch($supportRequest?->classroom_id);
+        }
+    }
+
+    public function confirmAssignedCancellation(int $supportRequestId): void
+    {
+        $this->confirmingAssignedCancellationId = $supportRequestId;
+    }
+
+    public function dismissAssignedCancellation(): void
+    {
+        $this->confirmingAssignedCancellationId = null;
+    }
+
+    public function cancelAssignedRequest(): void
+    {
+        $this->notice = null;
+        $supportRequest = SupportRequest::query()
+            ->whereKey($this->confirmingAssignedCancellationId)
+            ->where('student_id', auth()->id())
+            ->first(['id', 'classroom_id']);
+
+        $updated = SupportRequest::query()
+            ->whereKey($this->confirmingAssignedCancellationId)
+            ->where('student_id', auth()->id())
+            ->whereNotNull('assigned_teacher_id')
+            ->whereIn('status', SupportRequest::teacherActiveStatuses())
+            ->update([
+                'status' => SupportRequest::STATUS_CANCELLED,
+                'cancelled_by' => SupportRequest::CANCELLED_BY_STUDENT,
+                'cancel_reason' => SupportRequest::CANCEL_REASON_NO_LONGER_NEEDED,
+                'updated_at' => now(),
+            ]);
+
+        $this->confirmingAssignedCancellationId = null;
         $this->notice = $updated === 1
             ? 'Demande annulee.'
             : 'La demande a ete mise a jour.';

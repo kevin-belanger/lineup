@@ -5,7 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ app(\App\Services\ApplicationSettings::class)->displayName() }}</title>
+        <link rel="icon" type="image/png" href="{{ asset(app(\App\Services\ApplicationSettings::class)->faviconPath()) }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -17,16 +18,20 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
+            <div class="flex flex-col items-center gap-3">
                 <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    <x-application-logo class="h-20 w-20 object-contain" />
                 </a>
+                <div class="text-xl font-semibold text-gray-900">
+                    {{ app(\App\Services\ApplicationSettings::class)->displayName() }}
+                </div>
             </div>
 
             <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
                 {{ $slot }}
             </div>
         </div>
+        <x-toast-stack />
         @livewireScripts
     </body>
 </html>

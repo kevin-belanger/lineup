@@ -25,6 +25,7 @@
             }[type] ?? 'border-sky-200 bg-sky-50 text-sky-800';
         },
     }"
+    x-init="@if (session('toast')) add({ detail: @js(session('toast')) }) @endif"
     x-on:toast.window="add($event)"
     class="fixed bottom-4 right-4 z-50 w-[min(24rem,calc(100vw-2rem))] space-y-3 sm:bottom-6 sm:right-6"
     aria-live="polite"

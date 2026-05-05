@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Classroom;
+use App\Models\Setting;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\ApplicationSettings;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +20,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        Setting::query()->firstOrCreate(
+            ['key' => ApplicationSettings::APP_NAME_KEY],
+            ['value' => ApplicationSettings::DEFAULT_APP_NAME],
+        );
+        Setting::query()->firstOrCreate(
+            ['key' => ApplicationSettings::AUTO_CANCEL_REQUESTS_ENABLED_KEY],
+            ['value' => '0'],
+        );
+        Setting::query()->firstOrCreate(
+            ['key' => ApplicationSettings::AUTO_CANCEL_REQUESTS_TIME_KEY],
+            ['value' => ApplicationSettings::DEFAULT_AUTO_CANCEL_REQUESTS_TIME],
+        );
+
         $demoUsers = [
             [
                 'name' => 'Bob',

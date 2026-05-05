@@ -46,10 +46,9 @@
 
                         <button
                             type="button"
-                            wire:click="cancel({{ $supportRequest->id }})"
-                            wire:confirm="{{ __('Annuler cette demande?') }}"
+                            wire:click="confirmCancel({{ $supportRequest->id }})"
                             wire:loading.attr="disabled"
-                            wire:target="cancel({{ $supportRequest->id }})"
+                            wire:target="confirmCancel({{ $supportRequest->id }})"
                             class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                         >
                             {{ __('Annuler') }}
@@ -63,4 +62,25 @@
             </div>
         @endforelse
     </div>
+
+    @if ($confirmingCancellationId)
+        <div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+            <button type="button" class="absolute inset-0 bg-gray-500 opacity-75" wire:click="dismissCancel" aria-label="{{ __('Retour') }}"></button>
+
+            <x-confirmation-panel
+                :title="__('Annuler la demande')"
+                :message="__('Cette demande sera annulée et ne sera plus visible dans la file d’attente. Voulez-vous continuer ?')"
+            >
+                <x-slot name="actions">
+                    <x-secondary-button type="button" wire:click="dismissCancel">
+                        {{ __('Retour') }}
+                    </x-secondary-button>
+
+                    <x-danger-button type="button" wire:click="cancel" wire:loading.attr="disabled" wire:target="cancel">
+                        {{ __('Annuler la demande') }}
+                    </x-danger-button>
+                </x-slot>
+            </x-confirmation-panel>
+        </div>
+    @endif
 </section>

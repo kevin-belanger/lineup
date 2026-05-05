@@ -7,6 +7,24 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## LineUp
+
+LineUp utilise le scheduler Laravel pour les operations planifiees, dont l'annulation automatique des demandes actives en fin de journee.
+
+En deploiement Docker, le service `scheduler` defini dans `compose.yaml` remplace la cron systeme classique. Il lance `php artisan schedule:work` en continu dans la meme image que l'application:
+
+```bash
+docker compose up -d scheduler
+```
+
+Pour un deploiement sans Docker, configurez plutot une cron systeme qui appelle Laravel chaque minute:
+
+```bash
+* * * * * cd /chemin/du/projet && php artisan schedule:run >> /dev/null 2>&1
+```
+
+La cron ou le service Docker ne doivent pas etre configures directement a l'heure d'annulation, car cette heure est modifiable dans les parametres de l'application. Laravel verifie le reglage a chaque minute et execute l'annulation seulement lorsque l'option est activee et que l'heure configuree correspond.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
