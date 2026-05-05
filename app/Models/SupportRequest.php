@@ -1,0 +1,132 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\SupportRequestFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+#[Fillable([
+    'student_id',
+    'classroom_id',
+    'subject_id',
+    'assigned_teacher_id',
+    'moodle_tile_number',
+    'table_number',
+    'type',
+    'status',
+    'comment',
+    'assigned_at',
+    'completed_at',
+])]
+class SupportRequest extends Model
+{
+    public const TYPE_EXPLANATION = 'explanation';
+
+    public const TYPE_VALIDATION = 'validation';
+
+    public const TYPE_CORRECTION = 'correction';
+
+    public const STATUS_WAITING = 'waiting';
+
+    public const STATUS_ASSIGNED = 'assigned';
+
+    public const STATUS_PAUSED = 'paused';
+
+    public const STATUS_READY = 'ready';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** @use HasFactory<SupportRequestFactory> */
+    use HasFactory;
+
+    public static function typeLabels(): array
+    {
+        return [
+            self::TYPE_EXPLANATION => 'Explication',
+            self::TYPE_VALIDATION => 'Validation',
+            self::TYPE_CORRECTION => 'Correction',
+        ];
+    }
+
+    public static function statusLabels(): array
+    {
+        return [
+            self::STATUS_WAITING => 'En attente',
+            self::STATUS_ASSIGNED => 'Attribuee',
+            self::STATUS_PAUSED => 'En pause',
+            self::STATUS_READY => 'Pret a revoir',
+            self::STATUS_COMPLETED => 'Terminee',
+            self::STATUS_CANCELLED => 'Annulee',
+        ];
+    }
+
+    public static function activeStatuses(): array
+    {
+        return [
+            self::STATUS_WAITING,
+            self::STATUS_ASSIGNED,
+            self::STATUS_PAUSED,
+            self::STATUS_READY,
+        ];
+    }
+
+    public static function teacherActiveStatuses(): array
+    {
+        return [
+            self::STATUS_ASSIGNED,
+            self::STATUS_PAUSED,
+            self::STATUS_READY,
+        ];
+    }
+
+    public static function historyStatuses(): array
+    {
+        return [
+            self::STATUS_COMPLETED,
+            self::STATUS_CANCELLED,
+        ];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'assigned_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function assignedTeacher(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_teacher_id');
+    }
+
+    public function classroom(): BelongsTo
+    {
+        return $this->belongsTo(Classroom::class);
+    }
+
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+    public function typeLabel(): string
+    {
+        return self::typeLabels()[$this->type] ?? $this->type;
+    }
+
+    public function statusLabel(): string
+    {
+        return self::statusLabels()[$this->status] ?? $this->status;
+    }
+}
