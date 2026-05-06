@@ -61,6 +61,7 @@
                             x-data="{
                                 email: @js($user->email),
                                 emailError: '',
+                                rolesError: '',
                                 validateEmail() {
                                     this.emailError = emailExists(this.email, {{ $user->id }})
                                         ? 'Cette adresse courriel est deja utilisee.'
@@ -68,8 +69,17 @@
 
                                     return this.emailError === '';
                                 },
+                                validateRoles(form) {
+                                    const roleSelector = 'input[type=checkbox][name=is_student], input[type=checkbox][name=is_teacher], input[type=checkbox][name=is_admin]';
+
+                                    this.rolesError = Array.from(form.querySelectorAll(roleSelector)).some((checkbox) => checkbox.checked)
+                                        ? ''
+                                        : 'Selectionnez au moins un role.';
+
+                                    return this.rolesError === '';
+                                },
                             }"
-                            x-on:submit="if (! validateEmail()) $event.preventDefault()"
+                            x-on:submit="if (! (validateEmail() && validateRoles($el))) $event.preventDefault()"
                         >
                             @csrf
                             @method('PATCH')
@@ -93,17 +103,18 @@
                                 <div class="space-y-2">
                                     <div class="text-sm font-medium text-gray-700">{{ __('Roles') }}</div>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_student" value="1" @checked($user->is_student) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_student" value="1" @checked($user->is_student) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Etudiant') }}
                                     </label>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_teacher" value="1" @checked($user->is_teacher) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_teacher" value="1" @checked($user->is_teacher) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Enseignant') }}
                                     </label>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_admin" value="1" @checked($user->is_admin) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_admin" value="1" @checked($user->is_admin) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Admin') }}
                                     </label>
+                                    <p x-show="rolesError" x-text="rolesError" class="text-sm text-red-600"></p>
                                 </div>
 
                                 <div class="space-y-2">
@@ -134,7 +145,7 @@
                                     {{ __('Modifier le mot de passe') }}
                                 </x-secondary-button>
 
-                                <x-primary-button x-bind:disabled="emailError !== ''" class="disabled:opacity-50">
+                                <x-primary-button x-bind:disabled="emailError !== '' || rolesError !== ''" class="disabled:opacity-50">
                                     {{ __('Enregistrer') }}
                                 </x-primary-button>
                             </div>

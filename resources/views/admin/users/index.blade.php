@@ -12,6 +12,7 @@
                 editingUser: null,
                 createEmail: '',
                 createEmailError: '',
+                createRolesError: '',
                 emails: @js($emailValidationOptions),
                 normalize(value) {
                     return value.trim().toLowerCase();
@@ -32,6 +33,15 @@
 
                     return this.createEmailError === '';
                 },
+                validateRoles(form, errorProperty) {
+                    const roleSelector = 'input[type=checkbox][name=is_student], input[type=checkbox][name=is_teacher], input[type=checkbox][name=is_admin]';
+
+                    this[errorProperty] = Array.from(form.querySelectorAll(roleSelector)).some((checkbox) => checkbox.checked)
+                        ? ''
+                        : 'Selectionnez au moins un role.';
+
+                    return this[errorProperty] === '';
+                },
             }"
         >
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
@@ -44,7 +54,7 @@
                         <span class="text-sm font-medium text-indigo-700">{{ __('Ouvrir') }}</span>
                     </summary>
 
-                    <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-5 border-t border-gray-100 p-6" x-on:submit="if (! validateCreateEmail()) $event.preventDefault()">
+                    <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-5 border-t border-gray-100 p-6" x-on:submit="if (! (validateCreateEmail() && validateRoles($el, 'createRolesError'))) $event.preventDefault()">
                         @csrf
 
                         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -71,18 +81,19 @@
                                 <div class="text-sm font-medium text-gray-700">{{ __('Roles') }}</div>
                                 <div class="flex flex-wrap gap-4">
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_student" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_student" value="1" checked x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Etudiant') }}
                                     </label>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_teacher" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_teacher" value="1" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Enseignant') }}
                                     </label>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_admin" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_admin" value="1" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Admin') }}
                                     </label>
                                 </div>
+                                <p x-show="createRolesError" x-text="createRolesError" class="text-sm text-red-600"></p>
                             </div>
                         </div>
 
@@ -98,7 +109,7 @@
                                 </label>
                             </div>
 
-                            <x-primary-button x-bind:disabled="createEmailError !== ''" class="disabled:opacity-50">
+                            <x-primary-button x-bind:disabled="createEmailError !== '' || createRolesError !== ''" class="disabled:opacity-50">
                                 {{ __('Creer') }}
                             </x-primary-button>
                         </div>
