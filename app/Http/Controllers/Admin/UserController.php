@@ -68,14 +68,14 @@ class UserController extends Controller
         if ($request->user()->is($user) && ! ($validated['is_admin'] ?? false)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Tu ne peux pas retirer ton propre role admin.',
+                'message' => 'Vous ne pouvez pas retirer votre propre rôle admin.',
             ]);
         }
 
         if ($request->user()->is($user) && ! ($validated['is_active'] ?? false)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Tu ne peux pas desactiver ton propre compte.',
+                'message' => 'Vous ne pouvez pas désactiver votre propre compte.',
             ]);
         }
 
@@ -145,7 +145,7 @@ class UserController extends Controller
         if ($request->user()->is($user) && ! $roles['is_admin']) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Tu ne peux pas retirer ton propre role admin.',
+                'message' => 'Vous ne pouvez pas retirer votre propre rôle admin.',
             ]);
         }
 
@@ -163,7 +163,7 @@ class UserController extends Controller
         if ($request->user()->is($user)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Tu ne peux pas desactiver ton propre compte.',
+                'message' => 'Vous ne pouvez pas désactiver votre propre compte.',
             ]);
         }
 

@@ -33,7 +33,7 @@
         <div class="mb-5 flex items-start justify-between gap-3">
             <div>
                 <h3 class="text-lg font-semibold text-gray-900">{{ __('Demandes envoyees') }}</h3>
-                <p class="mt-1 text-sm text-gray-600">{{ __('Demandes prioritaires actives creees par toi.') }}</p>
+                <p class="mt-1 text-sm text-gray-600">{{ __('Demandes prioritaires actives envoyees.') }}</p>
             </div>
             <span class="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">{{ $requests->count() }}</span>
         </div>

@@ -29,7 +29,7 @@
                         @if ($activeRequests->isNotEmpty())
                             <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                                 <p class="font-medium">{{ __('Changement bloque pendant une prise en charge') }}</p>
-                                <p class="mt-1">{{ __('Termine, mets en pause ou remets tes demandes dans la file avant de changer de local.') }}</p>
+                                <p class="mt-1">{{ __('Veuillez terminer, mettre en pause ou remettre les demandes dans la file avant de changer de local.') }}</p>
                                 <ul class="mt-3 space-y-1">
                                     @foreach ($activeRequests as $supportRequest)
                                         <li>

@@ -39,7 +39,7 @@ class ClassroomController extends Controller
 
         if ($hasActiveRequestsInAnotherClassroom && ! $request->boolean('confirm_cancel_active_requests')) {
             return back()->withErrors([
-                'confirm_cancel_active_requests' => 'Confirme le changement de local pour annuler tes demandes en cours.',
+                'confirm_cancel_active_requests' => 'Veuillez confirmer le changement de local pour annuler les demandes en cours.',
             ])->withInput();
         }
 

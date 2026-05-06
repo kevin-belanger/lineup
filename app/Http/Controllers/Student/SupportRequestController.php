@@ -19,7 +19,7 @@ class SupportRequestController extends Controller
         if ($this->hasActiveRequest($request)) {
             return redirect()->route('student.dashboard')->with('toast', [
                 'type' => 'info',
-                'message' => 'Tu as deja une demande en cours.',
+                'message' => 'Vous avez déjà une demande en cours.',
             ]);
         }
 
@@ -28,7 +28,7 @@ class SupportRequestController extends Controller
         if ($classroom === null) {
             return redirect()->route('student.classroom.edit')->with('toast', [
                 'type' => 'info',
-                'message' => 'Choisis un local avant de creer une demande.',
+                'message' => 'Veuillez choisir un local avant de créer une demande.',
             ]);
         }
 
@@ -50,7 +50,7 @@ class SupportRequestController extends Controller
         if ($this->hasActiveRequest($request)) {
             return redirect()->route('student.dashboard')->with('toast', [
                 'type' => 'info',
-                'message' => 'Tu as deja une demande en cours.',
+                'message' => 'Vous avez déjà une demande en cours.',
             ]);
         }
 
@@ -59,7 +59,7 @@ class SupportRequestController extends Controller
         if ($classroom === null) {
             return redirect()->route('student.classroom.edit')->with('toast', [
                 'type' => 'info',
-                'message' => 'Choisis un local avant de creer une demande.',
+                'message' => 'Veuillez choisir un local avant de créer une demande.',
             ]);
         }
 
@@ -145,7 +145,7 @@ class SupportRequestController extends Controller
 
         app(SupportRequestChangeMarker::class)->touch($supportRequest->classroom_id);
 
-        return back()->with('status', 'Ton enseignant verra que tu es pret.');
+        return back()->with('status', 'L’enseignant verra que vous êtes prêt.');
     }
 
     public function history(Request $request): View

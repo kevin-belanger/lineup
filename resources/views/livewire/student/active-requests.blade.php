@@ -49,7 +49,7 @@
                                 @csrf
                                 @method('PATCH')
                                 <x-primary-button>
-                                    {{ __('Je suis pret') }}
+                                    {{ __('Prêt à revoir') }}
                                 </x-primary-button>
                             </form>
                         @endif

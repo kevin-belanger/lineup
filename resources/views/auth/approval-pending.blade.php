@@ -10,10 +10,10 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <p class="font-medium">
-                        {{ __('Ton compte doit etre approuve avant de pouvoir utiliser LineUp.') }}
+                        {{ __('Votre compte doit être approuvé avant de pouvoir utiliser LineUp.') }}
                     </p>
                     <p class="mt-2 text-sm text-gray-600">
-                        {{ __('Un administrateur doit valider ton compte. Tu pourras ensuite acceder a ton espace selon tes roles.') }}
+                        {{ __('Un administrateur doit valider votre compte. Vous pourrez ensuite accéder à votre espace selon vos rôles.') }}
                     </p>
                 </div>
             </div>

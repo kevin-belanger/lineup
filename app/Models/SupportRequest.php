@@ -77,7 +77,7 @@ class SupportRequest extends Model
             self::STATUS_WAITING => 'En attente',
             self::STATUS_ASSIGNED => 'Attribuee',
             self::STATUS_PAUSED => 'En pause',
-            self::STATUS_READY => 'Pret a revoir',
+            self::STATUS_READY => 'Prêt à revoir',
             self::STATUS_COMPLETED => 'Terminee',
             self::STATUS_CANCELLED => 'Annulee',
         ];

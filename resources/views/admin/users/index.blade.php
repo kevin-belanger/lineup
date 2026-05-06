@@ -38,7 +38,7 @@
 
                     this[errorProperty] = Array.from(form.querySelectorAll(roleSelector)).some((checkbox) => checkbox.checked)
                         ? ''
-                        : 'Selectionnez au moins un role.';
+                        : 'Veuillez sélectionner au moins un rôle.';
 
                     return this[errorProperty] === '';
                 },

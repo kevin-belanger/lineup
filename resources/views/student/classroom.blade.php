@@ -29,7 +29,7 @@
                         <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                             <div class="font-medium">{{ __('Demande en cours') }}</div>
                             <div class="mt-1">
-                                {{ __('Changer vers un autre local annulera tes demandes en cours.') }}
+                                {{ __('Changer vers un autre local annulera les demandes en cours.') }}
                             </div>
                             <ul class="mt-2 list-disc space-y-1 ps-5">
                                 @foreach ($activeRequests as $supportRequest)
@@ -45,7 +45,7 @@
                             </ul>
                             <label class="mt-3 flex items-center gap-2">
                                 <input type="checkbox" name="confirm_cancel_active_requests" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                <span>{{ __('Je confirme que mes demandes en cours seront annulees si je change de local.') }}</span>
+                                <span>{{ __('Je confirme que les demandes en cours seront annulees si le local est change.') }}</span>
                             </label>
                             <x-input-error :messages="$errors->get('confirm_cancel_active_requests')" class="mt-2" />
                         </div>

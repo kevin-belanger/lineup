@@ -1,8 +1,8 @@
 <section class="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 shadow-sm">
     <div class="mb-4 flex items-start justify-between gap-3">
         <div>
-            <h3 class="text-lg font-semibold text-gray-950">{{ __('Mes demandes en cours') }}</h3>
-            <p class="text-sm text-gray-600">{{ __('Prises en charge dans ce local.') }}</p>
+            <h3 class="text-lg font-semibold text-gray-950">{{ __('Demandes en cours') }}</h3>
+            <p class="text-sm text-gray-600">{{ __('Demandes prises en charge dans ce local.') }}</p>
         </div>
         <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-800">{{ $requests->count() }}</span>
     </div>
@@ -113,7 +113,7 @@
             </article>
         @empty
             <div class="rounded-lg border border-dashed border-indigo-200 bg-white/70 p-6 text-center text-sm text-gray-600">
-                {{ __('Tu n as aucune demande en cours.') }}
+                {{ __('Aucune demande en cours.') }}
             </div>
         @endforelse
     </div>

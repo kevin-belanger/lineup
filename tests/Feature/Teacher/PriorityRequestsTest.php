@@ -129,7 +129,7 @@ class PriorityRequestsTest extends TestCase
             'table_number' => null,
             'type' => null,
             'status' => SupportRequest::STATUS_WAITING,
-            'comment' => 'Peux-tu venir voir un probleme technique ?',
+            'comment' => 'Assistance demandee pour un probleme technique.',
             'created_at' => now(),
         ]);
 

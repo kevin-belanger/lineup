@@ -149,7 +149,7 @@ class StudentSupportRequestTest extends TestCase
             ->assertRedirect(route('student.dashboard'))
             ->assertSessionHas('toast', [
                 'type' => 'info',
-                'message' => 'Tu as deja une demande en cours.',
+                'message' => 'Vous avez déjà une demande en cours.',
             ]);
 
         $this->assertSame(1, SupportRequest::query()->where('student_id', $student->id)->whereIn('status', SupportRequest::activeStatuses())->count());
@@ -171,7 +171,7 @@ class StudentSupportRequestTest extends TestCase
             ->assertRedirect(route('student.classroom.edit'))
             ->assertSessionHas('toast', [
                 'type' => 'info',
-                'message' => 'Choisis un local avant de creer une demande.',
+                'message' => 'Veuillez choisir un local avant de créer une demande.',
             ]);
     }
 

@@ -37,7 +37,7 @@ class ClassroomController extends Controller
 
         if ($hasActiveRequestInAnotherClassroom) {
             return back()->withErrors([
-                'classroom_id' => 'Tu as encore des demandes en cours dans ton local actuel.',
+                'classroom_id' => 'Des demandes sont encore en cours dans le local actuel.',
             ]);
         }
 
