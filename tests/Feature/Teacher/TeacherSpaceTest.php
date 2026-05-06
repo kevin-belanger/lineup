@@ -3,6 +3,7 @@
 namespace Tests\Feature\Teacher;
 
 use App\Livewire\Teacher\MyRequests;
+use App\Livewire\Teacher\OtherTeacherRequests;
 use App\Livewire\Teacher\RequestChangeWatcher;
 use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
@@ -196,6 +197,95 @@ class TeacherSpaceTest extends TestCase
         $this->assertNull($ready->assigned_teacher_id);
         $this->assertNull($ready->assigned_at);
         $this->assertSame(SupportRequest::STATUS_ASSIGNED, $otherRequest->refresh()->status);
+    }
+
+    public function test_teacher_can_manage_other_teacher_active_requests_from_current_classroom(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $toRequeue = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+        $toComplete = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_PAUSED,
+            'assigned_at' => now(),
+        ]);
+        $toCancel = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_READY,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(OtherTeacherRequests::class)
+            ->call('openManagementModal', $toRequeue->id)
+            ->assertSee('Gerer la demande')
+            ->call('requeue')
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated')
+            ->call('openManagementModal', $toComplete->id)
+            ->call('complete')
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated')
+            ->call('openManagementModal', $toCancel->id)
+            ->call('cancel')
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated');
+
+        $this->assertSame(SupportRequest::STATUS_WAITING, $toRequeue->refresh()->status);
+        $this->assertNull($toRequeue->assigned_teacher_id);
+        $this->assertNull($toRequeue->assigned_at);
+        $this->assertSame(SupportRequest::STATUS_COMPLETED, $toComplete->refresh()->status);
+        $this->assertNotNull($toComplete->completed_at);
+        $this->assertSame(SupportRequest::STATUS_CANCELLED, $toCancel->refresh()->status);
+        $this->assertSame(SupportRequest::CANCELLED_BY_TEACHER, $toCancel->cancelled_by);
+        $this->assertSame(SupportRequest::CANCEL_REASON_TEACHER_CANCELLED, $toCancel->cancel_reason);
+        $this->assertSame(3, app(SupportRequestChangeMarker::class)->current($classroom->id));
+    }
+
+    public function test_teacher_can_not_manage_requests_outside_other_teacher_visible_section(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $otherClassroom = Classroom::factory()->create();
+        $ownRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+        $otherClassroomRequest = SupportRequest::factory()->create([
+            'classroom_id' => $otherClassroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(OtherTeacherRequests::class)
+            ->set('managingRequestId', $ownRequest->id)
+            ->call('complete')
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated')
+            ->set('managingRequestId', $otherClassroomRequest->id)
+            ->call('cancel')
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated');
+
+        $this->assertSame(SupportRequest::STATUS_ASSIGNED, $ownRequest->refresh()->status);
+        $this->assertSame(SupportRequest::STATUS_ASSIGNED, $otherClassroomRequest->refresh()->status);
     }
 
     public function test_teacher_my_requests_are_ordered_by_creation_date_and_hide_pause_on_paused_requests(): void

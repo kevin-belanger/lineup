@@ -2,7 +2,7 @@
     <div class="mb-4 flex items-start justify-between gap-3">
         <div>
             <h3 class="text-lg font-semibold text-gray-950">{{ __('Mes demandes en cours') }}</h3>
-            <p class="text-sm text-gray-600">{{ __('Tes prises en charge dans ce local.') }}</p>
+            <p class="text-sm text-gray-600">{{ __('Prises en charge dans ce local.') }}</p>
         </div>
         <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-800">{{ $requests->count() }}</span>
     </div>
