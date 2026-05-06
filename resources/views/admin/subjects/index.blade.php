@@ -19,53 +19,127 @@
                 </div>
             @endif
 
-            <section class="bg-white shadow-sm sm:rounded-lg">
-                <form method="POST" action="{{ route('admin.subjects.store') }}" class="space-y-4 p-6">
-                    @csrf
-
-                    <div class="grid gap-4 md:grid-cols-[1fr_1fr_2fr_auto_auto] md:items-end">
+            <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <details>
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
                         <div>
-                            <x-input-label for="classroom_id" :value="__('Local')" />
-                            <select id="classroom_id" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                <option value="">{{ __('Choisir') }}</option>
-                                @foreach ($classrooms as $classroom)
-                                    <option value="{{ $classroom->id }}" @selected((int) old('classroom_id') === $classroom->id)>
-                                        {{ $classroom->name }}{{ $classroom->is_active ? '' : ' - inactif' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Creer une nouvelle matiere') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Ajouter une matiere associee a un local.') }}</p>
+                        </div>
+                        <span class="text-sm font-medium text-indigo-700">{{ __('Ouvrir') }}</span>
+                    </summary>
+
+                    <form
+                        method="POST"
+                        action="{{ route('admin.subjects.store') }}"
+                        class="space-y-4 border-t border-gray-100 p-6"
+                        x-data="{
+                            classroomId: '',
+                            name: '',
+                            url: '',
+                            urlError: '',
+                            nameError: '',
+                            subjects: @js($subjectValidationOptions),
+                            normalize(value) {
+                                return value.trim().toLowerCase();
+                            },
+                            validateUrl() {
+                                this.urlError = '';
+
+                                if (this.url.trim() === '') {
+                                    return true;
+                                }
+
+                                try {
+                                    const candidate = this.url.replaceAll('[table]', '1').replaceAll('[section]', '1');
+                                    new URL(candidate);
+
+                                    return true;
+                                } catch (error) {
+                                    this.urlError = 'L URL doit etre valide.';
+
+                                    return false;
+                                }
+                            },
+                            validateName() {
+                                this.nameError = '';
+
+                                if (this.classroomId === '' || this.name.trim() === '') {
+                                    return true;
+                                }
+
+                                const exists = this.subjects.some((subject) => String(subject.classroom_id) === String(this.classroomId) && subject.name === this.normalize(this.name));
+
+                                if (exists) {
+                                    this.nameError = 'Une matiere avec ce nom existe deja dans ce local.';
+
+                                    return false;
+                                }
+
+                                return true;
+                            },
+                            validateCreate() {
+                                const nameIsValid = this.validateName();
+                                const urlIsValid = this.validateUrl();
+
+                                return nameIsValid && urlIsValid;
+                            },
+                            hasClientErrors() {
+                                return this.nameError !== '' || this.urlError !== '';
+                            },
+                        }"
+                        x-on:submit="if (! validateCreate()) $event.preventDefault()"
+                    >
+                        @csrf
+
+                        <div class="grid gap-4 md:grid-cols-[1fr_1fr_2fr] md:items-end">
+                            <div>
+                                <x-input-label for="classroom_id" :value="__('Local')" />
+                                <select id="classroom_id" name="classroom_id" x-model="classroomId" x-on:change="validateName()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                    <option value="">{{ __('Choisir') }}</option>
+                                    @foreach ($classrooms as $classroom)
+                                        <option value="{{ $classroom->id }}" @selected((int) old('classroom_id') === $classroom->id)>
+                                            {{ $classroom->name }}{{ $classroom->is_active ? '' : ' - inactif' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="name" :value="__('Nom')" />
+                                <x-text-input id="name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
+                                <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
+                            </div>
+
+                            <div>
+                                <x-input-label for="description" :value="__('Description')" />
+                                <x-text-input id="description" name="description" class="mt-1 block w-full" />
+                            </div>
                         </div>
 
                         <div>
-                            <x-input-label for="name" :value="__('Nom')" />
-                            <x-text-input id="name" name="name" class="mt-1 block w-full" required />
+                            <x-input-label for="url" :value="__('URL')" />
+                            <x-text-input id="url" name="url" type="text" x-model="url" x-on:input="validateUrl()" class="mt-1 block w-full" />
+                            <p class="mt-1 text-xs text-gray-500">
+                                {{ __('Vous pouvez utiliser [table] pour inserer le numero de table et [section] pour inserer le numero de tuile Moodle dans l URL.') }}
+                            </p>
+                            <p x-show="urlError" x-text="urlError" class="mt-2 text-sm text-red-600"></p>
+                            <x-input-error :messages="$errors->get('url')" class="mt-2" />
                         </div>
 
-                        <div>
-                            <x-input-label for="description" :value="__('Description')" />
-                            <x-text-input id="description" name="description" class="mt-1 block w-full" />
+                        <div class="flex items-center justify-between gap-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                {{ __('Actif') }}
+                            </label>
+
+                            <x-primary-button x-bind:disabled="hasClientErrors()" class="disabled:opacity-50">
+                                {{ __('Creer') }}
+                            </x-primary-button>
                         </div>
-
-                        <label class="flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                            {{ __('Actif') }}
-                        </label>
-
-                        <x-primary-button>
-                            {{ __('Creer') }}
-                        </x-primary-button>
-                    </div>
-
-                    <div>
-                        <x-input-label for="url" :value="__('URL')" />
-                        <x-text-input id="url" name="url" type="text" class="mt-1 block w-full" :value="old('url')" />
-                        <p class="mt-1 text-xs text-gray-500">
-                            {{ __('Vous pouvez utiliser [table] pour inserer le numero de table et [section] pour inserer le numero de tuile Moodle dans l URL.') }}
-                        </p>
-                        <x-input-error :messages="$errors->get('url')" class="mt-2" />
-                    </div>
-                </form>
+                    </form>
+                </details>
             </section>
 
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
@@ -79,51 +153,22 @@
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
+                        <tbody x-data="{ editingSubject: null }" class="divide-y divide-gray-200 bg-white">
                             @forelse ($subjects as $subject)
-                                <tr>
+                                <tr x-show="editingSubject !== {{ $subject->id }}">
                                     <td class="px-4 py-4 align-top">
-                                        <form method="POST" action="{{ route('admin.subjects.update', $subject) }}" class="space-y-3">
-                                            @csrf
-                                            @method('PATCH')
+                                        <div class="space-y-2">
+                                            <div class="font-semibold text-gray-900">{{ $subject->name }}</div>
+                                            @if ($subject->description)
+                                                <div class="text-sm text-gray-600">{{ $subject->description }}</div>
+                                            @else
+                                                <div class="text-sm text-gray-400">{{ __('Aucune description.') }}</div>
+                                            @endif
 
-                                            <div class="grid gap-3 md:grid-cols-[1fr_1fr_2fr_auto] md:items-end">
-                                                <div>
-                                                    <x-input-label for="subject-{{ $subject->id }}-classroom" :value="__('Local')" />
-                                                    <select id="subject-{{ $subject->id }}-classroom" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                                        @foreach ($classrooms as $classroom)
-                                                            <option value="{{ $classroom->id }}" @selected($subject->classroom_id === $classroom->id)>
-                                                                {{ $classroom->name }}{{ $classroom->is_active ? '' : ' - inactif' }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-
-                                                <div>
-                                                    <x-input-label for="subject-{{ $subject->id }}-name" :value="__('Nom')" />
-                                                    <x-text-input id="subject-{{ $subject->id }}-name" name="name" value="{{ $subject->name }}" class="mt-1 block w-full" required />
-                                                </div>
-
-                                                <div>
-                                                    <x-input-label for="subject-{{ $subject->id }}-description" :value="__('Description')" />
-                                                    <x-text-input id="subject-{{ $subject->id }}-description" name="description" value="{{ $subject->description }}" class="mt-1 block w-full" />
-                                                </div>
-
-                                                <x-secondary-button type="submit">
-                                                    {{ __('Sauvegarder') }}
-                                                </x-secondary-button>
-                                            </div>
-
-                                            <div>
-                                                <x-input-label for="subject-{{ $subject->id }}-url" :value="__('URL')" />
-                                                <x-text-input id="subject-{{ $subject->id }}-url" name="url" type="text" value="{{ $subject->url }}" class="mt-1 block w-full" />
-                                                <p class="mt-1 text-xs text-gray-500">
-                                                    {{ __('Vous pouvez utiliser [table] pour inserer le numero de table et [section] pour inserer le numero de tuile Moodle dans l URL.') }}
-                                                </p>
-                                            </div>
-
-                                            <input type="hidden" name="is_active" value="{{ $subject->is_active ? '1' : '0' }}">
-                                        </form>
+                                            @if ($subject->url)
+                                                <div class="break-all text-sm text-indigo-700">{{ $subject->url }}</div>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm">
                                         <div class="font-medium text-gray-900">{{ $subject->classroom?->name ?? __('Aucun') }}</div>
@@ -138,6 +183,10 @@
                                     </td>
                                     <td class="px-4 py-4 align-top text-right">
                                         <div class="flex flex-col items-end gap-2">
+                                            <x-secondary-button type="button" x-on:click="editingSubject = {{ $subject->id }}">
+                                                {{ __('Modifier') }}
+                                            </x-secondary-button>
+
                                             <form method="POST" action="{{ route('admin.subjects.active', $subject) }}">
                                                 @csrf
                                                 @method('PATCH')
@@ -171,6 +220,58 @@
                                                 </x-confirmation-panel>
                                             </x-modal>
                                         </div>
+                                    </td>
+                                </tr>
+
+                                <tr x-show="editingSubject === {{ $subject->id }}">
+                                    <td colspan="4" class="bg-indigo-50/50 px-4 py-5 align-top">
+                                        <form method="POST" action="{{ route('admin.subjects.update', $subject) }}" class="space-y-4 rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                                            @csrf
+                                            @method('PATCH')
+
+                                            <div class="grid gap-3 md:grid-cols-[1fr_1fr_2fr] md:items-end">
+                                                <div>
+                                                    <x-input-label for="subject-{{ $subject->id }}-classroom" :value="__('Local')" />
+                                                    <select id="subject-{{ $subject->id }}-classroom" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                        @foreach ($classrooms as $classroom)
+                                                            <option value="{{ $classroom->id }}" @selected($subject->classroom_id === $classroom->id)>
+                                                                {{ $classroom->name }}{{ $classroom->is_active ? '' : ' - inactif' }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <x-input-label for="subject-{{ $subject->id }}-name" :value="__('Nom')" />
+                                                    <x-text-input id="subject-{{ $subject->id }}-name" name="name" value="{{ $subject->name }}" class="mt-1 block w-full" required />
+                                                </div>
+
+                                                <div>
+                                                    <x-input-label for="subject-{{ $subject->id }}-description" :value="__('Description')" />
+                                                    <x-text-input id="subject-{{ $subject->id }}-description" name="description" value="{{ $subject->description }}" class="mt-1 block w-full" />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <x-input-label for="subject-{{ $subject->id }}-url" :value="__('URL')" />
+                                                <x-text-input id="subject-{{ $subject->id }}-url" name="url" type="text" value="{{ $subject->url }}" class="mt-1 block w-full" />
+                                                <p class="mt-1 text-xs text-gray-500">
+                                                    {{ __('Vous pouvez utiliser [table] pour inserer le numero de table et [section] pour inserer le numero de tuile Moodle dans l URL.') }}
+                                                </p>
+                                            </div>
+
+                                            <input type="hidden" name="is_active" value="{{ $subject->is_active ? '1' : '0' }}">
+
+                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                <x-secondary-button type="reset" x-on:click="editingSubject = null">
+                                                    {{ __('Annuler') }}
+                                                </x-secondary-button>
+
+                                                <x-primary-button>
+                                                    {{ __('Enregistrer') }}
+                                                </x-primary-button>
+                                            </div>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty

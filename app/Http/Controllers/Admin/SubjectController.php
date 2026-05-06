@@ -25,6 +25,13 @@ class SubjectController extends Controller
                 ->orderByDesc('is_active')
                 ->orderBy('name')
                 ->get(['id', 'name', 'is_active']),
+            'subjectValidationOptions' => Subject::query()
+                ->get(['classroom_id', 'name'])
+                ->map(fn (Subject $subject): array => [
+                    'classroom_id' => $subject->classroom_id,
+                    'name' => mb_strtolower(trim($subject->name)),
+                ])
+                ->values(),
         ]);
     }
 
