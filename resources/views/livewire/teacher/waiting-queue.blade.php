@@ -39,56 +39,105 @@
                     </div>
                 </article>
             @else
-            <article wire:key="waiting-request-{{ $supportRequest->id }}" class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="min-w-0 space-y-3">
-                        <div>
-                            <div class="text-base font-semibold text-gray-900">{{ $supportRequest->student?->name ?? 'N/A' }}</div>
-                            <div class="mt-1 flex flex-wrap gap-2 text-sm text-gray-600">
-                                <span>{{ __('Table') }} {{ $supportRequest->table_number }}</span>
-                                <span class="inline-flex items-center gap-1">
-                                    <span>{{ __('Matiere') }} : {{ $supportRequest->subject?->name ?? 'N/A' }}</span>
-                                    <x-subject-request-link :support-request="$supportRequest" />
-                                </span>
-                                <span>{{ __('Tuile Moodle') }} {{ $supportRequest->moodle_tile_number }}</span>
+                @php
+                    $subjectUrl = $supportRequest->subjectUrl();
+                @endphp
+
+                <article wire:key="waiting-request-{{ $supportRequest->id }}" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0 flex-1 space-y-2">
+                            <div class="px-2">
+                                <div class="min-w-0 text-base font-semibold text-gray-900">
+                                    {{ $supportRequest->student?->name ?? 'N/A' }}
+                                </div>
                             </div>
+
+                            @if ($subjectUrl)
+                                <a
+                                    href="{{ $subjectUrl }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="block truncate rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    aria-label="{{ __('Ouvrir le lien de la matiere') }}"
+                                >
+                                    <span class="inline-flex min-w-0 items-center gap-1.5">
+                                        <span class="truncate">{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tuile') }} {{ $supportRequest->moodle_tile_number }}</span>
+                                        <svg class="h-3.5 w-3.5 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
+                                        </svg>
+                                    </span>
+                                </a>
+                            @else
+                                <div class="truncate px-2 py-1.5 text-sm font-medium text-gray-700">
+                                    {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tuile') }} {{ $supportRequest->moodle_tile_number }}
+                                </div>
+                            @endif
+
                         </div>
 
-                        <div class="flex flex-wrap gap-2 text-sm">
-                            <span class="rounded-full bg-indigo-50 px-3 py-1 font-medium text-indigo-700">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
-                            <span class="rounded-full bg-amber-50 px-3 py-1 font-medium text-amber-700">{{ __('Attente') }} {{ $supportRequest->created_at->diffForHumans(null, true) }}</span>
+                        <div class="flex shrink-0 flex-col items-end gap-2">
+                            <div class="inline-flex items-center justify-end gap-1.5 rounded-md bg-gray-50 px-2.5 py-1 text-sm font-semibold text-gray-800 ring-1 ring-gray-200" title="{{ __('Table') }} {{ $supportRequest->table_number }}">
+                                <svg class="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25h6m-7.5 3h9m-12-6.75h15A1.5 1.5 0 0 0 21 12V5.25a1.5 1.5 0 0 0-1.5-1.5h-15A1.5 1.5 0 0 0 3 5.25V12a1.5 1.5 0 0 0 1.5 1.5Z" />
+                                </svg>
+                                <span>{{ $supportRequest->table_number }}</span>
+                            </div>
+
+                            <div class="inline-flex items-stretch rounded-md shadow-sm">
+                                <button
+                                    type="button"
+                                    wire:click="assign({{ $supportRequest->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="assign({{ $supportRequest->id }})"
+                                    class="inline-flex uppercase w-32 items-center justify-center rounded-l-md border border-transparent bg-indigo-600 px-3 py-2 text-center text-xs font-semibold leading-tight text-white transition hover:bg-indigo-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                                >
+                                    <span class="block leading-tight">
+                                        {{ __('Prendre en') }}<br>
+                                        {{ __('charge') }}
+                                    </span>
+                                </button>
+
+                                <details class="js-waiting-action-menu relative flex">
+                                    <summary
+                                        class="flex h-full cursor-pointer list-none items-center justify-center rounded-r-md border-l border-indigo-500 bg-indigo-600 px-2 text-white transition hover:bg-indigo-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                        aria-label="{{ __('Ouvrir le menu des actions') }}"
+                                        aria-haspopup="true"
+                                    >
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                        </svg>
+                                    </summary>
+
+                                    <div class="absolute right-0 top-full z-20 mt-2 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg" role="menu">
+                                        <button
+                                            type="button"
+                                            wire:click="confirmCancel({{ $supportRequest->id }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="confirmCancel({{ $supportRequest->id }})"
+                                            class="block w-full px-4 py-2 text-left text-sm text-red-700 transition hover:bg-red-50 focus:outline-none focus:bg-red-50 disabled:opacity-50"
+                                            role="menuitem"
+                                        >
+                                            {{ __('Annuler') }}
+                                        </button>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 border-t border-gray-100 px-2 pt-2 text-sm leading-snug text-gray-700">
+                        <div class="float-right mb-1 ml-3 flex flex-wrap justify-end gap-1.5 text-xs">
+                            <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
+                            <span class="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700">{{ __('Attente') }} {{ $supportRequest->created_at->diffForHumans(null, true) }}</span>
                         </div>
 
                         @if ($supportRequest->comment)
-                            <p class="text-sm text-gray-700">{{ $supportRequest->comment }}</p>
-                        @else
-                            <p class="text-sm text-gray-500">{{ __('Aucun commentaire.') }}</p>
+                            <p>{{ $supportRequest->comment }}</p>
                         @endif
-                    </div>
 
-                    <div class="flex shrink-0 flex-col gap-2 sm:w-44">
-                        <button
-                            type="button"
-                            wire:click="assign({{ $supportRequest->id }})"
-                            wire:loading.attr="disabled"
-                            wire:target="assign({{ $supportRequest->id }})"
-                            class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-                        >
-                            {{ __('Prendre en charge') }}
-                        </button>
-
-                        <button
-                            type="button"
-                            wire:click="confirmCancel({{ $supportRequest->id }})"
-                            wire:loading.attr="disabled"
-                            wire:target="confirmCancel({{ $supportRequest->id }})"
-                            class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                        >
-                            {{ __('Annuler') }}
-                        </button>
+                        <div class="clear-both"></div>
                     </div>
-                </div>
-            </article>
+                </article>
             @endif
         @empty
             <div class="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
@@ -118,3 +167,36 @@
         </div>
     @endif
 </section>
+
+
+@once
+    <script>
+        document.addEventListener('click', function (event) {
+            document.querySelectorAll('.js-waiting-action-menu[open]').forEach(function (menu) {
+                if (!menu.contains(event.target)) {
+                    menu.removeAttribute('open');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.js-waiting-action-menu[open]').forEach(function (menu) {
+                    menu.removeAttribute('open');
+                });
+            }
+        });
+
+        document.addEventListener('toggle', function (event) {
+            if (!event.target.matches('.js-waiting-action-menu') || !event.target.open) {
+                return;
+            }
+
+            document.querySelectorAll('.js-waiting-action-menu[open]').forEach(function (menu) {
+                if (menu !== event.target) {
+                    menu.removeAttribute('open');
+                }
+            });
+        }, true);
+    </script>
+@endonce

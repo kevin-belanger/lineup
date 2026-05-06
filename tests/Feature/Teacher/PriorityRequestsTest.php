@@ -181,7 +181,7 @@ class PriorityRequestsTest extends TestCase
             ->assertSee('Prioritaire')
             ->assertSee('Jacques')
             ->assertSee('Besoin d aide avec un eleve.')
-            ->assertSee('Terminer')
+            ->assertSee('Terminé')
             ->assertDontSee('Mettre en pause')
             ->assertDontSee('Remettre dans la file')
             ->call('complete', $priorityRequest->id)
