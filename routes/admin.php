@@ -12,6 +12,9 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin'])
     ->group(function (): void {
         Route::view('/', 'admin.dashboard')->name('dashboard');
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::patch('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.password');
         Route::patch('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::patch('/users/{user}/roles', [UserController::class, 'updateRoles'])->name('users.roles');
         Route::patch('/users/{user}/active', [UserController::class, 'toggleActive'])->name('users.active');

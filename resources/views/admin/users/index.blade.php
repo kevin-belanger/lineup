@@ -6,114 +6,138 @@
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div
+            class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8"
+            x-data="{
+                editingUser: null,
+                createEmail: '',
+                createEmailError: '',
+                emails: @js($emailValidationOptions),
+                normalize(value) {
+                    return value.trim().toLowerCase();
+                },
+                emailExists(value, ignoredId = null) {
+                    const email = this.normalize(value);
+
+                    if (email === '') {
+                        return false;
+                    }
+
+                    return this.emails.some((user) => user.email === email && Number(user.id) !== Number(ignoredId));
+                },
+                validateCreateEmail() {
+                    this.createEmailError = this.emailExists(this.createEmail)
+                        ? 'Cette adresse courriel est deja utilisee.'
+                        : '';
+
+                    return this.createEmailError === '';
+                },
+            }"
+        >
             @if (session('status'))
-                <div class="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-800">
+                <div class="rounded-md bg-green-50 p-4 text-sm text-green-800">
                     {{ session('status') }}
                 </div>
             @endif
 
             @if ($errors->any())
-                <div class="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+                <div class="rounded-md bg-red-50 p-4 text-sm text-red-800">
                     {{ $errors->first() }}
                 </div>
             @endif
 
-            <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Nom') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Statut') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Roles') }}</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
-                            @forelse ($users as $user)
-                                <tr>
-                                    <td class="px-4 py-4 align-top">
-                                        <div class="font-medium text-gray-900">{{ $user->name }}</div>
-                                        <div class="text-sm text-gray-500">{{ $user->email }}</div>
-                                        @if ($user->approver)
-                                            <div class="mt-1 text-xs text-gray-400">
-                                                {{ __('Approuve par :name', ['name' => $user->approver->name]) }}
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-4 align-top text-sm">
-                                        <div>
-                                            <span class="{{ $user->is_approved ? 'text-green-700' : 'text-amber-700' }}">
-                                                {{ $user->is_approved ? __('Approuve') : __('En attente') }}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span class="{{ $user->is_active ? 'text-green-700' : 'text-red-700' }}">
-                                                {{ $user->is_active ? __('Actif') : __('Inactif') }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-4 align-top">
-                                        <form method="POST" action="{{ route('admin.users.roles', $user) }}" class="space-y-2">
-                                            @csrf
-                                            @method('PATCH')
+            <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <details>
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Creer un nouvel utilisateur') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Ajouter un compte et definir ses roles.') }}</p>
+                        </div>
+                        <span class="text-sm font-medium text-indigo-700">{{ __('Ouvrir') }}</span>
+                    </summary>
 
-                                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                <input type="checkbox" name="is_student" value="1" @checked($user->is_student) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                                {{ __('Etudiant') }}
-                                            </label>
-                                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                <input type="checkbox" name="is_teacher" value="1" @checked($user->is_teacher) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                                {{ __('Enseignant') }}
-                                            </label>
-                                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                <input type="checkbox" name="is_admin" value="1" @checked($user->is_admin) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                                {{ __('Admin') }}
-                                            </label>
+                    <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-5 border-t border-gray-100 p-6" x-on:submit="if (! validateCreateEmail()) $event.preventDefault()">
+                        @csrf
 
-                                            <x-secondary-button type="submit">
-                                                {{ __('Sauvegarder') }}
-                                            </x-secondary-button>
-                                        </form>
-                                    </td>
-                                    <td class="px-4 py-4 align-top">
-                                        <div class="flex flex-col items-end gap-2">
-                                            @unless ($user->is_approved)
-                                                <form method="POST" action="{{ route('admin.users.approve', $user) }}">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <x-primary-button>
-                                                        {{ __('Approuver') }}
-                                                    </x-primary-button>
-                                                </form>
-                                            @endunless
+                        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            <div>
+                                <x-input-label for="name" :value="__('Nom')" />
+                                <x-text-input id="name" name="name" class="mt-1 block w-full" required />
+                            </div>
 
-                                            <form method="POST" action="{{ route('admin.users.active', $user) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <x-secondary-button type="submit">
-                                                    {{ $user->is_active ? __('Desactiver') : __('Activer') }}
-                                                </x-secondary-button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">
-                                        {{ __('Aucun utilisateur.') }}
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            <div>
+                                <x-input-label for="email" :value="__('Adresse courriel')" />
+                                <x-text-input id="email" name="email" type="email" x-model="createEmail" x-on:input="validateCreateEmail()" class="mt-1 block w-full" required />
+                                <p x-show="createEmailError" x-text="createEmailError" class="mt-2 text-sm text-red-600"></p>
+                            </div>
+
+                            <div>
+                                <x-input-label for="password" :value="__('Mot de passe initial')" />
+                                <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" required minlength="8" />
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="text-sm font-medium text-gray-700">{{ __('Roles') }}</div>
+                                <div class="flex flex-wrap gap-4">
+                                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                                        <input type="checkbox" name="is_student" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        {{ __('Etudiant') }}
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                                        <input type="checkbox" name="is_teacher" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        {{ __('Enseignant') }}
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                                        <input type="checkbox" name="is_admin" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        {{ __('Admin') }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex flex-wrap gap-4">
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    {{ __('Actif') }}
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="is_approved" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    {{ __('Approuve') }}
+                                </label>
+                            </div>
+
+                            <x-primary-button x-bind:disabled="createEmailError !== ''" class="disabled:opacity-50">
+                                {{ __('Creer') }}
+                            </x-primary-button>
+                        </div>
+                    </form>
+                </details>
+            </section>
+
+            <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div class="border-b border-gray-100 px-6 py-4">
+                    <h3 class="text-base font-semibold text-gray-900">{{ __('Utilisateurs actifs') }}</h3>
                 </div>
 
-                <div class="border-t border-gray-200 px-4 py-3">
-                    {{ $users->links() }}
-                </div>
-            </div>
+                @include('admin.users.partials.user-table', ['users' => $activeUsers, 'emptyMessage' => __('Aucun utilisateur actif.')])
+            </section>
+
+            <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <details>
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Utilisateurs inactifs') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Comptes desactives pouvant etre reactives.') }}</p>
+                        </div>
+                        <span class="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">{{ $inactiveUsers->count() }}</span>
+                    </summary>
+
+                    <div class="border-t border-gray-100">
+                        @include('admin.users.partials.user-table', ['users' => $inactiveUsers, 'emptyMessage' => __('Aucun utilisateur inactif.')])
+                    </div>
+                </details>
+            </section>
         </div>
     </div>
 </x-app-layout>

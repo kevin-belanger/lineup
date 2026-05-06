@@ -6,21 +6,106 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class UserController extends Controller
 {
     public function index(): View
     {
-        $users = User::query()
+        $activeUsers = User::query()
             ->with('approver:id,name')
+            ->where('is_active', true)
             ->orderBy('is_approved')
             ->orderBy('name')
-            ->paginate(25);
+            ->get();
+
+        $inactiveUsers = User::query()
+            ->with('approver:id,name')
+            ->where('is_active', false)
+            ->orderBy('name')
+            ->get();
 
         return view('admin.users.index', [
-            'users' => $users,
+            'activeUsers' => $activeUsers,
+            'inactiveUsers' => $inactiveUsers,
+            'emailValidationOptions' => User::query()
+                ->get(['id', 'email'])
+                ->map(fn (User $user): array => [
+                    'id' => $user->id,
+                    'email' => mb_strtolower(trim($user->email)),
+                ])
+                ->values(),
         ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $this->validatedData($request);
+
+        User::query()->create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'is_student' => (bool) ($validated['is_student'] ?? false),
+            'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
+            'is_admin' => (bool) ($validated['is_admin'] ?? false),
+            'is_active' => (bool) ($validated['is_active'] ?? false),
+            'is_approved' => (bool) ($validated['is_approved'] ?? false),
+            'approved_at' => ($validated['is_approved'] ?? false) ? now() : null,
+            'approved_by' => ($validated['is_approved'] ?? false) ? $request->user()->id : null,
+        ]);
+
+        return back()->with('status', 'Utilisateur cree.');
+    }
+
+    public function update(Request $request, User $user): RedirectResponse
+    {
+        $validated = $this->validatedData($request, $user);
+
+        if ($request->user()->is($user) && ! ($validated['is_admin'] ?? false)) {
+            return back()->withErrors([
+                'roles' => 'Tu ne peux pas retirer ton propre role admin.',
+            ]);
+        }
+
+        if ($request->user()->is($user) && ! ($validated['is_active'] ?? false)) {
+            return back()->withErrors([
+                'user' => 'Tu ne peux pas desactiver ton propre compte.',
+            ]);
+        }
+
+        $wasApproved = $user->is_approved;
+        $isApproved = (bool) ($validated['is_approved'] ?? false);
+
+        $user->forceFill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'is_student' => (bool) ($validated['is_student'] ?? false),
+            'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
+            'is_admin' => (bool) ($validated['is_admin'] ?? false),
+            'is_active' => (bool) ($validated['is_active'] ?? false),
+            'is_approved' => $isApproved,
+            'approved_at' => $isApproved ? ($wasApproved ? $user->approved_at : now()) : null,
+            'approved_by' => $isApproved ? ($wasApproved ? $user->approved_by : $request->user()->id) : null,
+        ])->save();
+
+        return back()->with('status', 'Utilisateur mis a jour.');
+    }
+
+    public function updatePassword(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', Password::defaults()],
+        ]);
+
+        $user->forceFill([
+            'password' => Hash::make($validated['password']),
+        ])->save();
+
+        return back()->with('status', 'Mot de passe mis a jour.');
     }
 
     public function approve(Request $request, User $user): RedirectResponse
@@ -82,5 +167,41 @@ class UserController extends Controller
         ])->save();
 
         return back()->with('status', $user->is_active ? 'Compte active.' : 'Compte desactive.');
+    }
+
+    /**
+     * @return array{name: string, email: string, password?: string, is_student?: bool, is_teacher?: bool, is_admin?: bool, is_active?: bool, is_approved?: bool}
+     */
+    private function validatedData(Request $request, ?User $user = null): array
+    {
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user)],
+            'is_student' => ['nullable', 'boolean'],
+            'is_teacher' => ['nullable', 'boolean'],
+            'is_admin' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
+            'is_approved' => ['nullable', 'boolean'],
+        ];
+
+        if ($user === null) {
+            $rules['password'] = ['required', Password::defaults()];
+        }
+
+        $validated = $request->validate($rules);
+
+        $roles = [
+            'is_student' => (bool) ($validated['is_student'] ?? false),
+            'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
+            'is_admin' => (bool) ($validated['is_admin'] ?? false),
+        ];
+
+        if (! in_array(true, $roles, true)) {
+            return back()->withErrors([
+                'roles' => 'Un utilisateur doit avoir au moins un role.',
+            ])->throwResponse();
+        }
+
+        return $validated;
     }
 }
