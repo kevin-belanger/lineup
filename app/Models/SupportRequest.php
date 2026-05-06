@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'classroom_id',
     'subject_id',
     'assigned_teacher_id',
+    'is_priority',
+    'priority_requested_by_teacher_id',
     'moodle_tile_number',
     'table_number',
     'type',
@@ -111,6 +113,7 @@ class SupportRequest extends Model
     protected function casts(): array
     {
         return [
+            'is_priority' => 'boolean',
             'assigned_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
@@ -124,6 +127,11 @@ class SupportRequest extends Model
     public function assignedTeacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_teacher_id');
+    }
+
+    public function priorityRequester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'priority_requested_by_teacher_id');
     }
 
     public function classroom(): BelongsTo

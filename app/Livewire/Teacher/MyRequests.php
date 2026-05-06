@@ -25,7 +25,7 @@ class MyRequests extends Component
         $this->updateAssignedRequest($supportRequestId, [
             'status' => SupportRequest::STATUS_PAUSED,
             'updated_at' => now(),
-        ], 'Demande mise en pause.');
+        ], 'Demande mise en pause.', false);
     }
 
     public function unassign(int $supportRequestId): void
@@ -35,7 +35,7 @@ class MyRequests extends Component
             'assigned_at' => null,
             'status' => SupportRequest::STATUS_WAITING,
             'updated_at' => now(),
-        ], 'Demande remise dans la file.');
+        ], 'Demande remise dans la file.', false);
     }
 
     #[On('teacher-requests-updated')]
@@ -48,7 +48,7 @@ class MyRequests extends Component
     {
         return view('livewire.teacher.my-requests', [
             'requests' => SupportRequest::query()
-                ->with(['student:id,name', 'subject:id,name'])
+                ->with(['student:id,name', 'subject:id,name', 'priorityRequester:id,name'])
                 ->where('classroom_id', $this->currentClassroomId())
                 ->where('assigned_teacher_id', auth()->id())
                 ->whereIn('status', SupportRequest::teacherActiveStatuses())
@@ -59,16 +59,21 @@ class MyRequests extends Component
         ]);
     }
 
-    private function updateAssignedRequest(int $supportRequestId, array $values, string $successMessage): void
+    private function updateAssignedRequest(int $supportRequestId, array $values, string $successMessage, bool $allowPriority = true): void
     {
         $classroomId = $this->currentClassroomId();
 
-        $updated = SupportRequest::query()
+        $query = SupportRequest::query()
             ->whereKey($supportRequestId)
             ->where('classroom_id', $classroomId)
             ->where('assigned_teacher_id', auth()->id())
-            ->whereIn('status', SupportRequest::teacherActiveStatuses())
-            ->update($values);
+            ->whereIn('status', SupportRequest::teacherActiveStatuses());
+
+        if (! $allowPriority) {
+            $query->where('is_priority', false);
+        }
+
+        $updated = $query->update($values);
 
         if ($updated === 0) {
             $this->toast('error', 'Cette demande ne peut pas etre modifiee.');

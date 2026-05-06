@@ -69,7 +69,7 @@ class OtherTeacherRequests extends Component
     {
         return view('livewire.teacher.other-teacher-requests', [
             'requests' => SupportRequest::query()
-                ->with(['student:id,name', 'subject:id,name', 'assignedTeacher:id,name'])
+                ->with(['student:id,name', 'subject:id,name', 'assignedTeacher:id,name', 'priorityRequester:id,name'])
                 ->where('classroom_id', session('current_classroom_id'))
                 ->whereNotNull('assigned_teacher_id')
                 ->where('assigned_teacher_id', '!=', auth()->id())
@@ -128,6 +128,7 @@ class OtherTeacherRequests extends Component
             ->where('classroom_id', $this->currentClassroomId())
             ->whereNotNull('assigned_teacher_id')
             ->where('assigned_teacher_id', '!=', auth()->id())
+            ->where('is_priority', false)
             ->whereIn('status', SupportRequest::teacherActiveStatuses());
     }
 

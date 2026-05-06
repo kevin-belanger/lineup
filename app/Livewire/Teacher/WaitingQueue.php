@@ -59,6 +59,7 @@ class WaitingQueue extends Component
             ->whereKey($this->confirmingCancellationId)
             ->where('classroom_id', $classroomId)
             ->where('status', SupportRequest::STATUS_WAITING)
+            ->where('is_priority', false)
             ->update([
                 'assigned_teacher_id' => null,
                 'assigned_at' => null,
@@ -92,9 +93,10 @@ class WaitingQueue extends Component
     {
         return view('livewire.teacher.waiting-queue', [
             'requests' => SupportRequest::query()
-                ->with(['student:id,name', 'subject:id,name'])
+                ->with(['student:id,name', 'subject:id,name', 'priorityRequester:id,name'])
                 ->where('classroom_id', $this->currentClassroomId())
                 ->where('status', SupportRequest::STATUS_WAITING)
+                ->orderByDesc('is_priority')
                 ->oldest('created_at')
                 ->get(),
             'typeLabels' => SupportRequest::typeLabels(),

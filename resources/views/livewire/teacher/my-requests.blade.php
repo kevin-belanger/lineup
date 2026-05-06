@@ -13,6 +13,47 @@
                 $cardClass = match ($supportRequest->status) {
                     \App\Models\SupportRequest::STATUS_READY => 'border-amber-300 bg-amber-50 shadow-md ring-1 ring-amber-200',
                     \App\Models\SupportRequest::STATUS_PAUSED => 'border-sky-200 bg-sky-50 shadow-sm',
+                    default => $supportRequest->is_priority ? 'border-rose-200 bg-rose-50 shadow-sm ring-1 ring-rose-100' : 'border-indigo-200 bg-white shadow-sm',
+                };
+
+                $badgeClass = match ($supportRequest->status) {
+                    \App\Models\SupportRequest::STATUS_READY => 'bg-amber-200 text-amber-900',
+                    \App\Models\SupportRequest::STATUS_PAUSED => 'bg-sky-100 text-sky-800',
+                    default => $supportRequest->is_priority ? 'bg-rose-100 text-rose-800' : 'bg-indigo-100 text-indigo-800',
+                };
+            @endphp
+
+            @if ($supportRequest->is_priority)
+                <article wire:key="my-request-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4">
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $badgeClass }}">{{ __('Prioritaire') }}</span>
+                                    <span class="font-semibold text-gray-950">{{ __('Envoyee par') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}</span>
+                                </div>
+                                <div class="mt-2 text-sm text-gray-700">{{ $supportRequest->comment }}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 text-sm">
+                            <span class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100">{{ __('Depuis') }} {{ ($supportRequest->assigned_at ?? $supportRequest->created_at)->diffForHumans(null, true) }}</span>
+                        </div>
+
+                        <div class="grid gap-2 sm:grid-cols-1">
+                            <button type="button" wire:click="complete({{ $supportRequest->id }})" wire:loading.attr="disabled" wire:target="complete({{ $supportRequest->id }})" class="inline-flex justify-center rounded-md border border-transparent bg-gray-800 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 disabled:opacity-50">
+                                {{ __('Terminer') }}
+                            </button>
+                        </div>
+                    </div>
+                </article>
+                @continue
+            @endif
+
+            @php
+                $cardClass = match ($supportRequest->status) {
+                    \App\Models\SupportRequest::STATUS_READY => 'border-amber-300 bg-amber-50 shadow-md ring-1 ring-amber-200',
+                    \App\Models\SupportRequest::STATUS_PAUSED => 'border-sky-200 bg-sky-50 shadow-sm',
                     default => 'border-indigo-200 bg-white shadow-sm',
                 };
 

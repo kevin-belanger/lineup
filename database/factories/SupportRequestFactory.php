@@ -27,6 +27,8 @@ class SupportRequestFactory extends Factory
             'classroom_id' => $classroom->id,
             'subject_id' => Subject::factory()->for($classroom),
             'assigned_teacher_id' => null,
+            'is_priority' => false,
+            'priority_requested_by_teacher_id' => null,
             'moodle_tile_number' => fake()->numberBetween(1, 200),
             'table_number' => (string) fake()->numberBetween(1, 40),
             'type' => fake()->randomElement(array_keys(SupportRequest::typeLabels())),

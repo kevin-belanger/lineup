@@ -28,11 +28,15 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <div class="truncate text-sm font-semibold text-gray-800">
-                                    {{ $supportRequest->student?->name ?? 'N/A' }}
+                                    {{ $supportRequest->is_priority ? __('Prioritaire') : ($supportRequest->student?->name ?? 'N/A') }}
                                 </div>
                                 <div class="mt-1 text-sm text-gray-600">
-                                    {{ $supportRequest->subject?->name ?? 'N/A' }} -
-                                    {{ __('Table') }} {{ $supportRequest->table_number }}
+                                    @if ($supportRequest->is_priority)
+                                        {{ __('Envoyee par') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}
+                                    @else
+                                        {{ $supportRequest->subject?->name ?? 'N/A' }} -
+                                        {{ __('Table') }} {{ $supportRequest->table_number }}
+                                    @endif
                                 </div>
                                 <div class="mt-1 text-xs text-gray-500">
                                     {{ __('Avec') }} {{ $supportRequest->assignedTeacher?->name ?? 'N/A' }}
@@ -44,20 +48,22 @@
                             </span>
                         </div>
 
-                        <button
-                            type="button"
-                            wire:click="openManagementModal({{ $supportRequest->id }})"
-                            wire:loading.attr="disabled"
-                            wire:target="openManagementModal({{ $supportRequest->id }})"
-                            class="absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-                            aria-label="{{ __('Gerer la demande') }}"
-                            title="{{ __('Gerer la demande') }}"
-                        >
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.66.841.081.036.162.074.241.114.337.17.738.149 1.054-.057l1.084-.705a1.125 1.125 0 0 1 1.45.12l1.833 1.833c.389.389.44.997.12 1.45l-.705 1.084c-.206.316-.227.717-.057 1.054.04.079.078.16.114.241.155.347.467.597.841.66l1.281.213c.542.09.94.56.94 1.11v2.593c0 .55-.398 1.02-.94 1.11l-1.281.213a1.125 1.125 0 0 0-.841.66 6.78 6.78 0 0 1-.114.241c-.17.337-.149.738.057 1.054l.705 1.084c.32.453.269 1.061-.12 1.45l-1.833 1.833a1.125 1.125 0 0 1-1.45.12l-1.084-.705c-.316-.206-.717-.227-1.054-.057a6.78 6.78 0 0 1-.241.114c-.347.155-.597.467-.66.841l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.125 1.125 0 0 0-.66-.841 6.78 6.78 0 0 1-.241-.114c-.337-.17-.738-.149-1.054.057l-1.084.705a1.125 1.125 0 0 1-1.45-.12l-1.833-1.833a1.125 1.125 0 0 1-.12-1.45l.705-1.084c.206-.316.227-.717.057-1.054a6.78 6.78 0 0 1-.114-.241 1.125 1.125 0 0 0-.841-.66l-1.281-.213a1.125 1.125 0 0 1-.94-1.11v-2.593c0-.55.398-1.02.94-1.11l1.281-.213c.374-.063.686-.313.841-.66.036-.081.074-.162.114-.241.17-.337.149-.738-.057-1.054l-.705-1.084a1.125 1.125 0 0 1 .12-1.45l1.833-1.833a1.125 1.125 0 0 1 1.45-.12l1.084.705c.316.206.717.227 1.054.057.079-.04.16-.078.241-.114.347-.155.597-.467.66-.841l.213-1.281Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            </svg>
-                        </button>
+                        @if (! $supportRequest->is_priority)
+                            <button
+                                type="button"
+                                wire:click="openManagementModal({{ $supportRequest->id }})"
+                                wire:loading.attr="disabled"
+                                wire:target="openManagementModal({{ $supportRequest->id }})"
+                                class="absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                                aria-label="{{ __('Gerer la demande') }}"
+                                title="{{ __('Gerer la demande') }}"
+                            >
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.66.841.081.036.162.074.241.114.337.17.738.149 1.054-.057l1.084-.705a1.125 1.125 0 0 1 1.45.12l1.833 1.833c.389.389.44.997.12 1.45l-.705 1.084c-.206.316-.227.717-.057 1.054.04.079.078.16.114.241.155.347.467.597.841.66l1.281.213c.542.09.94.56.94 1.11v2.593c0 .55-.398 1.02-.94 1.11l-1.281.213a1.125 1.125 0 0 0-.841.66 6.78 6.78 0 0 1-.114.241c-.17.337-.149.738.057 1.054l.705 1.084c.32.453.269 1.061-.12 1.45l-1.833 1.833a1.125 1.125 0 0 1-1.45.12l-1.084-.705c-.316-.206-.717-.227-1.054-.057a6.78 6.78 0 0 1-.241.114c-.347.155-.597.467-.66.841l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.125 1.125 0 0 0-.66-.841 6.78 6.78 0 0 1-.241-.114c-.337-.17-.738-.149-1.054.057l-1.084.705a1.125 1.125 0 0 1-1.45-.12l-1.833-1.833a1.125 1.125 0 0 1-.12-1.45l.705-1.084c.206-.316.227-.717.057-1.054a6.78 6.78 0 0 1-.114-.241 1.125 1.125 0 0 0-.841-.66l-1.281-.213a1.125 1.125 0 0 1-.94-1.11v-2.593c0-.55.398-1.02.94-1.11l1.281-.213c.374-.063.686-.313.841-.66.036-.081.074-.162.114-.241.17-.337.149-.738-.057-1.054l-.705-1.084a1.125 1.125 0 0 1 .12-1.45l1.833-1.833a1.125 1.125 0 0 1 1.45-.12l1.084.705c.316.206.717.227 1.054.057.079-.04.16-.078.241-.114.347-.155.597-.467.66-.841l.213-1.281Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                            </button>
+                        @endif
                     </article>
                 @empty
                     <div class="rounded-md border border-dashed border-gray-200 bg-gray-50 p-5 text-center text-sm text-gray-500">

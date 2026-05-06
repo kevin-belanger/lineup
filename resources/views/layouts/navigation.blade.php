@@ -21,8 +21,11 @@
                         </x-nav-link>
                     @endif
                     @if (Auth::user()->is_teacher)
-                        <x-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.*')">
+                        <x-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
                             {{ __('Enseignant') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
+                            {{ __('Demandes prioritaires') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -111,8 +114,11 @@
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->is_teacher)
-                <x-responsive-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.*')">
+                <x-responsive-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
                     {{ __('Enseignant') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
+                    {{ __('Demandes prioritaires') }}
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->is_admin)
