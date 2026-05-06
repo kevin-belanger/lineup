@@ -18,6 +18,10 @@ class ClassroomController extends Controller
                 ->orderByDesc('is_active')
                 ->orderBy('name')
                 ->paginate(20),
+            'classroomValidationOptions' => Classroom::query()
+                ->pluck('name')
+                ->map(fn (string $name): string => mb_strtolower(trim($name)))
+                ->values(),
         ]);
     }
 

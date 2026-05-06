@@ -19,29 +19,72 @@
                 </div>
             @endif
 
-            <section class="bg-white shadow-sm sm:rounded-lg">
-                <form method="POST" action="{{ route('admin.classrooms.store') }}" class="grid gap-4 p-6 md:grid-cols-[1fr_2fr_auto_auto] md:items-end">
-                    @csrf
+            <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <details>
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Creer un nouveau local') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Ajouter un local disponible dans l application.') }}</p>
+                        </div>
+                        <span class="text-sm font-medium text-indigo-700">{{ __('Ouvrir') }}</span>
+                    </summary>
 
-                    <div>
-                        <x-input-label for="name" :value="__('Nom')" />
-                        <x-text-input id="name" name="name" class="mt-1 block w-full" required />
-                    </div>
+                    <form
+                        method="POST"
+                        action="{{ route('admin.classrooms.store') }}"
+                        class="space-y-4 border-t border-gray-100 p-6"
+                        x-data="{
+                            name: '',
+                            nameError: '',
+                            classrooms: @js($classroomValidationOptions),
+                            normalize(value) {
+                                return value.trim().toLowerCase();
+                            },
+                            validateName() {
+                                this.nameError = '';
 
-                    <div>
-                        <x-input-label for="description" :value="__('Description')" />
-                        <x-text-input id="description" name="description" class="mt-1 block w-full" />
-                    </div>
+                                if (this.name.trim() === '') {
+                                    return true;
+                                }
 
-                    <label class="flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                        {{ __('Actif') }}
-                    </label>
+                                if (this.classrooms.includes(this.normalize(this.name))) {
+                                    this.nameError = 'Un local avec ce nom existe deja.';
 
-                    <x-primary-button>
-                        {{ __('Creer') }}
-                    </x-primary-button>
-                </form>
+                                    return false;
+                                }
+
+                                return true;
+                            },
+                        }"
+                        x-on:submit="if (! validateName()) $event.preventDefault()"
+                    >
+                        @csrf
+
+                        <div class="grid gap-4 md:grid-cols-[1fr_2fr] md:items-end">
+                            <div>
+                                <x-input-label for="name" :value="__('Nom')" />
+                                <x-text-input id="name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
+                                <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
+                            </div>
+
+                            <div>
+                                <x-input-label for="description" :value="__('Description')" />
+                                <x-text-input id="description" name="description" class="mt-1 block w-full" />
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                {{ __('Actif') }}
+                            </label>
+
+                            <x-primary-button x-bind:disabled="nameError !== ''" class="disabled:opacity-50">
+                                {{ __('Creer') }}
+                            </x-primary-button>
+                        </div>
+                    </form>
+                </details>
             </section>
 
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
@@ -54,30 +97,18 @@
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
+                        <tbody x-data="{ editingClassroom: null }" class="divide-y divide-gray-200 bg-white">
                             @forelse ($classrooms as $classroom)
-                                <tr>
+                                <tr x-show="editingClassroom !== {{ $classroom->id }}">
                                     <td class="px-4 py-4 align-top">
-                                        <form method="POST" action="{{ route('admin.classrooms.update', $classroom) }}" class="grid gap-3 md:grid-cols-[1fr_2fr_auto] md:items-end">
-                                            @csrf
-                                            @method('PATCH')
-
-                                            <div>
-                                                <x-input-label for="classroom-{{ $classroom->id }}-name" :value="__('Nom')" />
-                                                <x-text-input id="classroom-{{ $classroom->id }}-name" name="name" value="{{ $classroom->name }}" class="mt-1 block w-full" required />
-                                            </div>
-
-                                            <div>
-                                                <x-input-label for="classroom-{{ $classroom->id }}-description" :value="__('Description')" />
-                                                <x-text-input id="classroom-{{ $classroom->id }}-description" name="description" value="{{ $classroom->description }}" class="mt-1 block w-full" />
-                                            </div>
-
-                                            <input type="hidden" name="is_active" value="{{ $classroom->is_active ? '1' : '0' }}">
-
-                                            <x-secondary-button type="submit">
-                                                {{ __('Sauvegarder') }}
-                                            </x-secondary-button>
-                                        </form>
+                                        <div class="space-y-2">
+                                            <div class="font-semibold text-gray-900">{{ $classroom->name }}</div>
+                                            @if ($classroom->description)
+                                                <div class="text-sm text-gray-600">{{ $classroom->description }}</div>
+                                            @else
+                                                <div class="text-sm text-gray-400">{{ __('Aucune description.') }}</div>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm">
                                         <span class="{{ $classroom->is_active ? 'text-green-700' : 'text-red-700' }}">
@@ -86,6 +117,10 @@
                                     </td>
                                     <td class="px-4 py-4 align-top text-right">
                                         <div class="flex flex-col items-end gap-2">
+                                            <x-secondary-button type="button" x-on:click="editingClassroom = {{ $classroom->id }}">
+                                                {{ __('Modifier') }}
+                                            </x-secondary-button>
+
                                             <form method="POST" action="{{ route('admin.classrooms.active', $classroom) }}">
                                                 @csrf
                                                 @method('PATCH')
@@ -119,6 +154,39 @@
                                                 </x-confirmation-panel>
                                             </x-modal>
                                         </div>
+                                    </td>
+                                </tr>
+
+                                <tr x-show="editingClassroom === {{ $classroom->id }}">
+                                    <td colspan="3" class="bg-indigo-50/50 px-4 py-5 align-top">
+                                        <form method="POST" action="{{ route('admin.classrooms.update', $classroom) }}" class="space-y-4 rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                                            @csrf
+                                            @method('PATCH')
+
+                                            <div class="grid gap-3 md:grid-cols-[1fr_2fr] md:items-end">
+                                                <div>
+                                                    <x-input-label for="classroom-{{ $classroom->id }}-name" :value="__('Nom')" />
+                                                    <x-text-input id="classroom-{{ $classroom->id }}-name" name="name" value="{{ $classroom->name }}" class="mt-1 block w-full" required />
+                                                </div>
+
+                                                <div>
+                                                    <x-input-label for="classroom-{{ $classroom->id }}-description" :value="__('Description')" />
+                                                    <x-text-input id="classroom-{{ $classroom->id }}-description" name="description" value="{{ $classroom->description }}" class="mt-1 block w-full" />
+                                                </div>
+                                            </div>
+
+                                            <input type="hidden" name="is_active" value="{{ $classroom->is_active ? '1' : '0' }}">
+
+                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                <x-secondary-button type="reset" x-on:click="editingClassroom = null">
+                                                    {{ __('Annuler') }}
+                                                </x-secondary-button>
+
+                                                <x-primary-button>
+                                                    {{ __('Enregistrer') }}
+                                                </x-primary-button>
+                                            </div>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty
