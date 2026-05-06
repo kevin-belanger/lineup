@@ -17,16 +17,18 @@ class SupportRequestController extends Controller
     public function create(Request $request): RedirectResponse|View
     {
         if ($this->hasActiveRequest($request)) {
-            return redirect()->route('student.dashboard')->withErrors([
-                'support_request' => 'Tu as deja une demande en cours.',
+            return redirect()->route('student.dashboard')->with('toast', [
+                'type' => 'info',
+                'message' => 'Tu as deja une demande en cours.',
             ]);
         }
 
         $classroom = $this->currentClassroom($request);
 
         if ($classroom === null) {
-            return redirect()->route('student.classroom.edit')->withErrors([
-                'classroom' => 'Choisis un local avant de creer une demande.',
+            return redirect()->route('student.classroom.edit')->with('toast', [
+                'type' => 'info',
+                'message' => 'Choisis un local avant de creer une demande.',
             ]);
         }
 
@@ -46,16 +48,18 @@ class SupportRequestController extends Controller
     public function store(Request $request): RedirectResponse
     {
         if ($this->hasActiveRequest($request)) {
-            return redirect()->route('student.dashboard')->withErrors([
-                'support_request' => 'Tu as deja une demande en cours.',
+            return redirect()->route('student.dashboard')->with('toast', [
+                'type' => 'info',
+                'message' => 'Tu as deja une demande en cours.',
             ]);
         }
 
         $classroom = $this->currentClassroom($request);
 
         if ($classroom === null) {
-            return redirect()->route('student.classroom.edit')->withErrors([
-                'classroom' => 'Choisis un local avant de creer une demande.',
+            return redirect()->route('student.classroom.edit')->with('toast', [
+                'type' => 'info',
+                'message' => 'Choisis un local avant de creer une demande.',
             ]);
         }
 
@@ -119,7 +123,10 @@ class SupportRequestController extends Controller
             ]);
 
         if ($updated === 0) {
-            return back()->with('status', 'La demande a ete mise a jour.');
+            return back()->with('toast', [
+                'type' => 'info',
+                'message' => 'La demande a ete mise a jour.',
+            ]);
         }
 
         app(SupportRequestChangeMarker::class)->touch($classroomId);

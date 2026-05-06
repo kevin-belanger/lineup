@@ -147,7 +147,10 @@ class StudentSupportRequestTest extends TestCase
 
         $response
             ->assertRedirect(route('student.dashboard'))
-            ->assertSessionHasErrors('support_request');
+            ->assertSessionHas('toast', [
+                'type' => 'info',
+                'message' => 'Tu as deja une demande en cours.',
+            ]);
 
         $this->assertSame(1, SupportRequest::query()->where('student_id', $student->id)->whereIn('status', SupportRequest::activeStatuses())->count());
     }
@@ -166,7 +169,10 @@ class StudentSupportRequestTest extends TestCase
 
         $response
             ->assertRedirect(route('student.classroom.edit'))
-            ->assertSessionHasErrors('classroom');
+            ->assertSessionHas('toast', [
+                'type' => 'info',
+                'message' => 'Choisis un local avant de creer une demande.',
+            ]);
     }
 
     public function test_student_can_update_waiting_request(): void
@@ -232,7 +238,10 @@ class StudentSupportRequestTest extends TestCase
 
         $response
             ->assertRedirect()
-            ->assertSessionHas('status', 'La demande a ete mise a jour.');
+            ->assertSessionHas('toast', [
+                'type' => 'info',
+                'message' => 'La demande a ete mise a jour.',
+            ]);
 
         $supportRequest->refresh();
 
@@ -257,7 +266,7 @@ class StudentSupportRequestTest extends TestCase
             ->assertSee("Cette demande est déjà prise en charge par un enseignant. Voulez-vous vraiment l'annuler ?")
             ->assertSee('Annuler ma demande')
             ->call('cancelAssignedRequest')
-            ->assertSee('Demande annulee.');
+            ->assertDispatched('toast');
 
         $supportRequest->refresh();
 
@@ -322,7 +331,7 @@ class StudentSupportRequestTest extends TestCase
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
             ->call('cancel', $supportRequest->id)
-            ->assertSee('La demande a ete mise a jour.');
+            ->assertDispatched('toast');
 
         $supportRequest->refresh();
 

@@ -9,13 +9,10 @@ use Livewire\Component;
 
 class ActiveRequests extends Component
 {
-    public ?string $notice = null;
-
     public ?int $confirmingAssignedCancellationId = null;
 
     public function cancel(int $supportRequestId): void
     {
-        $this->notice = null;
         $supportRequest = SupportRequest::query()
             ->whereKey($supportRequestId)
             ->where('student_id', auth()->id())
@@ -32,9 +29,7 @@ class ActiveRequests extends Component
                 'updated_at' => now(),
             ]);
 
-        $this->notice = $updated === 1
-            ? 'Demande annulee.'
-            : 'La demande a ete mise a jour.';
+        $this->toast($updated === 1 ? 'success' : 'info', $updated === 1 ? 'Demande annulee.' : 'La demande a ete mise a jour.');
 
         if ($updated === 1) {
             app(SupportRequestChangeMarker::class)->touch($supportRequest?->classroom_id);
@@ -53,7 +48,6 @@ class ActiveRequests extends Component
 
     public function cancelAssignedRequest(): void
     {
-        $this->notice = null;
         $supportRequest = SupportRequest::query()
             ->whereKey($this->confirmingAssignedCancellationId)
             ->where('student_id', auth()->id())
@@ -72,9 +66,7 @@ class ActiveRequests extends Component
             ]);
 
         $this->confirmingAssignedCancellationId = null;
-        $this->notice = $updated === 1
-            ? 'Demande annulee.'
-            : 'La demande a ete mise a jour.';
+        $this->toast($updated === 1 ? 'success' : 'info', $updated === 1 ? 'Demande annulee.' : 'La demande a ete mise a jour.');
 
         if ($updated === 1) {
             app(SupportRequestChangeMarker::class)->touch($supportRequest?->classroom_id);
@@ -93,5 +85,10 @@ class ActiveRequests extends Component
             'statusLabels' => SupportRequest::statusLabels(),
             'typeLabels' => SupportRequest::typeLabels(),
         ]);
+    }
+
+    private function toast(string $type, string $message): void
+    {
+        $this->dispatch('toast', type: $type, message: $message);
     }
 }

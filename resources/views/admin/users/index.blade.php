@@ -34,18 +34,6 @@
                 },
             }"
         >
-            @if (session('status'))
-                <div class="rounded-md bg-green-50 p-4 text-sm text-green-800">
-                    {{ session('status') }}
-                </div>
-            @endif
-
-            @if ($errors->any())
-                <div class="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <details>
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
@@ -63,17 +51,20 @@
                             <div>
                                 <x-input-label for="name" :value="__('Nom')" />
                                 <x-text-input id="name" name="name" class="mt-1 block w-full" required />
+                                <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
                             <div>
                                 <x-input-label for="email" :value="__('Adresse courriel')" />
                                 <x-text-input id="email" name="email" type="email" x-model="createEmail" x-on:input="validateCreateEmail()" class="mt-1 block w-full" required />
                                 <p x-show="createEmailError" x-text="createEmailError" class="mt-2 text-sm text-red-600"></p>
+                                <x-input-error :messages="$errors->get('email')" class="mt-2" />
                             </div>
 
                             <div>
                                 <x-input-label for="password" :value="__('Mot de passe initial')" />
                                 <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" required minlength="8" />
+                                <x-input-error :messages="$errors->get('password')" class="mt-2" />
                             </div>
 
                             <div class="space-y-2">

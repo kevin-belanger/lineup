@@ -66,14 +66,16 @@ class UserController extends Controller
         $validated = $this->validatedData($request, $user);
 
         if ($request->user()->is($user) && ! ($validated['is_admin'] ?? false)) {
-            return back()->withErrors([
-                'roles' => 'Tu ne peux pas retirer ton propre role admin.',
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => 'Tu ne peux pas retirer ton propre role admin.',
             ]);
         }
 
         if ($request->user()->is($user) && ! ($validated['is_active'] ?? false)) {
-            return back()->withErrors([
-                'user' => 'Tu ne peux pas desactiver ton propre compte.',
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => 'Tu ne peux pas desactiver ton propre compte.',
             ]);
         }
 
@@ -134,14 +136,16 @@ class UserController extends Controller
         ];
 
         if (! in_array(true, $roles, true)) {
-            return back()->withErrors([
-                'roles' => 'Un utilisateur doit avoir au moins un role.',
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => 'Un utilisateur doit avoir au moins un role.',
             ]);
         }
 
         if ($request->user()->is($user) && ! $roles['is_admin']) {
-            return back()->withErrors([
-                'roles' => 'Tu ne peux pas retirer ton propre role admin.',
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => 'Tu ne peux pas retirer ton propre role admin.',
             ]);
         }
 
@@ -157,8 +161,9 @@ class UserController extends Controller
     public function toggleActive(Request $request, User $user): RedirectResponse
     {
         if ($request->user()->is($user)) {
-            return back()->withErrors([
-                'user' => 'Tu ne peux pas desactiver ton propre compte.',
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => 'Tu ne peux pas desactiver ton propre compte.',
             ]);
         }
 
@@ -197,8 +202,9 @@ class UserController extends Controller
         ];
 
         if (! in_array(true, $roles, true)) {
-            return back()->withErrors([
-                'roles' => 'Un utilisateur doit avoir au moins un role.',
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => 'Un utilisateur doit avoir au moins un role.',
             ])->throwResponse();
         }
 

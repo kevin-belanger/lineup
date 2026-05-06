@@ -78,12 +78,14 @@
                                 <div>
                                     <x-input-label for="user-{{ $user->id }}-name" :value="__('Nom')" />
                                     <x-text-input id="user-{{ $user->id }}-name" name="name" value="{{ $user->name }}" class="mt-1 block w-full" required />
+                                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                 </div>
 
                                 <div>
                                     <x-input-label for="user-{{ $user->id }}-email" :value="__('Adresse courriel')" />
                                     <x-text-input id="user-{{ $user->id }}-email" name="email" type="email" x-model="email" x-on:input="validateEmail()" class="mt-1 block w-full" required />
                                     <p x-show="emailError" x-text="emailError" class="mt-2 text-sm text-red-600"></p>
+                                    <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                 </div>
                             </div>
 
@@ -211,6 +213,7 @@
                                         </div>
                                         <p x-show="copied" class="mt-2 text-sm text-green-700">{{ __('Mot de passe copie.') }}</p>
                                         <p x-show="passwordError" x-text="passwordError" class="mt-2 text-sm text-red-600"></p>
+                                        <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                     </div>
 
                                     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">

@@ -7,12 +7,6 @@
 
     <div class="py-8">
         <div class="max-w-3xl mx-auto space-y-6 sm:px-6 lg:px-8">
-            @if ($errors->any())
-                <div class="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
             <section class="bg-white p-6 shadow-sm sm:rounded-lg">
                 <form method="POST" action="{{ route('student.classroom.update') }}" class="space-y-4">
                     @csrf

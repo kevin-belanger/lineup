@@ -7,18 +7,6 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
-            @if (session('status'))
-                <div class="rounded-md bg-green-50 p-4 text-sm text-green-800">
-                    {{ session('status') }}
-                </div>
-            @endif
-
-            @if ($errors->any())
-                <div class="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <details>
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
@@ -65,11 +53,13 @@
                                 <x-input-label for="name" :value="__('Nom')" />
                                 <x-text-input id="name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
                                 <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
+                                <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
                             <div>
                                 <x-input-label for="description" :value="__('Description')" />
                                 <x-text-input id="description" name="description" class="mt-1 block w-full" />
+                                <x-input-error :messages="$errors->get('description')" class="mt-2" />
                             </div>
                         </div>
 
@@ -167,11 +157,13 @@
                                                 <div>
                                                     <x-input-label for="classroom-{{ $classroom->id }}-name" :value="__('Nom')" />
                                                     <x-text-input id="classroom-{{ $classroom->id }}-name" name="name" value="{{ $classroom->name }}" class="mt-1 block w-full" required />
+                                                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                                 </div>
 
                                                 <div>
                                                     <x-input-label for="classroom-{{ $classroom->id }}-description" :value="__('Description')" />
                                                     <x-text-input id="classroom-{{ $classroom->id }}-description" name="description" value="{{ $classroom->description }}" class="mt-1 block w-full" />
+                                                    <x-input-error :messages="$errors->get('description')" class="mt-2" />
                                                 </div>
                                             </div>
 

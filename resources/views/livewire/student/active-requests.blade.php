@@ -1,10 +1,4 @@
 <section @if ($requests->isNotEmpty()) wire:poll.3s.visible @endif class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-    @if ($notice)
-        <div class="border-b border-gray-200 bg-green-50 px-6 py-3 text-sm text-green-800">
-            {{ $notice }}
-        </div>
-    @endif
-
     <div class="divide-y divide-gray-200">
         @forelse ($requests as $supportRequest)
             <article wire:key="student-active-request-{{ $supportRequest->id }}" class="relative p-6">

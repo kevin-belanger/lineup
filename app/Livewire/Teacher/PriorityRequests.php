@@ -163,7 +163,7 @@ class PriorityRequests extends Component
 
     private function toast(string $type, string $message): void
     {
-        $this->dispatch('toast', type: $type, message: $message, timeout: $type === 'error' ? 5000 : 3500);
+        $this->dispatch('toast', type: $type, message: $message);
     }
 
     /**

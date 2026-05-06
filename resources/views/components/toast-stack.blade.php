@@ -1,13 +1,52 @@
+@php
+    $flashToasts = [];
+    $statusMessages = [
+        'password-updated' => __('Mot de passe mis a jour.'),
+        'profile-updated' => __('Profil mis a jour.'),
+        'verification-link-sent' => __('Un nouveau lien de verification a ete envoye.'),
+    ];
+    $statusTypes = [
+        'Ce compte est desactive.' => 'error',
+    ];
+
+    if (session('toast')) {
+        $toast = session('toast');
+        $flashToasts[] = is_array($toast)
+            ? $toast
+            : ['type' => 'info', 'message' => (string) $toast];
+    }
+
+    if (session('status')) {
+        $status = session('status');
+        $flashToasts[] = [
+            'type' => $statusTypes[$status] ?? 'success',
+            'message' => $statusMessages[$status] ?? (string) $status,
+        ];
+    }
+
+    foreach (['success', 'info', 'warning', 'error'] as $type) {
+        if (session($type)) {
+            $flashToasts[] = ['type' => $type, 'message' => session($type)];
+        }
+    }
+
+    $flashToasts = collect($flashToasts)
+        ->filter(fn (array $toast): bool => filled($toast['message'] ?? null))
+        ->unique(fn (array $toast): string => ($toast['type'] ?? 'info').'|'.($toast['message'] ?? ''))
+        ->values();
+@endphp
+
 <div
     x-data="{
         toasts: [],
         add(event) {
             const detail = event.detail ?? {};
+            const type = detail.type ?? 'info';
             const toast = {
                 id: Date.now() + Math.random(),
-                type: detail.type ?? 'info',
+                type,
                 message: detail.message ?? '',
-                timeout: detail.timeout ?? (detail.type === 'error' ? 5000 : 3500),
+                timeout: detail.timeout ?? (type === 'success' ? 4000 : 10000),
             };
 
             this.toasts.push(toast);
@@ -25,7 +64,7 @@
             }[type] ?? 'border-sky-200 bg-sky-50 text-sky-800';
         },
     }"
-    x-init="@if (session('toast')) add({ detail: @js(session('toast')) }) @endif"
+    x-init="@foreach ($flashToasts as $flashToast) add({ detail: @js($flashToast) }); @endforeach"
     x-on:toast.window="add($event)"
     class="fixed bottom-4 right-4 z-50 w-[min(24rem,calc(100vw-2rem))] space-y-3 sm:bottom-6 sm:right-6"
     aria-live="polite"
