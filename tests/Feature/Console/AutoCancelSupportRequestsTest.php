@@ -3,10 +3,12 @@
 namespace Tests\Feature\Console;
 
 use App\Models\Classroom;
+use App\Models\Setting;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -32,6 +34,7 @@ class AutoCancelSupportRequestsTest extends TestCase
     public function test_it_does_not_cancel_requests_before_configured_time(): void
     {
         $settings = app(ApplicationSettings::class);
+        $settings->updateTimezone('America/Toronto');
         $settings->updateAutoCancelRequests(true, now()->addMinute()->format('H:i'));
 
         $supportRequest = SupportRequest::factory()->create([
@@ -42,6 +45,38 @@ class AutoCancelSupportRequestsTest extends TestCase
             ->assertExitCode(0);
 
         $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->refresh()->status);
+    }
+
+    public function test_it_uses_configured_timezone_when_checking_configured_time(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-01-15 21:30:00', 'UTC'));
+
+        try {
+            $settings = app(ApplicationSettings::class);
+            $settings->updateTimezone('America/Toronto');
+            $settings->updateAutoCancelRequests(true, '16:30');
+
+            $supportRequest = SupportRequest::factory()->create([
+                'status' => SupportRequest::STATUS_WAITING,
+            ]);
+
+            $this->artisan('requests:auto-cancel')
+                ->assertExitCode(0);
+
+            $this->assertSame(SupportRequest::STATUS_CANCELLED, $supportRequest->refresh()->status);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_invalid_saved_timezone_falls_back_to_toronto(): void
+    {
+        Setting::query()->create([
+            'key' => ApplicationSettings::TIMEZONE_KEY,
+            'value' => 'Not/AZone',
+        ]);
+
+        $this->assertSame('America/Toronto', app(ApplicationSettings::class)->timezone());
     }
 
     public function test_it_cancels_active_requests_and_leaves_history_untouched(): void

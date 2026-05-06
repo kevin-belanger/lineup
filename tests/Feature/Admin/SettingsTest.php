@@ -20,6 +20,7 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
             'display_name' => 'Atelier Algo',
+            'timezone' => 'America/Vancouver',
             'auto_cancel_requests_enabled' => '1',
             'auto_cancel_requests_time' => '16:45',
         ]);
@@ -31,6 +32,7 @@ class SettingsTest extends TestCase
         $settings = app(ApplicationSettings::class);
 
         $this->assertSame('Atelier Algo', $settings->displayName());
+        $this->assertSame('America/Vancouver', $settings->timezone());
         $this->assertTrue($settings->autoCancelRequestsEnabled());
         $this->assertSame('16:45', $settings->autoCancelRequestsTime());
 
@@ -38,6 +40,7 @@ class SettingsTest extends TestCase
             ->get(route('admin.settings.edit'))
             ->assertOk()
             ->assertSee('Atelier Algo')
+            ->assertSee('America/Vancouver')
             ->assertSee('16:45');
     }
 
@@ -58,11 +61,26 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
             'display_name' => 'LineUp',
+            'timezone' => 'America/Toronto',
             'auto_cancel_requests_enabled' => '1',
             'auto_cancel_requests_time' => '',
         ]);
 
         $response->assertSessionHasErrors('auto_cancel_requests_time');
+    }
+
+    public function test_application_timezone_must_be_valid(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
+            'display_name' => 'LineUp',
+            'timezone' => 'Not/AZone',
+            'auto_cancel_requests_enabled' => '0',
+            'auto_cancel_requests_time' => '16:30',
+        ]);
+
+        $response->assertSessionHasErrors('timezone');
     }
 
     public function test_non_admin_can_not_update_application_settings(): void

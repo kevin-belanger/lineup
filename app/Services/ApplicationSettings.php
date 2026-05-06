@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use DateTimeZone;
 use Illuminate\Support\Facades\Cache;
 
 class ApplicationSettings
@@ -13,9 +14,22 @@ class ApplicationSettings
 
     public const AUTO_CANCEL_REQUESTS_TIME_KEY = 'requests.auto_cancel_time';
 
+    public const TIMEZONE_KEY = 'app.timezone';
+
     public const DEFAULT_APP_NAME = 'LineUp';
 
     public const DEFAULT_AUTO_CANCEL_REQUESTS_TIME = '16:30';
+
+    public const DEFAULT_TIMEZONE = 'America/Toronto';
+
+    public const AVAILABLE_TIMEZONES = [
+        'America/Toronto',
+        'America/New_York',
+        'America/Chicago',
+        'America/Denver',
+        'America/Vancouver',
+        'UTC',
+    ];
 
     public function displayName(): string
     {
@@ -70,6 +84,25 @@ class ApplicationSettings
         Cache::forget(self::AUTO_CANCEL_REQUESTS_TIME_KEY);
     }
 
+    public function timezone(): string
+    {
+        return Cache::rememberForever(self::TIMEZONE_KEY, function (): string {
+            $value = Setting::query()->where('key', self::TIMEZONE_KEY)->value('value');
+
+            return $this->normalizeTimezone($value);
+        });
+    }
+
+    public function updateTimezone(string $timezone): void
+    {
+        Setting::query()->updateOrCreate(
+            ['key' => self::TIMEZONE_KEY],
+            ['value' => $this->normalizeTimezone($timezone)],
+        );
+
+        Cache::forget(self::TIMEZONE_KEY);
+    }
+
     public function logoPath(): string
     {
         return 'logo.png';
@@ -94,5 +127,14 @@ class ApplicationSettings
         return preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $time) === 1
             ? $time
             : self::DEFAULT_AUTO_CANCEL_REQUESTS_TIME;
+    }
+
+    private function normalizeTimezone(?string $timezone): string
+    {
+        $timezone = trim((string) $timezone);
+
+        return in_array($timezone, DateTimeZone::listIdentifiers(), true)
+            ? $timezone
+            : self::DEFAULT_TIMEZONE;
     }
 }

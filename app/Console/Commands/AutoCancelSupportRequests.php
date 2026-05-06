@@ -23,10 +23,11 @@ class AutoCancelSupportRequests extends Command
         }
 
         $configuredTime = $settings->autoCancelRequestsTime();
-        $currentTime = now()->format('H:i');
+        $timezone = $settings->timezone();
+        $currentTime = now($timezone)->format('H:i');
 
         if (! $this->option('force') && $currentTime !== $configuredTime) {
-            $this->info("Automatic request cancellation is scheduled for {$configuredTime}; current time is {$currentTime}.");
+            $this->info("Automatic request cancellation is scheduled for {$configuredTime} {$timezone}; current time is {$currentTime}.");
 
             return self::SUCCESS;
         }
@@ -52,6 +53,7 @@ class AutoCancelSupportRequests extends Command
         Log::info('Automatically cancelled active support requests.', [
             'count' => $cancelledCount,
             'time' => $configuredTime,
+            'timezone' => $timezone,
         ]);
 
         $this->info("Automatically cancelled {$cancelledCount} active request(s).");

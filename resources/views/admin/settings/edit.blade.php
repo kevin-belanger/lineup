@@ -20,6 +20,24 @@
 
                     <section class="border-t border-gray-200 pt-6">
                         <div>
+                            <x-input-label for="timezone" :value="__('Fuseau horaire de l application')" />
+                            <p class="mt-1 text-sm text-gray-600">
+                                Ce fuseau horaire est utilise pour les taches planifiees, comme l annulation automatique des demandes en fin de journee.
+                            </p>
+                        </div>
+
+                        <select id="timezone" name="timezone" required class="mt-3 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @foreach ($timezones as $availableTimezone)
+                                <option value="{{ $availableTimezone }}" @selected(old('timezone', $timezone) === $availableTimezone)>
+                                    {{ $availableTimezone }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
+                    </section>
+
+                    <section class="border-t border-gray-200 pt-6">
+                        <div>
                             <h3 class="text-base font-semibold text-gray-900">Annulation automatique des demandes</h3>
                             <p class="mt-1 text-sm text-gray-600">
                                 A l'heure indiquee, toutes les demandes encore en attente ou prises en charge seront annulees automatiquement. Les demandes terminees ou deja annulees ne seront pas modifiees.
@@ -47,6 +65,9 @@
                             <div>
                                 <x-input-label for="auto_cancel_requests_time" :value="__('Heure d annulation automatique')" />
                                 <x-text-input id="auto_cancel_requests_time" name="auto_cancel_requests_time" type="time" class="mt-1 block w-48" :value="old('auto_cancel_requests_time', $autoCancelRequestsTime)" />
+                                <p class="mt-1 text-sm text-gray-600">
+                                    Cette heure utilise le fuseau horaire configure ci-dessus.
+                                </p>
                                 <x-input-error :messages="$errors->get('auto_cancel_requests_time')" class="mt-2" />
                             </div>
                         </div>

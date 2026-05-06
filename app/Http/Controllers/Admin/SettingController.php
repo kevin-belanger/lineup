@@ -15,6 +15,8 @@ class SettingController extends Controller
     {
         return view('admin.settings.edit', [
             'displayName' => $settings->displayName(),
+            'timezone' => $settings->timezone(),
+            'timezones' => ApplicationSettings::AVAILABLE_TIMEZONES,
             'autoCancelRequestsEnabled' => $settings->autoCancelRequestsEnabled(),
             'autoCancelRequestsTime' => $settings->autoCancelRequestsTime(),
         ]);
@@ -24,6 +26,7 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'display_name' => ['required', 'string', 'max:100'],
+            'timezone' => ['required', 'timezone'],
             'auto_cancel_requests_enabled' => ['nullable', 'boolean'],
             'auto_cancel_requests_time' => [
                 Rule::requiredIf($request->boolean('auto_cancel_requests_enabled')),
@@ -33,6 +36,7 @@ class SettingController extends Controller
         ]);
 
         $settings->updateDisplayName($validated['display_name']);
+        $settings->updateTimezone($validated['timezone']);
         $settings->updateAutoCancelRequests(
             $request->boolean('auto_cancel_requests_enabled'),
             $validated['auto_cancel_requests_time'] ?? $settings->autoCancelRequestsTime(),

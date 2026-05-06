@@ -32,6 +32,10 @@ class DatabaseSeeder extends Seeder
             ['key' => ApplicationSettings::AUTO_CANCEL_REQUESTS_TIME_KEY],
             ['value' => ApplicationSettings::DEFAULT_AUTO_CANCEL_REQUESTS_TIME],
         );
+        Setting::query()->firstOrCreate(
+            ['key' => ApplicationSettings::TIMEZONE_KEY],
+            ['value' => ApplicationSettings::DEFAULT_TIMEZONE],
+        );
 
         $demoUsers = [
             [
