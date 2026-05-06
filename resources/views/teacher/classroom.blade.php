@@ -34,7 +34,11 @@
                                     @foreach ($activeRequests as $supportRequest)
                                         <li>
                                             {{ $supportRequest->classroom?->name ?? 'N/A' }} -
-                                            {{ $supportRequest->subject?->name ?? 'N/A' }} -
+                                            <span class="inline-flex items-center gap-1">
+                                                <span>{{ $supportRequest->subject?->name ?? 'N/A' }}</span>
+                                                <x-subject-request-link :support-request="$supportRequest" />
+                                            </span>
+                                            -
                                             {{ $supportRequest->statusLabel() }}
                                         </li>
                                     @endforeach

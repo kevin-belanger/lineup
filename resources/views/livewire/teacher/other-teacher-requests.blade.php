@@ -34,7 +34,11 @@
                                     @if ($supportRequest->is_priority)
                                         {{ __('Envoyee par') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}
                                     @else
-                                        {{ $supportRequest->subject?->name ?? 'N/A' }} -
+                                        <span class="inline-flex items-center gap-1">
+                                            <span>{{ $supportRequest->subject?->name ?? 'N/A' }}</span>
+                                            <x-subject-request-link :support-request="$supportRequest" />
+                                        </span>
+                                        -
                                         {{ __('Table') }} {{ $supportRequest->table_number }}
                                     @endif
                                 </div>
@@ -95,7 +99,10 @@
                     </div>
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Matiere') }}</div>
-                        <div class="mt-1 text-gray-800">{{ $managedRequest->subject?->name ?? 'N/A' }}</div>
+                        <div class="mt-1 inline-flex items-center gap-1 text-gray-800">
+                            <span>{{ $managedRequest->subject?->name ?? 'N/A' }}</span>
+                            <x-subject-request-link :support-request="$managedRequest" />
+                        </div>
                     </div>
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Statut') }}</div>

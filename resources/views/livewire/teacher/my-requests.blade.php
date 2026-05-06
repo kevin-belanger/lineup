@@ -71,7 +71,11 @@
                             <div class="font-semibold text-gray-950">{{ $supportRequest->student?->name ?? 'N/A' }}</div>
                             <div class="mt-1 text-sm text-gray-600">
                                 {{ __('Table') }} {{ $supportRequest->table_number }} -
-                                {{ $supportRequest->subject?->name ?? 'N/A' }} -
+                                <span class="inline-flex items-center gap-1">
+                                    <span>{{ $supportRequest->subject?->name ?? 'N/A' }}</span>
+                                    <x-subject-request-link :support-request="$supportRequest" />
+                                </span>
+                                -
                                 {{ __('Tuile') }} {{ $supportRequest->moodle_tile_number }}
                             </div>
                         </div>

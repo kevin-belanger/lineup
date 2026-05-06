@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['classroom_id', 'name', 'description', 'is_active'])]
+#[Fillable(['classroom_id', 'name', 'description', 'url', 'is_active'])]
 class Subject extends Model
 {
     /** @use HasFactory<SubjectFactory> */

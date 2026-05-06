@@ -153,4 +153,23 @@ class SupportRequest extends Model
     {
         return self::statusLabels()[$this->status] ?? $this->status;
     }
+
+    public function subjectUrl(): ?string
+    {
+        $url = $this->subject?->url;
+
+        if ($url === null || trim($url) === '') {
+            return null;
+        }
+
+        if ($this->table_number !== null) {
+            $url = str_replace('[table]', (string) $this->table_number, $url);
+        }
+
+        if ($this->moodle_tile_number !== null) {
+            $url = str_replace('[section]', (string) $this->moodle_tile_number, $url);
+        }
+
+        return $url;
+    }
 }

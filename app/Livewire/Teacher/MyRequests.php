@@ -48,7 +48,7 @@ class MyRequests extends Component
     {
         return view('livewire.teacher.my-requests', [
             'requests' => SupportRequest::query()
-                ->with(['student:id,name', 'subject:id,name', 'priorityRequester:id,name'])
+                ->with(['student:id,name', 'subject:id,name,url', 'priorityRequester:id,name'])
                 ->where('classroom_id', $this->currentClassroomId())
                 ->where('assigned_teacher_id', auth()->id())
                 ->whereIn('status', SupportRequest::teacherActiveStatuses())

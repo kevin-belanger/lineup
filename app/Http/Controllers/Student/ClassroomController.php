@@ -21,7 +21,7 @@ class ClassroomController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'description']),
             'currentClassroomId' => $request->session()->get('current_classroom_id'),
-            'activeRequests' => $this->activeRequests($request)->with(['classroom:id,name', 'subject:id,name'])->get(),
+            'activeRequests' => $this->activeRequests($request)->with(['classroom:id,name', 'subject:id,name,url'])->get(),
         ]);
     }
 

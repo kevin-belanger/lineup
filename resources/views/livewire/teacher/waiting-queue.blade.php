@@ -46,7 +46,10 @@
                             <div class="text-base font-semibold text-gray-900">{{ $supportRequest->student?->name ?? 'N/A' }}</div>
                             <div class="mt-1 flex flex-wrap gap-2 text-sm text-gray-600">
                                 <span>{{ __('Table') }} {{ $supportRequest->table_number }}</span>
-                                <span>{{ __('Matiere') }} : {{ $supportRequest->subject?->name ?? 'N/A' }}</span>
+                                <span class="inline-flex items-center gap-1">
+                                    <span>{{ __('Matiere') }} : {{ $supportRequest->subject?->name ?? 'N/A' }}</span>
+                                    <x-subject-request-link :support-request="$supportRequest" />
+                                </span>
                                 <span>{{ __('Tuile Moodle') }} {{ $supportRequest->moodle_tile_number }}</span>
                             </div>
                         </div>

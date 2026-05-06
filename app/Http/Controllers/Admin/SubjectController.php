@@ -59,7 +59,7 @@ class SubjectController extends Controller
     }
 
     /**
-     * @return array{classroom_id: int, name: string, description: ?string, is_active: bool}
+     * @return array{classroom_id: int, name: string, description: ?string, url: ?string, is_active: bool}
      */
     private function validatedData(Request $request, ?Subject $subject = null): array
     {
@@ -74,6 +74,13 @@ class SubjectController extends Controller
                     ->ignore($subject),
             ],
             'description' => ['nullable', 'string', 'max:2000'],
+            'url' => ['nullable', 'string', 'max:2000', function (string $attribute, mixed $value, \Closure $fail): void {
+                $candidate = str_replace(['[table]', '[section]'], ['1', '1'], (string) $value);
+
+                if (filter_var($candidate, FILTER_VALIDATE_URL) === false) {
+                    $fail('L URL doit etre valide.');
+                }
+            }],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -81,6 +88,7 @@ class SubjectController extends Controller
             'classroom_id' => (int) $validated['classroom_id'],
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
+            'url' => $validated['url'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? false),
         ];
     }

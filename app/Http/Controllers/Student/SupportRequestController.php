@@ -145,7 +145,7 @@ class SupportRequestController extends Controller
     {
         return view('student.history', [
             'requests' => SupportRequest::query()
-                ->with(['classroom:id,name', 'subject:id,name', 'assignedTeacher:id,name'])
+                ->with(['classroom:id,name', 'subject:id,name,url', 'assignedTeacher:id,name'])
                 ->where('student_id', $request->user()->id)
                 ->whereIn('status', SupportRequest::historyStatuses())
                 ->latest()

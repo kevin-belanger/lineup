@@ -22,6 +22,7 @@ class SubjectFactory extends Factory
             'classroom_id' => Classroom::factory(),
             'name' => fake()->unique()->words(2, true),
             'description' => fake()->optional()->sentence(),
+            'url' => null,
             'is_active' => true,
         ];
     }

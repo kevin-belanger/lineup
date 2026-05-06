@@ -22,7 +22,10 @@
                                 <tr>
                                     <td class="px-4 py-4 align-top">
                                         <div class="font-medium text-gray-900">
-                                            {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}
+                                            <span class="inline-flex items-center gap-1">
+                                                <span>{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
+                                                <x-subject-request-link :support-request="$supportRequest" />
+                                            </span>
                                         </div>
                                         <div class="mt-1 text-sm text-gray-600">
                                             {{ $supportRequest->classroom?->name ?? 'N/A' }}

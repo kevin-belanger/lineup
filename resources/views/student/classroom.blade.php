@@ -40,7 +40,10 @@
                             <ul class="mt-2 list-disc space-y-1 ps-5">
                                 @foreach ($activeRequests as $supportRequest)
                                     <li>
-                                        {{ $supportRequest->subject?->name ?? 'N/A' }}
+                                        <span class="inline-flex items-center gap-1">
+                                            <span>{{ $supportRequest->subject?->name ?? 'N/A' }}</span>
+                                            <x-subject-request-link :support-request="$supportRequest" />
+                                        </span>
                                         -
                                         {{ $supportRequest->classroom?->name ?? 'N/A' }}
                                     </li>
