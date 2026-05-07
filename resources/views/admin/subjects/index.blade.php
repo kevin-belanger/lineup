@@ -172,44 +172,9 @@
                                         </span>
                                     </td>
                                     <td class="px-4 py-4 align-top text-right">
-                                        <div class="flex flex-col items-end gap-2">
-                                            <x-secondary-button type="button" x-on:click="editingSubject = {{ $subject->id }}">
-                                                {{ __('Modifier') }}
-                                            </x-secondary-button>
-
-                                            <form method="POST" action="{{ route('admin.subjects.active', $subject) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <x-secondary-button type="submit">
-                                                    {{ $subject->is_active ? __('Desactiver') : __('Activer') }}
-                                                </x-secondary-button>
-                                            </form>
-
-                                            <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-subject-{{ $subject->id }}')">
-                                                {{ __('Supprimer') }}
-                                            </x-danger-button>
-
-                                            <x-modal name="delete-subject-{{ $subject->id }}" maxWidth="md" focusable>
-                                                <x-confirmation-panel
-                                                    :title="__('Supprimer la matière')"
-                                                    :message="__('Les demandes associées resteront dans l’historique, mais la matière affichera N/A. Voulez-vous supprimer cette matière ?')"
-                                                >
-                                                    <x-slot name="actions">
-                                                        <x-secondary-button type="button" x-on:click="$dispatch('close')">
-                                                            {{ __('Retour') }}
-                                                        </x-secondary-button>
-
-                                                        <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <x-danger-button>
-                                                                {{ __('Supprimer') }}
-                                                            </x-danger-button>
-                                                        </form>
-                                                    </x-slot>
-                                                </x-confirmation-panel>
-                                            </x-modal>
-                                        </div>
+                                        <x-secondary-button type="button" x-on:click="editingSubject = {{ $subject->id }}">
+                                            {{ __('Modifier') }}
+                                        </x-secondary-button>
                                     </td>
                                 </tr>
 
@@ -254,18 +219,51 @@
                                                 <x-input-error :messages="$errors->get('url')" class="mt-2" />
                                             </div>
 
-                                            <input type="hidden" name="is_active" value="{{ $subject->is_active ? '1' : '0' }}">
+                                            <div class="flex items-center justify-between gap-4">
+                                                <input type="hidden" name="is_active" value="0">
+                                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                                    <input type="checkbox" name="is_active" value="1" @checked($subject->is_active) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                    {{ __('Actif') }}
+                                                </label>
+                                            </div>
 
-                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                                                <x-secondary-button type="reset" x-on:click="editingSubject = null">
-                                                    {{ __('Annuler') }}
-                                                </x-secondary-button>
+                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-subject-{{ $subject->id }}')">
+                                                    {{ __('Supprimer cette matière') }}
+                                                </x-danger-button>
 
-                                                <x-primary-button>
-                                                    {{ __('Enregistrer') }}
-                                                </x-primary-button>
+                                                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                    <x-secondary-button type="reset" x-on:click="editingSubject = null">
+                                                        {{ __('Annuler') }}
+                                                    </x-secondary-button>
+
+                                                    <x-primary-button>
+                                                        {{ __('Enregistrer') }}
+                                                    </x-primary-button>
+                                                </div>
                                             </div>
                                         </form>
+
+                                        <x-modal name="delete-subject-{{ $subject->id }}" maxWidth="md" focusable>
+                                            <x-confirmation-panel
+                                                :title="__('Supprimer la matière')"
+                                                :message="__('Les demandes associées resteront dans l’historique, mais la matière affichera N/A. Voulez-vous supprimer cette matière ?')"
+                                            >
+                                                <x-slot name="actions">
+                                                    <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                                                        {{ __('Retour') }}
+                                                    </x-secondary-button>
+
+                                                    <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <x-danger-button>
+                                                            {{ __('Supprimer') }}
+                                                        </x-danger-button>
+                                                    </form>
+                                                </x-slot>
+                                            </x-confirmation-panel>
+                                        </x-modal>
                                     </td>
                                 </tr>
                             @empty
