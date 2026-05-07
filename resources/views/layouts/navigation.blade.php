@@ -16,8 +16,11 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     @if (Auth::user()->is_student)
-                        <x-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.*')">
+                        <x-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')">
                             {{ __('Etudiant') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('student.history')" :active="request()->routeIs('student.history')">
+                            {{ __('Historique') }}
                         </x-nav-link>
                     @endif
                     @if (Auth::user()->is_teacher)
@@ -109,8 +112,11 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             @if (Auth::user()->is_student)
-                <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.*')">
+                <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')">
                     {{ __('Etudiant') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('student.history')" :active="request()->routeIs('student.history')">
+                    {{ __('Historique') }}
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->is_teacher)

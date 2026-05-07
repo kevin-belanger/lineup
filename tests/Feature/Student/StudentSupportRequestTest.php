@@ -38,6 +38,33 @@ class StudentSupportRequestTest extends TestCase
         $response->assertRedirect(route('student.classroom.edit'));
     }
 
+    public function test_student_classroom_choice_shows_student_breadcrumb(): void
+    {
+        $student = User::factory()->create();
+
+        $this
+            ->actingAs($student)
+            ->get(route('student.classroom.edit'))
+            ->assertOk()
+            ->assertSee('Fil d Ariane')
+            ->assertSee('Étudiant');
+    }
+
+    public function test_student_dashboard_shows_current_classroom_breadcrumb(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.dashboard'))
+            ->assertOk()
+            ->assertSee('Étudiant')
+            ->assertSee($classroom->name)
+            ->assertSee(route('student.classroom.edit'), false);
+    }
+
     public function test_student_must_confirm_classroom_change_when_active_request_exists(): void
     {
         $student = User::factory()->create();
@@ -468,6 +495,8 @@ class StudentSupportRequestTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertSee('Fil d Ariane')
+            ->assertSee('Historique')
             ->assertSee($completed->subject->name)
             ->assertSee($cancelled->subject->name)
             ->assertDontSee($active->subject->name);

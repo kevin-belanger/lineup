@@ -30,6 +30,24 @@ class NavigationTest extends TestCase
             ->assertDontSee('Matieres');
     }
 
+    public function test_student_history_is_available_from_main_navigation_only(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+
+        $response = $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.dashboard'));
+
+        $response
+            ->assertOk()
+            ->assertSee('Historique')
+            ->assertSee(route('student.history'), false);
+
+        $this->assertSame(2, substr_count($response->getContent(), route('student.history')));
+    }
+
     public function test_admin_navigation_shows_admin_dropdown_links_without_dashboard_link(): void
     {
         $admin = User::factory()->admin()->create([

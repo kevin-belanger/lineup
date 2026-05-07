@@ -1,8 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Espace etudiant') }}
-        </h2>
+        <x-student-breadcrumb :classroom-name="$currentClassroom?->name" />
     </x-slot>
 
     <div class="py-8">
@@ -25,9 +23,6 @@
                                 {{ __('Nouvelle demande') }}
                             </a>
                         @endif
-                        <a href="{{ route('student.history') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">
-                            {{ __('Historique') }}
-                        </a>
                     </div>
                 </div>
             </section>
