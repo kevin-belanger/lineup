@@ -12,19 +12,51 @@ use Illuminate\View\View;
 
 class SubjectController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $classrooms = Classroom::query()
+            ->orderByDesc('is_active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_active']);
+
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'classroom' => ['nullable', Rule::in($classrooms->pluck('id')->map(fn (int $id): string => (string) $id)->push('all')->push('none')->all())],
+            'status' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
+        ]);
+
+        $filters = [
+            'search' => trim($validated['search'] ?? ''),
+            'classroom' => $validated['classroom'] ?? 'all',
+            'status' => $validated['status'] ?? 'all',
+        ];
+
         return view('admin.subjects.index', [
             'subjects' => Subject::query()
                 ->with('classroom:id,name,is_active')
+                ->when($filters['search'] !== '', function ($query) use ($filters): void {
+                    $query->where(function ($query) use ($filters): void {
+                        $query
+                            ->where('name', 'like', "%{$filters['search']}%")
+                            ->orWhere('description', 'like', "%{$filters['search']}%");
+                    });
+                })
+                ->when($filters['classroom'] === 'none', fn ($query) => $query->whereNull('classroom_id'))
+                ->when(! in_array($filters['classroom'], ['all', 'none'], true), fn ($query) => $query->where('classroom_id', (int) $filters['classroom']))
+                ->when($filters['status'] === 'active', fn ($query) => $query->where('is_active', true))
+                ->when($filters['status'] === 'inactive', fn ($query) => $query->where('is_active', false))
                 ->orderByDesc('is_active')
                 ->orderBy('classroom_id')
                 ->orderBy('name')
-                ->paginate(20),
-            'classrooms' => Classroom::query()
-                ->orderByDesc('is_active')
-                ->orderBy('name')
-                ->get(['id', 'name', 'is_active']),
+                ->paginate(20)
+                ->withQueryString(),
+            'classrooms' => $classrooms,
+            'filters' => $filters,
+            'statusOptions' => [
+                'all' => 'Tous les statuts',
+                'active' => 'Actives',
+                'inactive' => 'Inactives',
+            ],
             'subjectValidationOptions' => Subject::query()
                 ->get(['classroom_id', 'name'])
                 ->map(fn (Subject $subject): array => [

@@ -95,6 +95,73 @@ class ReferenceDataManagementTest extends TestCase
         ])->assertSessionHasErrors('url');
     }
 
+    public function test_admin_subject_list_can_search_and_filter_subjects(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $localA = Classroom::factory()->create(['name' => 'Local A']);
+        $localB = Classroom::factory()->create(['name' => 'Local B']);
+        $math = Subject::factory()->create([
+            'classroom_id' => $localA->id,
+            'name' => 'Mathematique',
+            'description' => 'Algebre',
+            'is_active' => true,
+        ]);
+        $robotics = Subject::factory()->create([
+            'classroom_id' => $localA->id,
+            'name' => 'Informatique',
+            'description' => 'Robotique avancee',
+            'is_active' => true,
+        ]);
+        $history = Subject::factory()->create([
+            'classroom_id' => $localB->id,
+            'name' => 'Histoire',
+            'description' => 'Culture generale',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.subjects.index', ['search' => 'robotique']))
+            ->assertOk()
+            ->assertSeeText($robotics->name)
+            ->assertDontSeeText($math->name)
+            ->assertDontSeeText($history->name);
+
+        $this->actingAs($admin)
+            ->get(route('admin.subjects.index', ['classroom' => (string) $localB->id]))
+            ->assertOk()
+            ->assertSeeText($history->name)
+            ->assertDontSeeText($math->name)
+            ->assertDontSeeText($robotics->name);
+
+        $this->actingAs($admin)
+            ->get(route('admin.subjects.index', ['status' => 'inactive']))
+            ->assertOk()
+            ->assertSeeText($history->name)
+            ->assertDontSeeText($math->name)
+            ->assertDontSeeText($robotics->name);
+    }
+
+    public function test_admin_subject_list_preserves_filters_when_paginating(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create();
+
+        Subject::factory()->count(21)->create([
+            'classroom_id' => $classroom->id,
+            'is_active' => true,
+        ]);
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.subjects.index', ['status' => 'active']))
+            ->assertOk()
+            ->assertSee('status=active', false)
+            ->assertSee('page=2', false);
+    }
+
     public function test_subject_url_is_generated_on_teacher_request_cards(): void
     {
         $teacher = User::factory()->teacher()->create();
