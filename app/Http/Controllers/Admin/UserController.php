@@ -23,7 +23,7 @@ class UserController extends Controller
 
         $filters = [
             'search' => trim($filters['search'] ?? ''),
-            'status' => $filters['status'] ?? 'active',
+            'status' => $filters['status'] ?? 'all',
             'role' => $filters['role'] ?? 'all',
         ];
 

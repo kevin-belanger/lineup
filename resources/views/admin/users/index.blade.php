@@ -131,7 +131,7 @@
                     </div>
 
                     @php
-                        $hasActiveUserFilters = $filters['search'] !== '' || $filters['status'] !== 'active' || $filters['role'] !== 'all';
+                        $hasActiveUserFilters = $filters['search'] !== '' || $filters['status'] !== 'all' || $filters['role'] !== 'all';
                     @endphp
 
                     <div

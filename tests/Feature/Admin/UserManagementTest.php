@@ -72,7 +72,7 @@ class UserManagementTest extends TestCase
         $this->assertSame($admin->id, $user->approved_by);
     }
 
-    public function test_admin_user_list_defaults_to_active_users_and_paginates_results(): void
+    public function test_admin_user_list_defaults_to_all_statuses_and_paginates_results(): void
     {
         $admin = User::factory()->admin()->create();
         User::factory()->count(101)->create([
@@ -87,9 +87,14 @@ class UserManagementTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText('102 utilisateurs affichés')
-            ->assertDontSeeText($inactive->name)
+            ->assertSeeText('103 utilisateurs affichés')
+            ->assertSee('value="all" selected', false)
             ->assertSee('page=2', false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['page' => 2]))
+            ->assertOk()
+            ->assertSeeText($inactive->name);
     }
 
     public function test_admin_user_list_can_search_by_name_and_email(): void
