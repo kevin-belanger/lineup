@@ -11,13 +11,39 @@ use Illuminate\View\View;
 
 class ClassroomController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
+        ]);
+
+        $filters = [
+            'search' => trim($validated['search'] ?? ''),
+            'status' => $validated['status'] ?? 'all',
+        ];
+
         return view('admin.classrooms.index', [
             'classrooms' => Classroom::query()
+                ->when($filters['search'] !== '', function ($query) use ($filters): void {
+                    $query->where(function ($query) use ($filters): void {
+                        $query
+                            ->where('name', 'like', "%{$filters['search']}%")
+                            ->orWhere('description', 'like', "%{$filters['search']}%");
+                    });
+                })
+                ->when($filters['status'] === 'active', fn ($query) => $query->where('is_active', true))
+                ->when($filters['status'] === 'inactive', fn ($query) => $query->where('is_active', false))
                 ->orderByDesc('is_active')
                 ->orderBy('name')
-                ->paginate(20),
+                ->paginate(20)
+                ->withQueryString(),
+            'filters' => $filters,
+            'statusOptions' => [
+                'all' => 'Tous les statuts',
+                'active' => 'Actifs',
+                'inactive' => 'Inactifs',
+            ],
             'classroomValidationOptions' => Classroom::query()
                 ->pluck('name')
                 ->map(fn (string $name): string => mb_strtolower(trim($name)))

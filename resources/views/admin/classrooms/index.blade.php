@@ -78,6 +78,102 @@
             </section>
 
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div class="border-b border-gray-100">
+                    <div class="flex flex-col gap-2 px-6 py-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Locaux') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Recherche, filtres et pagination des locaux.') }}</p>
+                        </div>
+
+                        <span class="inline-flex w-fit rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+                            {{ trans_choice('{0} Aucun local affiché|{1} 1 local affiché|[2,*] :count locaux affichés', $classrooms->total(), ['count' => $classrooms->total()]) }}
+                        </span>
+                    </div>
+
+                    @php
+                        $hasActiveClassroomFilters = $filters['search'] !== '' || $filters['status'] !== 'all';
+                    @endphp
+
+                    <div
+                        class="border-t border-gray-100"
+                        x-data="{ open: @js($hasActiveClassroomFilters) }"
+                    >
+                        <button
+                            type="button"
+                            class="flex w-full items-center justify-between gap-3 bg-gray-50 px-6 py-2 text-left transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset"
+                            x-on:click="open = ! open"
+                            x-bind:aria-expanded="open.toString()"
+                            aria-controls="classroom-filters-panel"
+                        >
+                            <span class="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                                <svg class="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v3.118a2.25 2.25 0 0 1-1.244 2.013l-2.25 1.125A1.125 1.125 0 0 1 9 19.681v-5.249a2.25 2.25 0 0 0-.659-1.591L2.909 7.409a2.25 2.25 0 0 1-.659-1.591V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+                                </svg>
+                                {{ __('Filtres') }}
+                            </span>
+                            <span class="inline-flex items-center text-gray-500">
+                                <span class="sr-only" x-text="open ? '{{ __('Fermer les filtres') }}' : '{{ __('Ouvrir les filtres') }}'"></span>
+                                <svg
+                                    x-show="! open"
+                                    class="h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="1.8"
+                                    stroke="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                                </svg>
+                                <svg
+                                    x-show="open"
+                                    class="h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="1.8"
+                                    stroke="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </span>
+                        </button>
+
+                        <form
+                            id="classroom-filters-panel"
+                            method="GET"
+                            action="{{ route('admin.classrooms.index') }}"
+                            class="grid gap-3 border-t border-gray-100 bg-gray-50/40 px-6 py-3 sm:grid-cols-2 lg:grid-cols-10 lg:items-end"
+                            x-show="open"
+                        >
+                            <div class="lg:col-span-7">
+                                <x-input-label for="classroom-search" :value="__('Recherche')" />
+                                <x-text-input id="classroom-search" name="search" type="search" class="mt-1 block w-full text-sm" :value="$filters['search']" placeholder="{{ __('Nom ou description') }}" />
+                            </div>
+
+                            <div class="lg:col-span-3">
+                                <x-input-label for="classroom-status" :value="__('Statut')" />
+                                <select id="classroom-status" name="status" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    @foreach ($statusOptions as $value => $label)
+                                        <option value="{{ $value }}" @selected($filters['status'] === $value)>{{ __($label) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="flex gap-2 sm:col-span-2 lg:col-span-10 lg:justify-end">
+                                <x-primary-button>
+                                    {{ __('Filtrer') }}
+                                </x-primary-button>
+
+                                <a href="{{ route('admin.classrooms.index') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">
+                                    {{ __('Réinitialiser') }}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -106,44 +202,9 @@
                                         </span>
                                     </td>
                                     <td class="px-4 py-4 align-top text-right">
-                                        <div class="flex flex-col items-end gap-2">
-                                            <x-secondary-button type="button" x-on:click="editingClassroom = {{ $classroom->id }}">
-                                                {{ __('Modifier') }}
-                                            </x-secondary-button>
-
-                                            <form method="POST" action="{{ route('admin.classrooms.active', $classroom) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <x-secondary-button type="submit">
-                                                    {{ $classroom->is_active ? __('Desactiver') : __('Activer') }}
-                                                </x-secondary-button>
-                                            </form>
-
-                                            <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-classroom-{{ $classroom->id }}')">
-                                                {{ __('Supprimer') }}
-                                            </x-danger-button>
-
-                                            <x-modal name="delete-classroom-{{ $classroom->id }}" maxWidth="md" focusable>
-                                                <x-confirmation-panel
-                                                    :title="__('Supprimer le local')"
-                                                    :message="__('Les demandes associées resteront dans l’historique, mais le local affichera N/A. Voulez-vous supprimer ce local ?')"
-                                                >
-                                                    <x-slot name="actions">
-                                                        <x-secondary-button type="button" x-on:click="$dispatch('close')">
-                                                            {{ __('Retour') }}
-                                                        </x-secondary-button>
-
-                                                        <form method="POST" action="{{ route('admin.classrooms.destroy', $classroom) }}">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <x-danger-button>
-                                                                {{ __('Supprimer') }}
-                                                            </x-danger-button>
-                                                        </form>
-                                                    </x-slot>
-                                                </x-confirmation-panel>
-                                            </x-modal>
-                                        </div>
+                                        <x-secondary-button type="button" x-on:click="editingClassroom = {{ $classroom->id }}">
+                                            {{ __('Modifier') }}
+                                        </x-secondary-button>
                                     </td>
                                 </tr>
 
@@ -167,18 +228,51 @@
                                                 </div>
                                             </div>
 
-                                            <input type="hidden" name="is_active" value="{{ $classroom->is_active ? '1' : '0' }}">
+                                            <div class="flex items-center justify-between gap-4">
+                                                <input type="hidden" name="is_active" value="0">
+                                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                                    <input type="checkbox" name="is_active" value="1" @checked($classroom->is_active) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                    {{ __('Actif') }}
+                                                </label>
+                                            </div>
 
-                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                                                <x-secondary-button type="reset" x-on:click="editingClassroom = null">
-                                                    {{ __('Annuler') }}
-                                                </x-secondary-button>
+                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-classroom-{{ $classroom->id }}')">
+                                                    {{ __('Supprimer ce local') }}
+                                                </x-danger-button>
 
-                                                <x-primary-button>
-                                                    {{ __('Enregistrer') }}
-                                                </x-primary-button>
+                                                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                    <x-secondary-button type="reset" x-on:click="editingClassroom = null">
+                                                        {{ __('Annuler') }}
+                                                    </x-secondary-button>
+
+                                                    <x-primary-button>
+                                                        {{ __('Enregistrer') }}
+                                                    </x-primary-button>
+                                                </div>
                                             </div>
                                         </form>
+
+                                        <x-modal name="delete-classroom-{{ $classroom->id }}" maxWidth="md" focusable>
+                                            <x-confirmation-panel
+                                                :title="__('Supprimer le local')"
+                                                :message="__('Les demandes associées resteront dans l’historique, mais le local affichera N/A. Voulez-vous supprimer ce local ?')"
+                                            >
+                                                <x-slot name="actions">
+                                                    <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                                                        {{ __('Retour') }}
+                                                    </x-secondary-button>
+
+                                                    <form method="POST" action="{{ route('admin.classrooms.destroy', $classroom) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <x-danger-button>
+                                                            {{ __('Supprimer') }}
+                                                        </x-danger-button>
+                                                    </form>
+                                                </x-slot>
+                                            </x-confirmation-panel>
+                                        </x-modal>
                                     </td>
                                 </tr>
                             @empty

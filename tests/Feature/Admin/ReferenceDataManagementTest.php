@@ -41,6 +41,58 @@ class ReferenceDataManagementTest extends TestCase
         $this->assertFalse($classroom->is_active);
     }
 
+    public function test_admin_classroom_list_can_search_and_filter_classrooms(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $network = Classroom::factory()->create([
+            'name' => 'Local reseau',
+            'description' => 'Salle reseautique',
+            'is_active' => true,
+        ]);
+        $evaluation = Classroom::factory()->create([
+            'name' => 'Local evaluation',
+            'description' => 'Examens',
+            'is_active' => false,
+        ]);
+        $lab = Classroom::factory()->create([
+            'name' => 'Laboratoire',
+            'description' => 'Postes Windows',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.classrooms.index', ['search' => 'examens']))
+            ->assertOk()
+            ->assertSeeText($evaluation->name)
+            ->assertDontSeeText($network->name)
+            ->assertDontSeeText($lab->name);
+
+        $this->actingAs($admin)
+            ->get(route('admin.classrooms.index', ['status' => 'inactive']))
+            ->assertOk()
+            ->assertSeeText($evaluation->name)
+            ->assertDontSeeText($network->name)
+            ->assertDontSeeText($lab->name);
+    }
+
+    public function test_admin_classroom_list_preserves_filters_when_paginating(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Classroom::factory()->count(21)->create([
+            'is_active' => true,
+        ]);
+        Classroom::factory()->create([
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.classrooms.index', ['status' => 'active']))
+            ->assertOk()
+            ->assertSee('status=active', false)
+            ->assertSee('page=2', false);
+    }
+
     public function test_admin_can_create_update_and_deactivate_subject(): void
     {
         $admin = User::factory()->admin()->create();
