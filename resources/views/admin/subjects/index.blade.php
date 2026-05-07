@@ -8,13 +8,24 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <details>
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
+                <details x-data="{ open: false }" x-on:toggle="open = $el.open">
+                    <summary
+                        class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4"
+                        x-bind:aria-expanded="open.toString()"
+                    >
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">{{ __('Creer une nouvelle matiere') }}</h3>
                             <p class="mt-1 text-sm text-gray-500">{{ __('Ajouter une matiere associee a un local.') }}</p>
                         </div>
-                        <span class="text-sm font-medium text-indigo-700">{{ __('Ouvrir') }}</span>
+                        <span class="inline-flex items-center text-gray-500">
+                            <span class="sr-only" x-text="open ? '{{ __('Fermer la section de création') }}' : '{{ __('Ouvrir la section de création') }}'"></span>
+                            <svg x-show="! open" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                            </svg>
+                            <svg x-show="open" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </span>
                     </summary>
 
                     <form
