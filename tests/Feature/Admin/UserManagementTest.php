@@ -72,6 +72,89 @@ class UserManagementTest extends TestCase
         $this->assertSame($admin->id, $user->approved_by);
     }
 
+    public function test_admin_user_list_defaults_to_active_users_and_paginates_results(): void
+    {
+        $admin = User::factory()->admin()->create();
+        User::factory()->count(101)->create([
+            'is_active' => true,
+        ]);
+        $inactive = User::factory()->create([
+            'name' => 'Inactive Person',
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.users.index'));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('102 utilisateurs affichés')
+            ->assertDontSeeText($inactive->name)
+            ->assertSee('page=2', false);
+    }
+
+    public function test_admin_user_list_can_search_by_name_and_email(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $byName = User::factory()->create([
+            'name' => 'Alice Recherche',
+            'email' => 'alice@example.com',
+            'is_active' => true,
+        ]);
+        $byEmail = User::factory()->create([
+            'name' => 'Bob',
+            'email' => 'bob.recherche@example.com',
+            'is_active' => true,
+        ]);
+        $hidden = User::factory()->create([
+            'name' => 'Charlie',
+            'email' => 'charlie@example.com',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.users.index', [
+            'search' => 'recherche',
+            'status' => 'active',
+            'role' => 'all',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSeeText($byName->name)
+            ->assertSeeText($byEmail->email)
+            ->assertDontSeeText($hidden->name);
+    }
+
+    public function test_admin_user_list_can_filter_by_status_and_role(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $inactiveTeacher = User::factory()->teacher()->create([
+            'name' => 'Teacher Inactive',
+            'is_active' => false,
+        ]);
+        $activeTeacher = User::factory()->teacher()->create([
+            'name' => 'Teacher Active',
+            'is_active' => true,
+        ]);
+        $inactiveStudent = User::factory()->create([
+            'name' => 'Student Inactive',
+            'is_student' => true,
+            'is_teacher' => false,
+            'is_admin' => false,
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.users.index', [
+            'status' => 'inactive',
+            'role' => 'teacher',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSeeText($inactiveTeacher->name)
+            ->assertDontSeeText($activeTeacher->name)
+            ->assertDontSeeText($inactiveStudent->name);
+    }
+
     public function test_admin_can_update_user_information_roles_and_statuses(): void
     {
         $admin = User::factory()->admin()->create();

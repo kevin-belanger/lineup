@@ -118,27 +118,112 @@
             </section>
 
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <div class="border-b border-gray-100 px-6 py-4">
-                    <h3 class="text-base font-semibold text-gray-900">{{ __('Utilisateurs actifs') }}</h3>
+                <div class="border-b border-gray-100">
+                    <div class="flex flex-col gap-2 px-6 py-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Utilisateurs') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Recherche, filtres et pagination des comptes.') }}</p>
+                        </div>
+
+                        <span class="inline-flex w-fit rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+                            {{ trans_choice('{0} Aucun utilisateur affiché|{1} 1 utilisateur affiché|[2,*] :count utilisateurs affichés', $users->total(), ['count' => $users->total()]) }}
+                        </span>
+                    </div>
+
+                    @php
+                        $hasActiveUserFilters = $filters['search'] !== '' || $filters['status'] !== 'active' || $filters['role'] !== 'all';
+                    @endphp
+
+                    <div
+                        class="border-t border-gray-100"
+                        x-data="{ open: @js($hasActiveUserFilters) }"
+                    >
+                        <button
+                            type="button"
+                            class="flex w-full items-center justify-between gap-3 bg-gray-50 px-6 py-2 text-left transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset"
+                            x-on:click="open = ! open"
+                            x-bind:aria-expanded="open.toString()"
+                            aria-controls="user-filters-panel"
+                        >
+                            <span class="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                                <svg class="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v3.118a2.25 2.25 0 0 1-1.244 2.013l-2.25 1.125A1.125 1.125 0 0 1 9 19.681v-5.249a2.25 2.25 0 0 0-.659-1.591L2.909 7.409a2.25 2.25 0 0 1-.659-1.591V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+                                </svg>
+                                {{ __('Filtres') }}
+                            </span>
+                            <span class="inline-flex items-center text-gray-500">
+                                <span class="sr-only" x-text="open ? '{{ __('Fermer les filtres') }}' : '{{ __('Ouvrir les filtres') }}'"></span>
+                                <svg
+                                    x-show="! open"
+                                    class="h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="1.8"
+                                    stroke="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                                </svg>
+                                <svg
+                                    x-show="open"
+                                    class="h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="1.8"
+                                    stroke="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </span>
+                        </button>
+
+                        <form
+                            id="user-filters-panel"
+                            method="GET"
+                            action="{{ route('admin.users.index') }}"
+                            class="grid gap-3 border-t border-gray-100 bg-gray-50/40 px-6 py-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
+                            x-show="open"
+                        >
+                            <div class="lg:col-span-2">
+                                <x-input-label for="user-search" :value="__('Recherche')" />
+                                <x-text-input id="user-search" name="search" type="search" class="mt-1 block w-full text-sm" :value="$filters['search']" placeholder="{{ __('Nom ou courriel') }}" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="user-status" :value="__('Statut')" />
+                                <select id="user-status" name="status" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    @foreach ($statusOptions as $value => $label)
+                                        <option value="{{ $value }}" @selected($filters['status'] === $value)>{{ __($label) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <x-input-label for="user-role" :value="__('Rôle')" />
+                                <select id="user-role" name="role" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    @foreach ($roleOptions as $value => $label)
+                                        <option value="{{ $value }}" @selected($filters['role'] === $value)>{{ __($label) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="flex gap-2 sm:col-span-2 lg:col-span-4 lg:justify-end">
+                                <x-primary-button>
+                                    {{ __('Filtrer') }}
+                                </x-primary-button>
+
+                                <a href="{{ route('admin.users.index') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">
+                                    {{ __('Réinitialiser') }}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
-                @include('admin.users.partials.user-table', ['users' => $activeUsers, 'emptyMessage' => __('Aucun utilisateur actif.')])
-            </section>
-
-            <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <details>
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4">
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Utilisateurs inactifs') }}</h3>
-                            <p class="mt-1 text-sm text-gray-500">{{ __('Comptes desactives pouvant etre reactives.') }}</p>
-                        </div>
-                        <span class="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">{{ $inactiveUsers->count() }}</span>
-                    </summary>
-
-                    <div class="border-t border-gray-100">
-                        @include('admin.users.partials.user-table', ['users' => $inactiveUsers, 'emptyMessage' => __('Aucun utilisateur inactif.')])
-                    </div>
-                </details>
+                @include('admin.users.partials.user-table', ['users' => $users, 'emptyMessage' => __('Aucun utilisateur ne correspond aux filtres.')])
             </section>
         </div>
     </div>

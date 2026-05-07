@@ -13,24 +13,58 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $activeUsers = User::query()
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['all', 'active', 'inactive', 'approved', 'pending'])],
+            'role' => ['nullable', Rule::in(['all', 'student', 'teacher', 'admin'])],
+        ]);
+
+        $filters = [
+            'search' => trim($filters['search'] ?? ''),
+            'status' => $filters['status'] ?? 'active',
+            'role' => $filters['role'] ?? 'all',
+        ];
+
+        $users = User::query()
             ->with('approver:id,name')
-            ->where('is_active', true)
+            ->when($filters['search'] !== '', function ($query) use ($filters): void {
+                $query->where(function ($query) use ($filters): void {
+                    $query
+                        ->where('name', 'like', "%{$filters['search']}%")
+                        ->orWhere('email', 'like', "%{$filters['search']}%");
+                });
+            })
+            ->when($filters['status'] === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($filters['status'] === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->when($filters['status'] === 'approved', fn ($query) => $query->where('is_approved', true))
+            ->when($filters['status'] === 'pending', fn ($query) => $query->where('is_approved', false))
+            ->when($filters['role'] === 'student', fn ($query) => $query->where('is_student', true))
+            ->when($filters['role'] === 'teacher', fn ($query) => $query->where('is_teacher', true))
+            ->when($filters['role'] === 'admin', fn ($query) => $query->where('is_admin', true))
+            ->orderByDesc('is_active')
             ->orderBy('is_approved')
             ->orderBy('name')
-            ->get();
-
-        $inactiveUsers = User::query()
-            ->with('approver:id,name')
-            ->where('is_active', false)
-            ->orderBy('name')
-            ->get();
+            ->paginate(100)
+            ->withQueryString();
 
         return view('admin.users.index', [
-            'activeUsers' => $activeUsers,
-            'inactiveUsers' => $inactiveUsers,
+            'users' => $users,
+            'filters' => $filters,
+            'statusOptions' => [
+                'all' => 'Tous les statuts',
+                'active' => 'Actifs',
+                'inactive' => 'Inactifs',
+                'approved' => 'Approuvés',
+                'pending' => 'En attente d’approbation',
+            ],
+            'roleOptions' => [
+                'all' => 'Tous les rôles',
+                'student' => 'Étudiants',
+                'teacher' => 'Enseignants',
+                'admin' => 'Admins',
+            ],
             'emailValidationOptions' => User::query()
                 ->get(['id', 'email'])
                 ->map(fn (User $user): array => [
