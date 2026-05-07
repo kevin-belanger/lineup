@@ -49,6 +49,43 @@ class NavigationTest extends TestCase
             ->assertSee('Parametres');
     }
 
+    public function test_admin_dashboard_shows_settings_card(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Paramètres')
+            ->assertSee(route('admin.settings.edit'), false);
+    }
+
+    public function test_admin_subpages_show_breadcrumb_to_admin_dashboard(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('Fil d Ariane')
+            ->assertSee('Administration')
+            ->assertSee('Utilisateurs')
+            ->assertSee(route('admin.dashboard'), false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('Administration')
+            ->assertSee('Paramètres')
+            ->assertSee(route('admin.dashboard'), false);
+    }
+
     public function test_dashboard_logo_destination_prioritizes_teacher_before_admin(): void
     {
         $user = User::factory()->create([

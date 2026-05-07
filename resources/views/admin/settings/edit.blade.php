@@ -1,8 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold leading-tight text-gray-800">
-            {{ __('Parametres') }}
-        </h2>
+        <x-admin-breadcrumb :current="__('Paramètres')" />
     </x-slot>
 
     <div class="py-12">

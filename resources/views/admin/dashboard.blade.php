@@ -1,8 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Administration') }}
-        </h2>
+        <x-admin-breadcrumb />
     </x-slot>
 
     <div class="py-12">
@@ -21,6 +19,10 @@
                         <a href="{{ route('admin.subjects.index') }}" class="rounded-md border border-gray-200 p-4 hover:border-indigo-300 hover:bg-indigo-50">
                             <div class="font-medium text-gray-900">{{ __('Matieres') }}</div>
                             <div class="mt-1 text-sm text-gray-600">{{ __('Domaines de cours') }}</div>
+                        </a>
+                        <a href="{{ route('admin.settings.edit') }}" class="rounded-md border border-gray-200 p-4 hover:border-indigo-300 hover:bg-indigo-50">
+                            <div class="font-medium text-gray-900">{{ __('Paramètres') }}</div>
+                            <div class="mt-1 text-sm text-gray-600">{{ __('Configuration globale') }}</div>
                         </a>
                     </div>
                 </div>
