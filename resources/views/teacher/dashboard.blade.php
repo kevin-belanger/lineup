@@ -17,17 +17,6 @@
     </x-slot>
 
     <div class="py-8">
-        <livewire:teacher.request-change-watcher />
-
-        <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[minmax(360px,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:px-8">
-            <div class="space-y-5">
-                <livewire:teacher.my-requests />
-                <livewire:teacher.other-teacher-requests />
-            </div>
-
-            <div class="space-y-5">
-                <livewire:teacher.waiting-queue />
-            </div>
-        </div>
+        <livewire:teacher.dashboard-view />
     </div>
 </x-app-layout>

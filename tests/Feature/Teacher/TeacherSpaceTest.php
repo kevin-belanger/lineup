@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\Teacher;
 
+use App\Livewire\Teacher\DashboardView;
 use App\Livewire\Teacher\MyRequests;
 use App\Livewire\Teacher\OtherTeacherRequests;
 use App\Livewire\Teacher\RequestChangeWatcher;
+use App\Livewire\Teacher\RequestHistory;
 use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
+use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\SupportRequestChangeMarker;
@@ -365,5 +368,118 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('wire:poll.2s="check"', false)
             ->assertDontSee('wire:poll.8s.visible', false)
             ->assertDontSee('wire:poll.10s.visible', false);
+    }
+
+    public function test_teacher_dashboard_toggles_between_requests_and_history_views(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(DashboardView::class)
+            ->assertSee('Voir l’historique')
+            ->assertSee('teacher.my-requests', false)
+            ->assertSee('teacher.waiting-queue', false)
+            ->assertDontSee('teacher.request-history', false)
+            ->call('showHistory')
+            ->assertSet('activeView', 'history')
+            ->assertSee('Retour aux demandes')
+            ->assertSee('teacher.request-history', false)
+            ->assertDontSee('teacher.my-requests', false)
+            ->assertDontSee('teacher.waiting-queue', false)
+            ->call('showRequests')
+            ->assertSet('activeView', 'requests')
+            ->assertSee('Voir l’historique')
+            ->assertSee('teacher.my-requests', false)
+            ->assertSee('teacher.waiting-queue', false);
+    }
+
+    public function test_teacher_history_defaults_to_today_and_current_classroom(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $otherClassroom = Classroom::factory()->create();
+        $todayRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_COMPLETED,
+            'assigned_teacher_id' => $teacher->id,
+            'assigned_at' => now()->subMinutes(20),
+            'completed_at' => now()->subMinutes(5),
+            'created_at' => now()->subMinutes(30),
+        ]);
+        $oldRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_COMPLETED,
+            'assigned_teacher_id' => $teacher->id,
+            'created_at' => now()->subDay(),
+        ]);
+        $otherClassroomRequest = SupportRequest::factory()->create([
+            'classroom_id' => $otherClassroom->id,
+            'status' => SupportRequest::STATUS_COMPLETED,
+            'created_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestHistory::class)
+            ->assertSee('Historique')
+            ->assertSee($todayRequest->student->name)
+            ->assertDontSee($oldRequest->student->name)
+            ->assertDontSee($otherClassroomRequest->student->name);
+    }
+
+    public function test_teacher_history_filters_by_period_teacher_and_search(): void
+    {
+        $teacher = User::factory()->teacher()->create(['name' => 'Pierre']);
+        $otherTeacher = User::factory()->teacher()->create(['name' => 'Jean']);
+        $classroom = Classroom::factory()->create();
+        $networkSubject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Reseau',
+        ]);
+        $mathSubject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Math',
+        ]);
+        $oldNetworkRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $networkSubject->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_COMPLETED,
+            'comment' => 'Probleme de reseau',
+            'created_at' => now()->subDays(3),
+        ]);
+        $todayMathRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $mathSubject->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_CANCELLED,
+            'comment' => 'Calcul',
+            'created_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestHistory::class)
+            ->assertSee($todayMathRequest->student->name)
+            ->assertDontSee($oldNetworkRequest->student->name)
+            ->set('period', 'custom')
+            ->set('startDate', now()->subDays(4)->toDateString())
+            ->set('endDate', now()->subDays(2)->toDateString())
+            ->assertSee($oldNetworkRequest->student->name)
+            ->assertDontSee($todayMathRequest->student->name)
+            ->set('period', 'all')
+            ->assertSee($oldNetworkRequest->student->name)
+            ->set('teacherFilter', (string) $otherTeacher->id)
+            ->assertSee($oldNetworkRequest->student->name)
+            ->assertDontSee($todayMathRequest->student->name)
+            ->set('search', 'reseau')
+            ->assertSee($oldNetworkRequest->student->name)
+            ->set('search', 'math')
+            ->assertDontSee($oldNetworkRequest->student->name);
     }
 }
