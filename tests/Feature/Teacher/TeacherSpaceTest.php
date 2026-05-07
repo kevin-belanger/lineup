@@ -30,6 +30,17 @@ class TeacherSpaceTest extends TestCase
         $response->assertRedirect(route('teacher.classroom.edit'));
     }
 
+    public function test_teacher_classroom_choice_shows_teacher_breadcrumb(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this->actingAs($teacher)
+            ->get(route('teacher.classroom.edit'))
+            ->assertOk()
+            ->assertSee('Fil d Ariane')
+            ->assertSee('Enseignant');
+    }
+
     public function test_teacher_can_choose_current_classroom(): void
     {
         $teacher = User::factory()->teacher()->create();
@@ -80,6 +91,22 @@ class TeacherSpaceTest extends TestCase
         $response
             ->assertOk()
             ->assertSessionHas('current_classroom_id', $classroom->id);
+    }
+
+    public function test_teacher_dashboard_shows_current_classroom_breadcrumb(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create(['name' => 'Local 203']);
+
+        $this
+            ->actingAs($teacher)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('teacher.dashboard'))
+            ->assertOk()
+            ->assertSee('Enseignant')
+            ->assertSee('Local 203')
+            ->assertSee(route('teacher.classroom.edit'), false)
+            ->assertDontSee('Changer de local');
     }
 
     public function test_teacher_can_assign_waiting_request_from_current_classroom(): void
@@ -370,7 +397,7 @@ class TeacherSpaceTest extends TestCase
             ->assertDontSee('wire:poll.10s.visible', false);
     }
 
-    public function test_teacher_dashboard_toggles_between_requests_and_history_views(): void
+    public function test_teacher_dashboard_links_to_distinct_history_page(): void
     {
         $teacher = User::factory()->teacher()->create();
         $classroom = Classroom::factory()->create();
@@ -380,20 +407,39 @@ class TeacherSpaceTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(DashboardView::class)
             ->assertSee('Voir l’historique')
+            ->assertSee(route('teacher.history'), false)
             ->assertSee('teacher.my-requests', false)
             ->assertSee('teacher.waiting-queue', false)
-            ->assertDontSee('teacher.request-history', false)
-            ->call('showHistory')
-            ->assertSet('activeView', 'history')
+            ->assertDontSee('teacher.request-history', false);
+    }
+
+    public function test_teacher_history_is_a_distinct_page_for_current_classroom(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create(['name' => 'Local 203']);
+
+        $this
+            ->actingAs($teacher)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('teacher.history'))
+            ->assertOk()
+            ->assertSee('Historique')
+            ->assertSee('Local 203')
             ->assertSee('Retour aux demandes')
+            ->assertSee(route('teacher.classroom.edit'), false)
+            ->assertSee(route('teacher.dashboard'), false)
             ->assertSee('teacher.request-history', false)
             ->assertDontSee('teacher.my-requests', false)
-            ->assertDontSee('teacher.waiting-queue', false)
-            ->call('showRequests')
-            ->assertSet('activeView', 'requests')
-            ->assertSee('Voir l’historique')
-            ->assertSee('teacher.my-requests', false)
-            ->assertSee('teacher.waiting-queue', false);
+            ->assertDontSee('teacher.waiting-queue', false);
+    }
+
+    public function test_teacher_history_redirects_to_classroom_choice_when_no_classroom_is_selected(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this->actingAs($teacher)
+            ->get(route('teacher.history'))
+            ->assertRedirect(route('teacher.classroom.edit'));
     }
 
     public function test_teacher_history_defaults_to_today_and_current_classroom(): void

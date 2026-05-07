@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold leading-tight text-gray-800">
+        <div class="text-sm font-semibold text-gray-800">
             {{ __('Demandes prioritaires') }}
-        </h2>
+        </div>
     </x-slot>
 
     <div class="py-8">
