@@ -148,7 +148,6 @@
                     <div class="flex flex-col gap-2 px-6 py-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">{{ __('Matières') }}</h3>
-                            <p class="mt-1 text-sm text-gray-500">{{ __('Recherche, filtres et pagination des matières.') }}</p>
                         </div>
 
                         <span class="inline-flex w-fit rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
