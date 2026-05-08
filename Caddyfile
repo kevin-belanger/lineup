@@ -1,0 +1,58 @@
+# ============================================
+# Caddy configuration for LineUp
+# ============================================
+#
+# Default configuration: HTTP only on port 80.
+# This is suitable for local development or an intranet server
+# where Let's Encrypt certificates are not available.
+#
+# If you want to use a domain name:
+# - For HTTP only, see Example 1 below.
+# - For HTTPS with automatic Let's Encrypt certificates,
+#   see Example 2 below.
+#
+# Important:
+# Enable only one configuration block at a time.
+# Leave only one site block uncommented in this file.
+#
+
+:80 {
+    reverse_proxy app:80
+}
+
+# --------------------------------------------
+# Example 1: domain name with HTTP only
+# --------------------------------------------
+# Use this option for an internal domain name, intranet DNS,
+# or a local hosts file entry without SSL.
+#
+# To use it:
+# 1. Comment the default :80 block above.
+# 2. Uncomment the block below.
+# 3. Replace lineup.intranet with your own internal domain name.
+#
+# lineup.intranet {
+#     reverse_proxy app:80
+# }
+
+# --------------------------------------------
+# Example 2: public domain name with HTTPS
+# --------------------------------------------
+# Use this option for a public domain name with automatic SSL.
+#
+# Caddy will automatically request and renew a Let's Encrypt
+# certificate for the domain.
+#
+# Requirements:
+# - The domain must point to this server's public IP address.
+# - Ports 80 and 443 must be open and reachable from the Internet.
+# - The server must be publicly accessible.
+#
+# To use it:
+# 1. Comment the default :80 block above.
+# 2. Uncomment the block below.
+# 3. Replace lineup.example.com with your own public domain name.
+#
+# lineup.example.com {
+#     reverse_proxy app:80
+# }

@@ -8,8 +8,9 @@ services:
         image: 'sail-8.5/app'
         extra_hosts:
             - 'host.docker.internal:host-gateway'
+        expose:
+            - "80"
         ports:
-            - '${APP_PORT:-80}:80'
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
             WWWUSER: '${WWWUSER}'
@@ -24,6 +25,7 @@ services:
         depends_on:
             - mysql
             - redis
+
     scheduler:
         build:
             context: './vendor/laravel/sail/runtimes/8.4'
@@ -46,6 +48,22 @@ services:
         depends_on:
             - mysql
             - redis
+
+    caddy:
+        image: 'caddy:alpine'
+        restart: unless-stopped
+        ports:
+            - '${HTTP_PORT:-80}:80'
+            - '${HTTPS_PORT:-443}:443'
+        volumes:
+            - './Caddyfile:/etc/caddy/Caddyfile'
+            - 'caddy-data:/data'
+            - 'caddy-config:/config'
+        networks:
+            - sail
+        depends_on:
+            - app
+
     mysql:
         image: 'mysql:8.4'
         ports:
@@ -71,6 +89,7 @@ services:
                 - '-p${DB_PASSWORD}'
             retries: 3
             timeout: 5s
+
     redis:
         image: 'redis:alpine'
         ports:
@@ -86,11 +105,17 @@ services:
                 - ping
             retries: 3
             timeout: 5s
+
 networks:
     sail:
         driver: bridge
+
 volumes:
     sail-mysql:
         driver: local
     sail-redis:
+        driver: local
+    caddy-data:
+        driver: local
+    caddy-config:
         driver: local
