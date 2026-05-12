@@ -6,17 +6,17 @@
     <div class="py-12">
         <div class="mx-auto max-w-3xl sm:px-6 lg:px-8">
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-8 p-6">
+                <form method="POST" action="{{ route('admin.settings.update') }}">
                     @csrf
                     @method('PATCH')
 
-                    <section>
+                    <section class="p-6">
                         <x-input-label for="display_name" :value="__('Application name')" />
                         <x-text-input id="display_name" name="display_name" type="text" class="mt-1 block w-full" :value="old('display_name', $displayName)" required maxlength="100" />
                         <x-input-error :messages="$errors->get('display_name')" class="mt-2" />
                     </section>
 
-                    <section class="border-t border-gray-200 pt-6">
+                    <section class="border-t border-gray-200 p-6">
                         <x-input-label for="default_locale" :value="__('Default language')" />
                         <select id="default_locale" name="default_locale" required class="mt-1 block w-48 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             @foreach ($availableLocales as $locale)
@@ -28,7 +28,7 @@
                         <x-input-error :messages="$errors->get('default_locale')" class="mt-2" />
                     </section>
 
-                    <section class="border-t border-gray-200 pt-6">
+                    <section class="border-t border-gray-200 p-6">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">{{ __('Application version') }}</h3>
                             <dl class="mt-3 space-y-2 text-sm">
@@ -68,7 +68,7 @@
                         </div>
                     </section>
 
-                    <section class="border-t border-gray-200 pt-6">
+                    <section class="border-t border-gray-200 p-6">
                         <div>
                             <x-input-label for="timezone" :value="__('Application time zone')" />
                             <p class="mt-1 text-sm text-gray-600">
@@ -86,7 +86,7 @@
                         <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
                     </section>
 
-                    <section class="border-t border-gray-200 pt-6">
+                    <section class="border-t border-gray-200 p-6">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">{{ __('Automatic request cancellation') }}</h3>
                             <p class="mt-1 text-sm text-gray-600">
@@ -123,28 +123,30 @@
                         </div>
                     </section>
 
-                    <x-primary-button>
-                        {{ __('Save') }}
-                    </x-primary-button>
+                    <section class="border-t border-gray-200 p-6">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Database backup') }}</h3>
+                            <p class="mt-1 text-sm text-gray-600">
+                                {{ __('Download a SQL dump of the current application database. Keep this file private because it may contain sensitive data.') }}
+                            </p>
+                        </div>
+
+                        <div class="mt-4">
+                            <a
+                                href="{{ route('admin.database.backup.download') }}"
+                                class="text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            >
+                                {{ __('Download database backup') }}
+                            </a>
+                        </div>
+                    </section>
+
+                    <section class="border-t border-gray-200 bg-gray-50 p-6">
+                        <x-primary-button>
+                            {{ __('Save') }}
+                        </x-primary-button>
+                    </section>
                 </form>
-
-                <section class="border-t border-gray-200 p-6">
-                    <div>
-                        <h3 class="text-base font-semibold text-gray-900">{{ __('Database backup') }}</h3>
-                        <p class="mt-1 text-sm text-gray-600">
-                            {{ __('Download a SQL dump of the current application database. Keep this file private because it may contain sensitive data.') }}
-                        </p>
-                    </div>
-
-                    <div class="mt-5">
-                        <a
-                            href="{{ route('admin.database.backup.download') }}"
-                            class="inline-flex items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-gray-900"
-                        >
-                            {{ __('Download database backup') }}
-                        </a>
-                    </div>
-                </section>
             </section>
         </div>
     </div>
