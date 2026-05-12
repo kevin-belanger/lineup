@@ -87,6 +87,7 @@ class MyRequests extends Component
             return;
         }
 
+        $this->refreshKey++;
         $this->toast('success', $successMessage);
         app(SupportRequestChangeMarker::class)->touch($classroomId);
         DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));

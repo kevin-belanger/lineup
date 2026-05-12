@@ -187,6 +187,45 @@ class TeacherSpaceTest extends TestCase
             ->assertSee($waitingRequest->student->name);
     }
 
+    public function test_completing_priority_request_keeps_regular_my_requests_visible(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $priorityRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'is_priority' => true,
+            'priority_requested_by_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'comment' => 'Priorite a terminer',
+            'assigned_at' => now()->subMinutes(10),
+            'created_at' => now()->subMinutes(15),
+        ]);
+        $regularRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(5),
+            'created_at' => now()->subMinutes(10),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSee($priorityRequest->comment)
+            ->assertSee($regularRequest->student->name)
+            ->call('complete', $priorityRequest->id)
+            ->assertSet('refreshKey', 1)
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated')
+            ->assertDontSee($priorityRequest->comment)
+            ->assertSee($regularRequest->student->name);
+
+        $this->assertSame(SupportRequest::STATUS_COMPLETED, $priorityRequest->refresh()->status);
+        $this->assertSame(SupportRequest::STATUS_ASSIGNED, $regularRequest->refresh()->status);
+    }
+
     public function test_teacher_assignment_uses_conditional_update_against_double_assignment(): void
     {
         $teacher = User::factory()->teacher()->create();
