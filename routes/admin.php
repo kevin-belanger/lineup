@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ClassroomController;
+use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\UserController;
@@ -33,4 +34,5 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin'])
 
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::get('/settings/database-backup', [DatabaseBackupController::class, 'download'])->name('database.backup.download');
     });
