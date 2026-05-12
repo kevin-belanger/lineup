@@ -11,6 +11,8 @@ use Livewire\Component;
 
 class MyRequests extends Component
 {
+    public int $refreshKey = 0;
+
     public function complete(int $supportRequestId): void
     {
         $this->updateAssignedRequest($supportRequestId, [
@@ -41,7 +43,7 @@ class MyRequests extends Component
     #[On('teacher-requests-updated')]
     public function refreshRequests(): void
     {
-        //
+        $this->refreshKey++;
     }
 
     public function render(): View

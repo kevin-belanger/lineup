@@ -7,43 +7,52 @@
         <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-800">{{ $requests->count() }}</span>
     </div>
 
-    <div class="space-y-3">
+    <div wire:key="my-requests-list-{{ $refreshKey }}" class="space-y-3">
         @forelse ($requests as $supportRequest)
             @php
                 $cardClass = match ($supportRequest->status) {
                     \App\Models\SupportRequest::STATUS_READY => 'border-amber-300 bg-amber-50 shadow-md ring-1 ring-amber-200',
-                    \App\Models\SupportRequest::STATUS_PAUSED => 'border-sky-200 bg-sky-50 shadow-sm',
+                    \App\Models\SupportRequest::STATUS_PAUSED => $supportRequest->is_priority ? 'border-rose-200 bg-rose-50 shadow-sm ring-1 ring-rose-100' : 'border-indigo-200 bg-white shadow-sm',
                     default => $supportRequest->is_priority ? 'border-rose-200 bg-rose-50 shadow-sm ring-1 ring-rose-100' : 'border-indigo-200 bg-white shadow-sm',
                 };
 
                 $badgeClass = match ($supportRequest->status) {
                     \App\Models\SupportRequest::STATUS_READY => 'bg-amber-200 text-amber-900',
-                    \App\Models\SupportRequest::STATUS_PAUSED => 'bg-sky-100 text-sky-800',
+                    \App\Models\SupportRequest::STATUS_PAUSED => 'bg-amber-100 text-amber-800',
                     default => $supportRequest->is_priority ? 'bg-rose-100 text-rose-800' : 'bg-indigo-100 text-indigo-800',
                 };
+
+                $priorityBadgeClass = 'bg-rose-100 text-rose-800';
+
+                $completeButtonClass = 'bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500';
+
+                $completeMenuClass = 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500';
+
+                $pausedCardClass = $supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED ? 'opacity-60' : '';
             @endphp
 
             @if ($supportRequest->is_priority)
-                <article wire:key="my-request-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4">
+                <article wire:key="my-request-priority-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
                     <div class="space-y-3">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $badgeClass }}">{{ __('Prioritaire') }}</span>
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $priorityBadgeClass }}">{{ __('Prioritaire') }}</span>
                                     <span class="font-semibold text-gray-950">{{ __('Envoyee par') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}</span>
                                 </div>
                                 <div class="mt-2 text-sm text-gray-700">{{ $supportRequest->comment }}</div>
                             </div>
+
+                            <button type="button" wire:click="complete({{ $supportRequest->id }})" wire:loading.attr="disabled" wire:target="complete({{ $supportRequest->id }})" class="inline-flex min-h-12 w-32 shrink-0 items-center justify-center self-end rounded-md border border-transparent px-3 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-widest transition focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 {{ $completeButtonClass }}">
+                                {{ __('Terminer') }}
+                            </button>
                         </div>
 
                         <div class="flex flex-wrap gap-2 text-sm">
+                            @if ($supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED)
+                                <span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">{{ __('En pause') }}</span>
+                            @endif
                             <span class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100">{{ __('Depuis') }} {{ ($supportRequest->assigned_at ?? $supportRequest->created_at)->diffForHumans(null, true) }}</span>
-                        </div>
-
-                        <div class="grid gap-2 sm:grid-cols-1">
-                            <button type="button" wire:click="complete({{ $supportRequest->id }})" wire:loading.attr="disabled" wire:target="complete({{ $supportRequest->id }})" class="inline-flex justify-center rounded-md border border-transparent bg-gray-800 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 disabled:opacity-50">
-                                {{ __('Terminé') }}
-                            </button>
                         </div>
                     </div>
                 </article>
@@ -53,22 +62,28 @@
             @php
                 $cardClass = match ($supportRequest->status) {
                     \App\Models\SupportRequest::STATUS_READY => 'border-amber-300 bg-amber-50 shadow-md ring-1 ring-amber-200',
-                    \App\Models\SupportRequest::STATUS_PAUSED => 'border-sky-200 bg-sky-50 shadow-sm',
+                    \App\Models\SupportRequest::STATUS_PAUSED => 'border-indigo-200 bg-white shadow-sm',
                     default => 'border-indigo-200 bg-white shadow-sm',
                 };
 
                 $badgeClass = match ($supportRequest->status) {
                     \App\Models\SupportRequest::STATUS_READY => 'bg-amber-200 text-amber-900',
-                    \App\Models\SupportRequest::STATUS_PAUSED => 'bg-sky-100 text-sky-800',
+                    \App\Models\SupportRequest::STATUS_PAUSED => 'bg-amber-100 text-amber-800',
                     default => 'bg-indigo-100 text-indigo-800',
                 };
+
+                $completeButtonClass = 'bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500';
+
+                $completeMenuClass = 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500';
+
+                $pausedCardClass = $supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED ? 'opacity-60' : '';
             @endphp
 
             @php
                 $subjectUrl = $supportRequest->subjectUrl();
             @endphp
 
-            <article wire:key="my-request-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4">
+            <article wire:key="my-request-regular-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="min-w-0 flex-1 space-y-2">
                         <div class="px-2">
@@ -113,14 +128,14 @@
                                 wire:click="complete({{ $supportRequest->id }})"
                                 wire:loading.attr="disabled"
                                 wire:target="complete({{ $supportRequest->id }})"
-                                class="inline-flex w-32 items-center justify-center rounded-l-md border border-transparent bg-gray-800 px-3 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-widest text-white transition hover:bg-gray-700 focus:z-10 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 disabled:opacity-50"
+                                class="inline-flex min-h-12 w-32 items-center justify-center rounded-l-md border border-transparent px-3 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-widest transition focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 {{ $completeButtonClass }}"
                             >
-                                {{ __('Terminé') }}
+                                {{ __('Terminer') }}
                             </button>
 
                             <details class="js-my-requests-action-menu relative flex">
                                 <summary
-                                    class="flex h-full cursor-pointer list-none items-center justify-center rounded-r-md border-l border-gray-700 bg-gray-800 px-2 text-white transition hover:bg-gray-700 focus:z-10 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2"
+                                    class="flex h-full cursor-pointer list-none items-center justify-center rounded-r-md border-l px-2 transition focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $completeMenuClass }}"
                                     aria-label="{{ __('Ouvrir le menu des actions') }}"
                                     aria-haspopup="true"
                                 >
@@ -161,9 +176,11 @@
 
                 <div class="mt-3 border-t border-gray-100 px-2 pt-2 text-sm leading-snug text-gray-700">
                     <div class="float-right mb-1 ml-3 flex flex-wrap justify-end gap-1.5 text-xs">
-                        <span class="rounded-full px-2.5 py-0.5 font-medium {{ $badgeClass }}">
-                            {{ $supportRequest->status === \App\Models\SupportRequest::STATUS_READY ? __('Prêt à revoir') : ($statusLabels[$supportRequest->status] ?? $supportRequest->status) }}
-                        </span>
+                        @if ($supportRequest->status !== \App\Models\SupportRequest::STATUS_ASSIGNED)
+                            <span class="rounded-full px-2.5 py-0.5 font-medium {{ $badgeClass }}">
+                                {{ $supportRequest->status === \App\Models\SupportRequest::STATUS_READY ? __('Prêt à revoir') : ($statusLabels[$supportRequest->status] ?? $supportRequest->status) }}
+                            </span>
+                        @endif
                         <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-indigo-700 ring-1 ring-indigo-100">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
                         <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-gray-700 ring-1 ring-gray-200">{{ __('Depuis') }} {{ ($supportRequest->assigned_at ?? $supportRequest->created_at)->diffForHumans(null, true) }}</span>
                     </div>

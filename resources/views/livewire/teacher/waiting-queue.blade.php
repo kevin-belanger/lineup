@@ -92,8 +92,7 @@
                                     class="inline-flex uppercase w-32 items-center justify-center rounded-l-md border border-transparent bg-indigo-600 px-3 py-2 text-center text-xs font-semibold leading-tight text-white transition hover:bg-indigo-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
                                 >
                                     <span class="block leading-tight">
-                                        {{ __('Prendre en') }}<br>
-                                        {{ __('charge') }}
+                                        {{ __('Prendre en charge') }}
                                     </span>
                                 </button>
 

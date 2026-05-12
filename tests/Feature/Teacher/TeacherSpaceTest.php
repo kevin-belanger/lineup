@@ -135,6 +135,55 @@ class TeacherSpaceTest extends TestCase
         $this->assertSame(1, app(SupportRequestChangeMarker::class)->current($classroom->id));
     }
 
+    public function test_my_requests_refresh_keeps_priority_and_regular_requests_after_assignment(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $priorityRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'is_priority' => true,
+            'priority_requested_by_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'comment' => 'Assistance prioritaire',
+            'assigned_at' => now()->subMinutes(20),
+            'created_at' => now()->subMinutes(30),
+        ]);
+        $existingRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(10),
+            'created_at' => now()->subMinutes(20),
+        ]);
+        $waitingRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+            'created_at' => now()->subMinutes(5),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        $myRequests = Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSee($priorityRequest->comment)
+            ->assertSee($existingRequest->student->name)
+            ->assertDontSee($waitingRequest->student->name);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->call('assign', $waitingRequest->id)
+            ->assertDispatched('teacher-requests-updated');
+
+        $myRequests
+            ->call('refreshRequests')
+            ->assertSet('refreshKey', 1)
+            ->assertSee($priorityRequest->comment)
+            ->assertSee($existingRequest->student->name)
+            ->assertSee($waitingRequest->student->name);
+    }
+
     public function test_teacher_assignment_uses_conditional_update_against_double_assignment(): void
     {
         $teacher = User::factory()->teacher()->create();
@@ -410,7 +459,11 @@ class TeacherSpaceTest extends TestCase
                 $olderPaused->student->name,
                 $newerAssigned->student->name,
             ])
+            ->assertDontSee('Attribuee')
             ->assertSee('En pause')
+            ->assertSee('bg-amber-100', false)
+            ->assertSee('opacity-60', false)
+            ->assertSee('bg-emerald-600', false)
             ->assertSee('Mettre en pause');
 
         session(['current_classroom_id' => $pausedOnlyClassroom->id]);
