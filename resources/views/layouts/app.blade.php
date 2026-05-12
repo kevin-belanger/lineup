@@ -17,7 +17,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
+        <div class="flex min-h-screen flex-col bg-gray-100">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
@@ -30,9 +30,21 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main class="flex-1">
                 {{ $slot }}
             </main>
+
+            <footer class="py-4 text-center text-xs text-gray-500">
+                <a
+                    href="https://github.com/kevin-belanger/lineup"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="hover:underline hover:text-gray-700"
+                >
+                    Propulsé par LineUp · v{{ config('app.version') }}
+                </a>
+            </footer>
+
         </div>
         <x-toast-stack />
         @livewireScripts
