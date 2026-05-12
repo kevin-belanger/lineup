@@ -40,6 +40,10 @@
 
         <div class="space-y-3">
             @forelse ($requests as $supportRequest)
+                @php
+                    $durationMinutes = intdiv((int) $supportRequest->created_at->diffInSeconds(now(), true), 60);
+                @endphp
+
                 <article wire:key="sent-priority-request-{{ $supportRequest->id }}" class="rounded-lg border border-rose-200 bg-rose-50/70 p-4 shadow-sm">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0 space-y-2">
@@ -52,7 +56,12 @@
 
                             <div class="flex flex-wrap gap-2 text-xs font-medium">
                                 <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ $statusLabels[$supportRequest->status] ?? $supportRequest->status }}</span>
-                                <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ __('Depuis') }} {{ $supportRequest->created_at->diffForHumans(null, true) }}</span>
+                                <span
+                                    class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100"
+                                    data-live-duration
+                                    data-live-duration-prefix="{{ __('Depuis') }}"
+                                    data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
+                                >{{ __('Depuis') }} {{ $durationMinutes }} min</span>
                                 @if ($supportRequest->assignedTeacher)
                                     <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ __('Pris par') }} {{ $supportRequest->assignedTeacher->name }}</span>
                                 @endif

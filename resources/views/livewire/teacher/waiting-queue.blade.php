@@ -9,6 +9,10 @@
 
     <div class="space-y-4">
         @forelse ($requests as $supportRequest)
+            @php
+                $waitMinutes = intdiv((int) $supportRequest->created_at->diffInSeconds(now(), true), 60);
+            @endphp
+
             @if ($supportRequest->is_priority)
                 <article wire:key="waiting-request-{{ $supportRequest->id }}" class="rounded-lg border border-rose-200 bg-rose-50 p-5 shadow-sm ring-1 ring-rose-100">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -21,7 +25,12 @@
                             <p class="text-sm text-gray-800">{{ $supportRequest->comment }}</p>
 
                             <div class="flex flex-wrap gap-2 text-sm">
-                                <span class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100">{{ __('Attente') }} {{ $supportRequest->created_at->diffForHumans(null, true) }}</span>
+                                <span
+                                    class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100"
+                                    data-live-duration
+                                    data-live-duration-prefix="{{ __('Attente') }}"
+                                    data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
+                                >{{ __('Attente') }} {{ $waitMinutes }} min</span>
                             </div>
                         </div>
 
@@ -138,7 +147,12 @@
                     <div class="mt-3 border-t border-gray-100 px-2 pt-2 text-sm leading-snug text-gray-700">
                         <div class="float-right mb-1 ml-3 flex flex-wrap justify-end gap-1.5 text-xs">
                             <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
-                            <span class="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700">{{ __('Attente') }} {{ $supportRequest->created_at->diffForHumans(null, true) }}</span>
+                            <span
+                                class="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700"
+                                data-live-duration
+                                data-live-duration-prefix="{{ __('Attente') }}"
+                                data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
+                            >{{ __('Attente') }} {{ $waitMinutes }} min</span>
                         </div>
 
                         @if ($supportRequest->comment)

@@ -77,11 +77,14 @@ class PriorityRequestsTest extends TestCase
             'type' => null,
             'status' => SupportRequest::STATUS_WAITING,
             'comment' => 'Assistance en salle d’évaluation',
+            'created_at' => now()->subMinutes(15),
         ]);
 
         $component = Livewire::actingAs($requester)
             ->test(PriorityRequests::class)
             ->assertSee('Assistance en salle d’évaluation')
+            ->assertSee('Depuis 15 min')
+            ->assertDontSee('minutes')
             ->assertDontSee('Pris par Jean');
 
         $priorityRequest->update([

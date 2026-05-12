@@ -29,6 +29,9 @@
                 $completeMenuClass = 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500';
 
                 $pausedCardClass = $supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED ? 'opacity-60' : '';
+
+                $durationStartedAt = $supportRequest->assigned_at ?? $supportRequest->created_at;
+                $durationMinutes = intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
             @endphp
 
             @if ($supportRequest->is_priority)
@@ -52,7 +55,12 @@
                             @if ($supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED)
                                 <span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">{{ __('En pause') }}</span>
                             @endif
-                            <span class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100">{{ __('Depuis') }} {{ ($supportRequest->assigned_at ?? $supportRequest->created_at)->diffForHumans(null, true) }}</span>
+                            <span
+                                class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100"
+                                data-live-duration
+                                data-live-duration-prefix="{{ __('Depuis') }}"
+                                data-started-at="{{ $durationStartedAt->toIso8601String() }}"
+                            >{{ __('Depuis') }} {{ $durationMinutes }} min</span>
                         </div>
                     </div>
                 </article>
@@ -77,6 +85,9 @@
                 $completeMenuClass = 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500';
 
                 $pausedCardClass = $supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED ? 'opacity-60' : '';
+
+                $durationStartedAt = $supportRequest->assigned_at ?? $supportRequest->created_at;
+                $durationMinutes = intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
             @endphp
 
             @php
@@ -182,7 +193,12 @@
                             </span>
                         @endif
                         <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-indigo-700 ring-1 ring-indigo-100">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
-                        <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-gray-700 ring-1 ring-gray-200">{{ __('Depuis') }} {{ ($supportRequest->assigned_at ?? $supportRequest->created_at)->diffForHumans(null, true) }}</span>
+                        <span
+                            class="rounded-full bg-white px-2.5 py-0.5 font-medium text-gray-700 ring-1 ring-gray-200"
+                            data-live-duration
+                            data-live-duration-prefix="{{ __('Depuis') }}"
+                            data-started-at="{{ $durationStartedAt->toIso8601String() }}"
+                        >{{ __('Depuis') }} {{ $durationMinutes }} min</span>
                     </div>
 
                     @if ($supportRequest->comment)
