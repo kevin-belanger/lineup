@@ -425,23 +425,33 @@ class TeacherSpaceTest extends TestCase
         $this->assertSame(SupportRequest::STATUS_ASSIGNED, $otherClassroomRequest->refresh()->status);
     }
 
-    public function test_teacher_my_requests_are_ordered_by_creation_date_and_hide_pause_on_paused_requests(): void
+    public function test_teacher_my_requests_are_ordered_by_priority_then_assignment_date_and_hide_pause_on_paused_requests(): void
     {
         $teacher = User::factory()->teacher()->create();
         $classroom = Classroom::factory()->create();
         $pausedOnlyClassroom = Classroom::factory()->create();
-        $newerAssigned = SupportRequest::factory()->create([
+        $olderAssigned = SupportRequest::factory()->create([
             'classroom_id' => $classroom->id,
             'assigned_teacher_id' => $teacher->id,
             'status' => SupportRequest::STATUS_ASSIGNED,
-            'assigned_at' => now(),
+            'assigned_at' => now()->subMinutes(30),
             'created_at' => now()->subMinutes(5),
+        ]);
+        $priorityRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'is_priority' => true,
+            'priority_requested_by_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'comment' => 'Priorite recente',
+            'assigned_at' => now()->subMinutes(10),
+            'created_at' => now()->subMinutes(10),
         ]);
         $olderPaused = SupportRequest::factory()->create([
             'classroom_id' => $classroom->id,
             'assigned_teacher_id' => $teacher->id,
             'status' => SupportRequest::STATUS_PAUSED,
-            'assigned_at' => now()->subMinutes(20),
+            'assigned_at' => now(),
             'created_at' => now()->subMinutes(20),
         ]);
         SupportRequest::factory()->create([
@@ -456,8 +466,9 @@ class TeacherSpaceTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(MyRequests::class)
             ->assertSeeInOrder([
+                $priorityRequest->comment,
                 $olderPaused->student->name,
-                $newerAssigned->student->name,
+                $olderAssigned->student->name,
             ])
             ->assertDontSee('Attribuee')
             ->assertSee('En pause')

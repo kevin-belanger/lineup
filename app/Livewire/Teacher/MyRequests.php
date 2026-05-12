@@ -54,7 +54,10 @@ class MyRequests extends Component
                 ->where('classroom_id', $this->currentClassroomId())
                 ->where('assigned_teacher_id', auth()->id())
                 ->whereIn('status', SupportRequest::teacherActiveStatuses())
-                ->oldest('created_at')
+                ->orderByDesc('is_priority')
+                ->orderByDesc('assigned_at')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->get(),
             'statusLabels' => SupportRequest::statusLabels(),
             'typeLabels' => SupportRequest::typeLabels(),
