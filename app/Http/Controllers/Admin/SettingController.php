@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\ApplicationSettings;
+use App\Services\ApplicationUpdateChecker;
 use App\Services\LocaleManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,12 +13,16 @@ use Illuminate\View\View;
 
 class SettingController extends Controller
 {
-    public function edit(ApplicationSettings $settings, LocaleManager $localeManager): View
-    {
+    public function edit(
+        ApplicationSettings $settings,
+        LocaleManager $localeManager,
+        ApplicationUpdateChecker $updateChecker,
+    ): View {
         return view('admin.settings.edit', [
             'displayName' => $settings->displayName(),
             'defaultLocale' => $settings->defaultLocale(),
             'availableLocales' => $localeManager->availableLocales(),
+            'updateStatus' => $updateChecker->check(),
             'timezone' => $settings->timezone(),
             'timezones' => ApplicationSettings::AVAILABLE_TIMEZONES,
             'autoCancelRequestsEnabled' => $settings->autoCancelRequestsEnabled(),

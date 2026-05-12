@@ -239,23 +239,48 @@ docker compose exec app php artisan migrate --force
 
 ## Updating the application
 
-Pull the latest code:
+LineUp production updates are deployed through Git version tags, not through every commit on the `main` branch.
 
-```bash
-git pull
+Official release tags must use this format:
+
+```text
+vX.X.X
 ```
 
-Rebuild and restart:
+Examples:
 
-```bash
-docker compose up -d --build
+```text
+v0.0.1
+v0.1.0
+v1.0.0
 ```
 
-Run migrations:
+Tags may also include an optional suffix after the version number, for example:
+
+```text
+v0.1.0-beta
+v1.0.0-rc.1
+```
+
+To update an existing production installation, connect to the server, go to the project directory, and run:
 
 ```bash
-docker compose exec app php artisan migrate --force
+./update.sh
 ```
+
+The update script will:
+
+- fetch the latest Git tags;
+- find the latest valid version tag;
+- switch the project to that version;
+- update the installed version in `.env`;
+- rebuild and restart the Docker containers;
+- run database migrations;
+- refresh Laravel caches.
+
+The script does not delete Docker volumes. Application data, uploaded files, Redis data, Caddy data, and the MySQL database are preserved.
+
+You can also verify the installed application version from the admin settings page.
 
 ## Development with Laravel Sail
 
@@ -304,3 +329,4 @@ Do not run `php artisan key:generate` manually inside the production container t
 In this Docker setup, the `.env` file belongs to the server and is not copied into the Docker image. The `APP_KEY` value should be generated directly in the server `.env` file before starting the containers.
 
 If the database is new, always run migrations before using the application. The application may fail with a server error if required database tables such as `cache`, `sessions`, or `jobs` do not exist yet.
+

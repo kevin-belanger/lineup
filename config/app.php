@@ -15,7 +15,19 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
-    'version' => '1.0.0',
+    'version' => env('APP_VERSION', 'dev'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Repository URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL points to the public source repository displayed by the
+    | application when referencing project information or credits.
+    |
+    */
+
+    'repository_url' => env('APP_REPOSITORY_URL', 'https://github.com/kevin-belanger/lineup'),
 
     /*
     |--------------------------------------------------------------------------

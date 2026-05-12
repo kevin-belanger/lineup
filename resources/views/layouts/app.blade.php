@@ -36,12 +36,12 @@
 
             <footer class="py-4 text-center text-xs text-gray-500">
                 <a
-                    href="https://github.com/kevin-belanger/lineup"
+                    href="{{ config('app.repository_url') }}"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="hover:underline hover:text-gray-700"
                 >
-                    Powered by LineUp · v{{ config('app.version') }}
+                    Powered by LineUp · {{ config('app.version') }}
                 </a>
             </footer>
 

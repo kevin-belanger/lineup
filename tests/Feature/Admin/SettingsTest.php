@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\User;
 use App\Services\ApplicationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class SettingsTest extends TestCase
@@ -13,6 +14,12 @@ class SettingsTest extends TestCase
 
     public function test_admin_can_update_application_display_name(): void
     {
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([
+                ['name' => 'v0.0.1'],
+            ]),
+        ]);
+
         $admin = User::factory()->admin()->create([
             'is_student' => false,
             'is_teacher' => false,
@@ -43,8 +50,113 @@ class SettingsTest extends TestCase
             ->assertOk()
             ->assertSee('Atelier Algo')
             ->assertSee('Default language')
+            ->assertSee('Application version')
             ->assertSee('America/Vancouver')
             ->assertSee('16:45');
+    }
+
+    public function test_admin_settings_show_available_application_update(): void
+    {
+        config([
+            'app.version' => 'v0.0.1',
+            'app.repository_url' => 'https://github.com/kevin-belanger/lineup',
+        ]);
+
+        Http::fake([
+            'api.github.com/repos/kevin-belanger/lineup/tags*' => Http::response([
+                ['name' => 'not-a-version'],
+                ['name' => 'v0.1.0-beta'],
+                ['name' => 'v0.0.10'],
+                ['name' => 'v0.0.2'],
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('Application version')
+            ->assertSee('Installed version')
+            ->assertSee('v0.0.1')
+            ->assertSee('Latest available version')
+            ->assertSee('v0.1.0-beta')
+            ->assertSee('A newer version is available.')
+            ->assertSee('Run update.sh on the server to update the application.')
+            ->assertSee(config('app.repository_url').'#readme', false);
+    }
+
+    public function test_admin_settings_show_up_to_date_application_status(): void
+    {
+        config([
+            'app.version' => 'v0.0.1',
+            'app.repository_url' => 'https://github.com/kevin-belanger/lineup',
+        ]);
+
+        Http::fake([
+            'api.github.com/repos/kevin-belanger/lineup/tags*' => Http::response([
+                ['name' => 'v0.0.1'],
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('The application is up to date.');
+    }
+
+    public function test_admin_settings_do_not_crash_when_update_check_fails(): void
+    {
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([], 500),
+        ]);
+
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('Unable to check for updates at this time.');
+    }
+
+    public function test_admin_settings_handle_non_version_installed_value(): void
+    {
+        config([
+            'app.version' => 'dev',
+            'app.repository_url' => 'https://github.com/kevin-belanger/lineup',
+        ]);
+
+        Http::fake([
+            'api.github.com/repos/kevin-belanger/lineup/tags*' => Http::response([
+                ['name' => 'v0.0.1'],
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('dev')
+            ->assertSee('Unable to determine whether this installation is up to date.');
     }
 
     public function test_application_display_name_is_required(): void

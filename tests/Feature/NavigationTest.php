@@ -5,11 +5,23 @@ namespace Tests\Feature;
 use App\Models\Classroom;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class NavigationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([
+                ['name' => 'v0.0.1'],
+            ]),
+        ]);
+    }
 
     public function test_navigation_hides_dashboard_and_admin_menu_for_non_admin_users(): void
     {

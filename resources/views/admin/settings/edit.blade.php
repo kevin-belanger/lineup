@@ -30,9 +30,49 @@
 
                     <section class="border-t border-gray-200 pt-6">
                         <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Application version') }}</h3>
+                            <dl class="mt-3 space-y-2 text-sm">
+                                <div class="flex justify-between gap-4">
+                                    <dt class="text-gray-600">{{ __('Installed version') }}</dt>
+                                    <dd class="font-medium text-gray-900">{{ $updateStatus->installedVersion }}</dd>
+                                </div>
+
+                                @if ($updateStatus->latestVersion !== null)
+                                    <div class="flex justify-between gap-4">
+                                        <dt class="text-gray-600">{{ __('Latest available version') }}</dt>
+                                        <dd class="font-medium text-gray-900">{{ $updateStatus->latestVersion }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
+                        </div>
+
+                        <div class="mt-4 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                            @if (! $updateStatus->checked)
+                                <p>{{ __('Unable to check for updates at this time.') }}</p>
+                            @elseif (! $updateStatus->comparisonAvailable)
+                                <p>{{ __('Unable to determine whether this installation is up to date.') }}</p>
+                            @elseif ($updateStatus->updateAvailable)
+                                <p class="font-medium text-gray-900">{{ __('A newer version is available.') }}</p>
+                                <p class="mt-1">{{ __('Run update.sh on the server to update the application.') }}</p>
+                                <a
+                                    href="{{ rtrim(config('app.repository_url'), '/') }}#updating-the-application"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="mt-2 inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
+                                >
+                                    {{ __('Read the update procedure') }}
+                                </a>
+                            @else
+                                <p>{{ __('The application is up to date.') }}</p>
+                            @endif
+                        </div>
+                    </section>
+
+                    <section class="border-t border-gray-200 pt-6">
+                        <div>
                             <x-input-label for="timezone" :value="__('Application time zone')" />
                             <p class="mt-1 text-sm text-gray-600">
-                                This time zone is used for scheduled tasks, such as automatically cancelling requests at the end of the day.
+                                {{ __('This time zone is used for scheduled tasks, such as automatically cancelling requests at the end of the day.') }}
                             </p>
                         </div>
 
@@ -48,9 +88,9 @@
 
                     <section class="border-t border-gray-200 pt-6">
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900">Automatic request cancellation</h3>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Automatic request cancellation') }}</h3>
                             <p class="mt-1 text-sm text-gray-600">
-                                At the selected time, all requests that are still waiting or taken will be cancelled automatically. Completed or already cancelled requests will not be changed.
+                                {{ __('At the selected time, all requests that are still waiting or taken will be cancelled automatically. Completed or already cancelled requests will not be changed.') }}
                             </p>
                         </div>
 
@@ -66,8 +106,8 @@
                                     class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                                 >
                                 <span>
-                                    <span class="block text-sm font-medium text-gray-900">Automatically cancel active requests at the end of the day</span>
-                                    <span class="block text-sm text-gray-600">If this option is disabled, no automatic cancellation will be performed.</span>
+                                    <span class="block text-sm font-medium text-gray-900">{{ __('Automatically cancel active requests at the end of the day') }}</span>
+                                    <span class="block text-sm text-gray-600">{{ __('If this option is disabled, no automatic cancellation will be performed.') }}</span>
                                 </span>
                             </label>
                             <x-input-error :messages="$errors->get('auto_cancel_requests_enabled')" class="mt-2" />
@@ -76,7 +116,7 @@
                                 <x-input-label for="auto_cancel_requests_time" :value="__('Automatic cancellation time')" />
                                 <x-text-input id="auto_cancel_requests_time" name="auto_cancel_requests_time" type="time" class="mt-1 block w-48" :value="old('auto_cancel_requests_time', $autoCancelRequestsTime)" />
                                 <p class="mt-1 text-sm text-gray-600">
-                                    This time uses the application time zone configured above.
+                                    {{ __('This time uses the application time zone configured above.') }}
                                 </p>
                                 <x-input-error :messages="$errors->get('auto_cancel_requests_time')" class="mt-2" />
                             </div>
