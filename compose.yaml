@@ -1,86 +1,72 @@
 services:
     app:
         build:
-            context: './vendor/laravel/sail/runtimes/8.4'
+            context: .
             dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.5/app'
-        extra_hosts:
-            - 'host.docker.internal:host-gateway'
+        image: lineup-app:latest
+        restart: unless-stopped
+        env_file:
+            - .env
         expose:
             - "80"
-        ports:
-            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
         volumes:
-            - '.:/var/www/html'
+            - laravel-storage:/var/www/html/storage
         networks:
-            - sail
+            - lineup
         depends_on:
-            - mysql
-            - redis
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
 
     scheduler:
+        image: lineup-app:latest
         build:
-            context: './vendor/laravel/sail/runtimes/8.4'
+            context: .
             dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.5/app'
         restart: unless-stopped
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            SUPERVISOR_PHP_COMMAND: 'php artisan schedule:work'
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+        env_file:
+            - .env
+        command: php artisan schedule:work
         volumes:
-            - '.:/var/www/html'
+            - laravel-storage:/var/www/html/storage
         networks:
-            - sail
+            - lineup
         depends_on:
-            - mysql
-            - redis
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
 
     caddy:
-        image: 'caddy:alpine'
+        image: caddy:alpine
         restart: unless-stopped
         ports:
             - '${HTTP_PORT:-80}:80'
             - '${HTTPS_PORT:-443}:443'
         volumes:
-            - './Caddyfile:/etc/caddy/Caddyfile'
-            - 'caddy-data:/data'
-            - 'caddy-config:/config'
+            - ./Caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy-data:/data
+            - caddy-config:/config
         networks:
-            - sail
+            - lineup
         depends_on:
             - app
 
     mysql:
-        image: 'mysql:8.4'
-        ports:
-            - '${FORWARD_DB_PORT:-3306}:3306'
+        image: mysql:8.4
+        restart: unless-stopped
         environment:
             MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
             MYSQL_ROOT_HOST: '%'
             MYSQL_DATABASE: '${DB_DATABASE}'
             MYSQL_USER: '${DB_USERNAME}'
             MYSQL_PASSWORD: '${DB_PASSWORD}'
-            MYSQL_ALLOW_EMPTY_PASSWORD: 1
             MYSQL_EXTRA_OPTIONS: '${MYSQL_EXTRA_OPTIONS:-}'
         volumes:
-            - 'sail-mysql:/var/lib/mysql'
-            - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+            - mysql:/var/lib/mysql
         networks:
-            - sail
+            - lineup
         healthcheck:
             test:
                 - CMD
@@ -91,13 +77,13 @@ services:
             timeout: 5s
 
     redis:
-        image: 'redis:alpine'
-        ports:
-            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        image: redis:alpine
+        restart: unless-stopped
+        command: redis-server --appendonly yes
         volumes:
-            - 'sail-redis:/data'
+            - redis:/data
         networks:
-            - sail
+            - lineup
         healthcheck:
             test:
                 - CMD
@@ -107,15 +93,17 @@ services:
             timeout: 5s
 
 networks:
-    sail:
+    lineup:
         driver: bridge
 
 volumes:
-    sail-mysql:
+    mysql:
         driver: local
-    sail-redis:
+    redis:
         driver: local
     caddy-data:
         driver: local
     caddy-config:
+        driver: local
+    laravel-storage:
         driver: local
