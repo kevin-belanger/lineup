@@ -87,7 +87,7 @@ class UserManagementTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText('103 utilisateurs affichés')
+            ->assertSeeText('103 users shown')
             ->assertSee('value="all" selected', false)
             ->assertSee('page=2', false);
 

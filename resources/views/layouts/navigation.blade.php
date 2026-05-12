@@ -17,18 +17,18 @@
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     @if (Auth::user()->is_student)
                         <x-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')">
-                            {{ __('Etudiant') }}
+                            {{ __('Student') }}
                         </x-nav-link>
                         <x-nav-link :href="route('student.history')" :active="request()->routeIs('student.history')">
-                            {{ __('Historique') }}
+                            {{ __('History') }}
                         </x-nav-link>
                     @endif
                     @if (Auth::user()->is_teacher)
                         <x-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
-                            {{ __('Enseignant') }}
+                            {{ __('Teacher') }}
                         </x-nav-link>
                         <x-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
-                            {{ __('Demandes prioritaires') }}
+                            {{ __('Priority requests') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -49,16 +49,16 @@
 
                         <x-slot name="content">
                             <x-dropdown-link :href="route('admin.users.index')">
-                                {{ __('Utilisateurs') }}
+                                {{ __('Users') }}
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.classrooms.index')">
-                                {{ __('Locaux') }}
+                                {{ __('Rooms') }}
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.subjects.index')">
-                                {{ __('Matieres') }}
+                                {{ __('Subjects') }}
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.settings.edit')">
-                                {{ __('Parametres') }}
+                                {{ __('Settings') }}
                             </x-dropdown-link>
                         </x-slot>
                     </x-dropdown>
@@ -113,18 +113,18 @@
         <div class="pt-2 pb-3 space-y-1">
             @if (Auth::user()->is_student)
                 <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')">
-                    {{ __('Etudiant') }}
+                    {{ __('Student') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('student.history')" :active="request()->routeIs('student.history')">
-                    {{ __('Historique') }}
+                    {{ __('History') }}
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->is_teacher)
                 <x-responsive-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
-                    {{ __('Enseignant') }}
+                    {{ __('Teacher') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
-                    {{ __('Demandes prioritaires') }}
+                    {{ __('Priority requests') }}
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->is_admin)
@@ -132,16 +132,16 @@
                     {{ __('Administration') }}
                 </div>
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                    {{ __('Utilisateurs') }}
+                    {{ __('Users') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.classrooms.index')" :active="request()->routeIs('admin.classrooms.*')">
-                    {{ __('Locaux') }}
+                    {{ __('Rooms') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">
-                    {{ __('Matieres') }}
+                    {{ __('Subjects') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.settings.edit')" :active="request()->routeIs('admin.settings.*')">
-                    {{ __('Parametres') }}
+                    {{ __('Settings') }}
                 </x-responsive-nav-link>
             @endif
         </div>

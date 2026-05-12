@@ -22,7 +22,7 @@ class EnsureUserIsActive
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')->with('status', 'Ce compte est desactive.');
+            return redirect()->route('login')->with('status', 'This account is deactivated.');
         }
 
         return $next($request);

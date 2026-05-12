@@ -46,8 +46,8 @@ class StudentSupportRequestTest extends TestCase
             ->actingAs($student)
             ->get(route('student.classroom.edit'))
             ->assertOk()
-            ->assertSee('Fil d Ariane')
-            ->assertSee('Étudiant');
+            ->assertSee('Breadcrumb')
+            ->assertSee('Student');
     }
 
     public function test_student_dashboard_shows_current_classroom_breadcrumb(): void
@@ -60,7 +60,7 @@ class StudentSupportRequestTest extends TestCase
             ->withSession(['current_classroom_id' => $classroom->id])
             ->get(route('student.dashboard'))
             ->assertOk()
-            ->assertSee('Étudiant')
+            ->assertSee('Student')
             ->assertSee($classroom->name)
             ->assertSee(route('student.classroom.edit'), false);
     }
@@ -176,7 +176,7 @@ class StudentSupportRequestTest extends TestCase
             ->assertRedirect(route('student.dashboard'))
             ->assertSessionHas('toast', [
                 'type' => 'info',
-                'message' => 'Vous avez déjà une demande en cours.',
+                'message' => 'You already have an active request.',
             ]);
 
         $this->assertSame(1, SupportRequest::query()->where('student_id', $student->id)->whereIn('status', SupportRequest::activeStatuses())->count());
@@ -198,7 +198,7 @@ class StudentSupportRequestTest extends TestCase
             ->assertRedirect(route('student.classroom.edit'))
             ->assertSessionHas('toast', [
                 'type' => 'info',
-                'message' => 'Veuillez choisir un local avant de créer une demande.',
+                'message' => 'Please choose a room before creating a request.',
             ]);
     }
 
@@ -267,7 +267,7 @@ class StudentSupportRequestTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('toast', [
                 'type' => 'info',
-                'message' => 'La demande a ete mise a jour.',
+                'message' => 'The request has been updated.',
             ]);
 
         $supportRequest->refresh();
@@ -290,8 +290,8 @@ class StudentSupportRequestTest extends TestCase
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
             ->call('confirmAssignedCancellation', $supportRequest->id)
-            ->assertSee("Cette demande est déjà prise en charge par un enseignant. Voulez-vous vraiment l'annuler ?")
-            ->assertSee('Annuler ma demande')
+            ->assertSee("This request has already been taken by a teacher. Do you really want to cancel it?")
+            ->assertSee('Cancel my request')
             ->call('cancelAssignedRequest')
             ->assertDispatched('toast');
 
@@ -315,9 +315,9 @@ class StudentSupportRequestTest extends TestCase
 
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
-            ->assertSee('aria-label="Annuler la demande"', false)
+            ->assertSee('aria-label="Cancel request"', false)
             ->assertSee('text-gray-300', false)
-            ->assertDontSee('Annuler ma demande');
+            ->assertDontSee('Cancel my request');
     }
 
     public function test_student_active_requests_component_polls_only_when_active_request_exists(): void
@@ -336,7 +336,7 @@ class StudentSupportRequestTest extends TestCase
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
             ->assertSee('wire:poll.3s.visible', false)
-            ->assertDontSee('Demandes actives');
+            ->assertDontSee('Active requests');
     }
 
     public function test_student_livewire_cancel_uses_conditional_update(): void
@@ -380,8 +380,8 @@ class StudentSupportRequestTest extends TestCase
 
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
-            ->assertSee('Pris en charge par Pierre')
-            ->assertDontSee('Attribuee');
+            ->assertSee('Taken by Pierre')
+            ->assertDontSee('>Assigned<', false);
 
         SupportRequest::query()->where('student_id', $student->id)->update([
             'status' => SupportRequest::STATUS_PAUSED,
@@ -389,8 +389,8 @@ class StudentSupportRequestTest extends TestCase
 
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
-            ->assertSee('Pris en charge par Pierre')
-            ->assertSee('En pause');
+            ->assertSee('Taken by Pierre')
+            ->assertSee('Paused');
 
         SupportRequest::query()->where('student_id', $student->id)->update([
             'status' => SupportRequest::STATUS_READY,
@@ -398,8 +398,8 @@ class StudentSupportRequestTest extends TestCase
 
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
-            ->assertSee('Pris en charge par Pierre')
-            ->assertSee('Prêt à revoir');
+            ->assertSee('Taken by Pierre')
+            ->assertSee('Ready to review');
     }
 
     public function test_student_can_mark_paused_request_as_ready(): void
@@ -495,8 +495,8 @@ class StudentSupportRequestTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Fil d Ariane')
-            ->assertSee('Historique')
+            ->assertSee('Breadcrumb')
+            ->assertSee('History')
             ->assertSee($completed->subject->name)
             ->assertSee($cancelled->subject->name)
             ->assertDontSee($active->subject->name);
@@ -534,7 +534,7 @@ class StudentSupportRequestTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Terminée')
-            ->assertSee('Annulée');
+            ->assertSee('Completed')
+            ->assertSee('Cancelled');
     }
 }

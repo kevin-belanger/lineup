@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-admin-breadcrumb :current="__('Paramètres')" />
+        <x-admin-breadcrumb :current="__('Settings')" />
     </x-slot>
 
     <div class="py-12">
@@ -11,16 +11,16 @@
                     @method('PATCH')
 
                     <section>
-                        <x-input-label for="display_name" :value="__('Nom de l application')" />
+                        <x-input-label for="display_name" :value="__('Application name')" />
                         <x-text-input id="display_name" name="display_name" type="text" class="mt-1 block w-full" :value="old('display_name', $displayName)" required maxlength="100" />
                         <x-input-error :messages="$errors->get('display_name')" class="mt-2" />
                     </section>
 
                     <section class="border-t border-gray-200 pt-6">
                         <div>
-                            <x-input-label for="timezone" :value="__('Fuseau horaire de l application')" />
+                            <x-input-label for="timezone" :value="__('Application time zone')" />
                             <p class="mt-1 text-sm text-gray-600">
-                                Ce fuseau horaire est utilise pour les taches planifiees, comme l annulation automatique des demandes en fin de journee.
+                                This time zone is used for scheduled tasks, such as automatically cancelling requests at the end of the day.
                             </p>
                         </div>
 
@@ -36,9 +36,9 @@
 
                     <section class="border-t border-gray-200 pt-6">
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900">Annulation automatique des demandes</h3>
+                            <h3 class="text-base font-semibold text-gray-900">Automatic request cancellation</h3>
                             <p class="mt-1 text-sm text-gray-600">
-                                A l'heure indiquee, toutes les demandes encore en attente ou prises en charge seront annulees automatiquement. Les demandes terminees ou deja annulees ne seront pas modifiees.
+                                At the selected time, all requests that are still waiting or taken will be cancelled automatically. Completed or already cancelled requests will not be changed.
                             </p>
                         </div>
 
@@ -54,17 +54,17 @@
                                     class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                                 >
                                 <span>
-                                    <span class="block text-sm font-medium text-gray-900">Annuler automatiquement les demandes actives en fin de journee</span>
-                                    <span class="block text-sm text-gray-600">Si cette option est desactivee, aucune annulation automatique ne sera faite.</span>
+                                    <span class="block text-sm font-medium text-gray-900">Automatically cancel active requests at the end of the day</span>
+                                    <span class="block text-sm text-gray-600">If this option is disabled, no automatic cancellation will be performed.</span>
                                 </span>
                             </label>
                             <x-input-error :messages="$errors->get('auto_cancel_requests_enabled')" class="mt-2" />
 
                             <div>
-                                <x-input-label for="auto_cancel_requests_time" :value="__('Heure d annulation automatique')" />
+                                <x-input-label for="auto_cancel_requests_time" :value="__('Automatic cancellation time')" />
                                 <x-text-input id="auto_cancel_requests_time" name="auto_cancel_requests_time" type="time" class="mt-1 block w-48" :value="old('auto_cancel_requests_time', $autoCancelRequestsTime)" />
                                 <p class="mt-1 text-sm text-gray-600">
-                                    Cette heure utilise le fuseau horaire configure ci-dessus.
+                                    This time uses the application time zone configured above.
                                 </p>
                                 <x-input-error :messages="$errors->get('auto_cancel_requests_time')" class="mt-2" />
                             </div>
@@ -72,7 +72,7 @@
                     </section>
 
                     <x-primary-button>
-                        {{ __('Sauvegarder') }}
+                        {{ __('Save') }}
                     </x-primary-button>
                 </form>
             </section>

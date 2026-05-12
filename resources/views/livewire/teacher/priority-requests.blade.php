@@ -1,15 +1,15 @@
 <div class="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
     <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div>
-            <h3 class="text-lg font-semibold text-gray-900">{{ __('Nouvelle demande prioritaire') }}</h3>
-            <p class="mt-1 text-sm text-gray-600">{{ __('Demander rapidement l aide d un autre enseignant dans un local cible.') }}</p>
+            <h3 class="text-lg font-semibold text-gray-900">{{ __('New priority request') }}</h3>
+            <p class="mt-1 text-sm text-gray-600">{{ __('Quickly ask another teacher for help in a target room.') }}</p>
         </div>
 
         <form wire:submit="create" wire:key="priority-request-form-{{ $formResetKey }}" class="mt-6 space-y-5">
             <div>
-                <x-input-label for="classroomId" :value="__('Local cible')" />
+                <x-input-label for="classroomId" :value="__('Target room')" />
                 <select id="classroomId" wire:model="classroomId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="">{{ __('Choisir un local') }}</option>
+                    <option value="">{{ __('Choose a room') }}</option>
                     @foreach ($classrooms as $classroom)
                         <option value="{{ $classroom->id }}">{{ $classroom->name }}</option>
                     @endforeach
@@ -24,7 +24,7 @@
             </div>
 
             <x-primary-button wire:loading.attr="disabled" wire:target="create">
-                {{ __('Envoyer la demande') }}
+                {{ __('Send request') }}
             </x-primary-button>
         </form>
     </section>
@@ -32,8 +32,8 @@
     <section @if ($requests->isNotEmpty()) wire:poll.2s.visible="checkForPriorityRequestChanges" @endif class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div class="mb-5 flex items-start justify-between gap-3">
             <div>
-                <h3 class="text-lg font-semibold text-gray-900">{{ __('Demandes envoyees') }}</h3>
-                <p class="mt-1 text-sm text-gray-600">{{ __('Demandes prioritaires actives envoyees.') }}</p>
+                <h3 class="text-lg font-semibold text-gray-900">{{ __('Sent requests') }}</h3>
+                <p class="mt-1 text-sm text-gray-600">{{ __('Active priority requests sent.') }}</p>
             </div>
             <span class="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">{{ $requests->count() }}</span>
         </div>
@@ -48,7 +48,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0 space-y-2">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-800">{{ __('Prioritaire') }}</span>
+                                <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-800">{{ __('Priority') }}</span>
                                 <span class="text-sm font-semibold text-gray-900">{{ $supportRequest->classroom?->name ?? 'N/A' }}</span>
                             </div>
 
@@ -59,28 +59,28 @@
                                 <span
                                     class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100"
                                     data-live-duration
-                                    data-live-duration-prefix="{{ __('Depuis') }}"
+                                    data-live-duration-prefix="{{ __('Since') }}"
                                     data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
-                                >{{ __('Depuis') }} {{ $durationMinutes }} min</span>
+                                >{{ __('Since') }} {{ $durationMinutes }} min</span>
                                 @if ($supportRequest->assignedTeacher)
-                                    <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ __('Pris par') }} {{ $supportRequest->assignedTeacher->name }}</span>
+                                    <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ __('Taken by') }} {{ $supportRequest->assignedTeacher->name }}</span>
                                 @endif
                             </div>
                         </div>
 
                         <div class="flex shrink-0 flex-col gap-2 sm:w-40">
                             <button type="button" wire:click="complete({{ $supportRequest->id }})" wire:loading.attr="disabled" wire:target="complete({{ $supportRequest->id }})" class="inline-flex justify-center rounded-md border border-transparent bg-gray-800 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 disabled:opacity-50">
-                                {{ __('Terminer') }}
+                                {{ __('Complete') }}
                             </button>
                             <button type="button" wire:click="cancel({{ $supportRequest->id }})" wire:loading.attr="disabled" wire:target="cancel({{ $supportRequest->id }})" class="inline-flex justify-center rounded-md border border-transparent px-3 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 transition hover:bg-red-50 disabled:opacity-50">
-                                {{ __('Annuler') }}
+                                {{ __('Cancel') }}
                             </button>
                         </div>
                     </div>
                 </article>
             @empty
                 <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-600">
-                    {{ __('Aucune demande prioritaire active.') }}
+                    {{ __('No active priority requests.') }}
                 </div>
             @endforelse
         </div>

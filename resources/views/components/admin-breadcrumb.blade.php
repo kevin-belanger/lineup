@@ -1,6 +1,6 @@
 @props(['current' => null])
 
-<nav aria-label="{{ __('Fil d Ariane') }}">
+<nav aria-label="{{ __('Breadcrumb') }}">
     <ol class="flex items-center gap-2 text-sm text-gray-500">
         <li>
             @if ($current)

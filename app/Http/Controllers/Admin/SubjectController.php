@@ -53,9 +53,9 @@ class SubjectController extends Controller
             'classrooms' => $classrooms,
             'filters' => $filters,
             'statusOptions' => [
-                'all' => 'Tous les statuts',
-                'active' => 'Actives',
-                'inactive' => 'Inactives',
+                'all' => 'All statuses',
+                'active' => 'Active',
+                'inactive' => 'Inactive',
             ],
             'subjectValidationOptions' => Subject::query()
                 ->get(['classroom_id', 'name'])
@@ -71,14 +71,14 @@ class SubjectController extends Controller
     {
         Subject::query()->create($this->validatedData($request));
 
-        return back()->with('status', 'Matiere creee.');
+        return back()->with('status', 'Subject created.');
     }
 
     public function update(Request $request, Subject $subject): RedirectResponse
     {
         $subject->update($this->validatedData($request, $subject));
 
-        return back()->with('status', 'Matiere mise a jour.');
+        return back()->with('status', 'Subject updated.');
     }
 
     public function toggleActive(Subject $subject): RedirectResponse
@@ -87,14 +87,14 @@ class SubjectController extends Controller
             'is_active' => ! $subject->is_active,
         ]);
 
-        return back()->with('status', $subject->is_active ? 'Matiere activee.' : 'Matiere desactivee.');
+        return back()->with('status', $subject->is_active ? 'Subject activated.' : 'Subject deactivated.');
     }
 
     public function destroy(Subject $subject): RedirectResponse
     {
         $subject->delete();
 
-        return back()->with('status', 'Matiere supprimee. Les demandes associees conservent leur historique.');
+        return back()->with('status', 'Subject deleted. Associated requests keep their history.');
     }
 
     /**
@@ -117,7 +117,7 @@ class SubjectController extends Controller
                 $candidate = str_replace(['[table]', '[section]'], ['1', '1'], (string) $value);
 
                 if (filter_var($candidate, FILTER_VALIDATE_URL) === false) {
-                    $fail('L URL doit etre valide.');
+                    $fail('The URL must be valid.');
                 }
             }],
             'is_active' => ['nullable', 'boolean'],

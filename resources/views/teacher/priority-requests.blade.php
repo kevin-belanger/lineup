@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="text-sm font-semibold text-gray-800">
-            {{ __('Demandes prioritaires') }}
+            {{ __('Priority requests') }}
         </div>
     </x-slot>
 

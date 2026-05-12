@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-admin-breadcrumb :current="__('Locaux')" />
+        <x-admin-breadcrumb :current="__('Rooms')" />
     </x-slot>
 
     <div class="py-8">
@@ -12,11 +12,11 @@
                         x-bind:aria-expanded="open.toString()"
                     >
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Creer un nouveau local') }}</h3>
-                            <p class="mt-1 text-sm text-gray-500">{{ __('Ajouter un local disponible dans l application.') }}</p>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Create a new room') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Add an available room to the application.') }}</p>
                         </div>
                         <span class="inline-flex items-center text-gray-500">
-                            <span class="sr-only" x-text="open ? '{{ __('Fermer la section de création') }}' : '{{ __('Ouvrir la section de création') }}'"></span>
+                            <span class="sr-only" x-text="open ? '{{ __('Close creation section') }}' : '{{ __('Open creation section') }}'"></span>
                             <svg x-show="! open" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                             </svg>
@@ -45,7 +45,7 @@
                                 }
 
                                 if (this.classrooms.includes(this.normalize(this.name))) {
-                                    this.nameError = 'Un local avec ce nom existe deja.';
+                                    this.nameError = 'A room with this name already exists.';
 
                                     return false;
                                 }
@@ -59,7 +59,7 @@
 
                         <div class="grid gap-4 md:grid-cols-[1fr_2fr] md:items-end">
                             <div>
-                                <x-input-label for="name" :value="__('Nom')" />
+                                <x-input-label for="name" :value="__('Name')" />
                                 <x-text-input id="name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
                                 <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
@@ -75,11 +75,11 @@
                         <div class="flex items-center justify-between gap-4">
                             <label class="flex items-center gap-2 text-sm text-gray-700">
                                 <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                {{ __('Actif') }}
+                                {{ __('Active') }}
                             </label>
 
                             <x-primary-button x-bind:disabled="nameError !== ''" class="disabled:opacity-50">
-                                {{ __('Creer') }}
+                                {{ __('Create') }}
                             </x-primary-button>
                         </div>
                     </form>
@@ -90,11 +90,11 @@
                 <div class="border-b border-gray-100">
                     <div class="flex flex-col gap-2 px-6 py-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Locaux') }}</h3>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Rooms') }}</h3>
                         </div>
 
                         <span class="inline-flex w-fit rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-                            {{ trans_choice('{0} Aucun local affiché|{1} 1 local affiché|[2,*] :count locaux affichés', $classrooms->total(), ['count' => $classrooms->total()]) }}
+                            {{ trans_choice('{0} No rooms shown|{1} 1 room shown|[2,*] :count rooms shown', $classrooms->total(), ['count' => $classrooms->total()]) }}
                         </span>
                     </div>
 
@@ -117,10 +117,10 @@
                                 <svg class="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v3.118a2.25 2.25 0 0 1-1.244 2.013l-2.25 1.125A1.125 1.125 0 0 1 9 19.681v-5.249a2.25 2.25 0 0 0-.659-1.591L2.909 7.409a2.25 2.25 0 0 1-.659-1.591V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
                                 </svg>
-                                {{ __('Filtres') }}
+                                {{ __('Filters') }}
                             </span>
                             <span class="inline-flex items-center text-gray-500">
-                                <span class="sr-only" x-text="open ? '{{ __('Fermer les filtres') }}' : '{{ __('Ouvrir les filtres') }}'"></span>
+                                <span class="sr-only" x-text="open ? '{{ __('Close filters') }}' : '{{ __('Open filters') }}'"></span>
                                 <svg
                                     x-show="! open"
                                     class="h-4 w-4"
@@ -156,12 +156,12 @@
                             x-show="open"
                         >
                             <div class="lg:col-span-7">
-                                <x-input-label for="classroom-search" :value="__('Recherche')" />
-                                <x-text-input id="classroom-search" name="search" type="search" class="mt-1 block w-full text-sm" :value="$filters['search']" placeholder="{{ __('Nom ou description') }}" />
+                                <x-input-label for="classroom-search" :value="__('Search')" />
+                                <x-text-input id="classroom-search" name="search" type="search" class="mt-1 block w-full text-sm" :value="$filters['search']" placeholder="{{ __('Name or description') }}" />
                             </div>
 
                             <div class="lg:col-span-3">
-                                <x-input-label for="classroom-status" :value="__('Statut')" />
+                                <x-input-label for="classroom-status" :value="__('Status')" />
                                 <select id="classroom-status" name="status" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     @foreach ($statusOptions as $value => $label)
                                         <option value="{{ $value }}" @selected($filters['status'] === $value)>{{ __($label) }}</option>
@@ -171,11 +171,11 @@
 
                             <div class="flex gap-2 sm:col-span-2 lg:col-span-10 lg:justify-end">
                                 <x-primary-button>
-                                    {{ __('Filtrer') }}
+                                    {{ __('Filter') }}
                                 </x-primary-button>
 
                                 <a href="{{ route('admin.classrooms.index') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">
-                                    {{ __('Réinitialiser') }}
+                                    {{ __('Reset') }}
                                 </a>
                             </div>
                         </form>
@@ -186,8 +186,8 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Local') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Statut') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Room') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Status') }}</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
@@ -200,18 +200,18 @@
                                             @if ($classroom->description)
                                                 <div class="text-sm text-gray-600">{{ $classroom->description }}</div>
                                             @else
-                                                <div class="text-sm text-gray-400">{{ __('Aucune description.') }}</div>
+                                                <div class="text-sm text-gray-400">{{ __('No description.') }}</div>
                                             @endif
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm">
                                         <span class="{{ $classroom->is_active ? 'text-green-700' : 'text-red-700' }}">
-                                            {{ $classroom->is_active ? __('Actif') : __('Inactif') }}
+                                            {{ $classroom->is_active ? __('Active') : __('Inactive') }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-4 align-top text-right">
                                         <x-secondary-button type="button" x-on:click="editingClassroom = {{ $classroom->id }}">
-                                            {{ __('Modifier') }}
+                                            {{ __('Edit') }}
                                         </x-secondary-button>
                                     </td>
                                 </tr>
@@ -224,7 +224,7 @@
 
                                             <div class="grid gap-3 md:grid-cols-[1fr_2fr] md:items-end">
                                                 <div>
-                                                    <x-input-label for="classroom-{{ $classroom->id }}-name" :value="__('Nom')" />
+                                                    <x-input-label for="classroom-{{ $classroom->id }}-name" :value="__('Name')" />
                                                     <x-text-input id="classroom-{{ $classroom->id }}-name" name="name" value="{{ $classroom->name }}" class="mt-1 block w-full" required />
                                                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                                 </div>
@@ -240,22 +240,22 @@
                                                 <input type="hidden" name="is_active" value="0">
                                                 <label class="flex items-center gap-2 text-sm text-gray-700">
                                                     <input type="checkbox" name="is_active" value="1" @checked($classroom->is_active) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                                    {{ __('Actif') }}
+                                                    {{ __('Active') }}
                                                 </label>
                                             </div>
 
                                             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                 <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-classroom-{{ $classroom->id }}')">
-                                                    {{ __('Supprimer ce local') }}
+                                                    {{ __('Delete this room') }}
                                                 </x-danger-button>
 
                                                 <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                                                     <x-secondary-button type="reset" x-on:click="editingClassroom = null">
-                                                        {{ __('Annuler') }}
+                                                        {{ __('Cancel') }}
                                                     </x-secondary-button>
 
                                                     <x-primary-button>
-                                                        {{ __('Enregistrer') }}
+                                                        {{ __('Save') }}
                                                     </x-primary-button>
                                                 </div>
                                             </div>
@@ -263,19 +263,19 @@
 
                                         <x-modal name="delete-classroom-{{ $classroom->id }}" maxWidth="md" focusable>
                                             <x-confirmation-panel
-                                                :title="__('Supprimer le local')"
-                                                :message="__('Les demandes associées resteront dans l’historique, mais le local affichera N/A. Voulez-vous supprimer ce local ?')"
+                                                :title="__('Delete room')"
+                                                :message="__('Associated requests will remain in history, but the room will show N/A. Do you want to delete this room?')"
                                             >
                                                 <x-slot name="actions">
                                                     <x-secondary-button type="button" x-on:click="$dispatch('close')">
-                                                        {{ __('Retour') }}
+                                                        {{ __('Back') }}
                                                     </x-secondary-button>
 
                                                     <form method="POST" action="{{ route('admin.classrooms.destroy', $classroom) }}">
                                                         @csrf
                                                         @method('DELETE')
                                                         <x-danger-button>
-                                                            {{ __('Supprimer') }}
+                                                            {{ __('Delete') }}
                                                         </x-danger-button>
                                                     </form>
                                                 </x-slot>
@@ -286,7 +286,7 @@
                             @empty
                                 <tr>
                                     <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
-                                        {{ __('Aucun local.') }}
+                                        {{ __('No rooms.') }}
                                     </td>
                                 </tr>
                             @endforelse

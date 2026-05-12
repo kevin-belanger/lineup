@@ -37,8 +37,8 @@ class TeacherSpaceTest extends TestCase
         $this->actingAs($teacher)
             ->get(route('teacher.classroom.edit'))
             ->assertOk()
-            ->assertSee('Fil d Ariane')
-            ->assertSee('Enseignant');
+            ->assertSee('Breadcrumb')
+            ->assertSee('Teacher');
     }
 
     public function test_teacher_can_choose_current_classroom(): void
@@ -103,10 +103,10 @@ class TeacherSpaceTest extends TestCase
             ->withSession(['current_classroom_id' => $classroom->id])
             ->get(route('teacher.dashboard'))
             ->assertOk()
-            ->assertSee('Enseignant')
+            ->assertSee('Teacher')
             ->assertSee('Local 203')
             ->assertSee(route('teacher.classroom.edit'), false)
-            ->assertDontSee('Changer de local');
+            ->assertDontSee('Change room');
     }
 
     public function test_teacher_can_assign_waiting_request_from_current_classroom(): void
@@ -168,9 +168,9 @@ class TeacherSpaceTest extends TestCase
         $myRequests = Livewire::actingAs($teacher)
             ->test(MyRequests::class)
             ->assertSee($priorityRequest->comment)
-            ->assertSee('Depuis 20 min')
+            ->assertSee('Since 20 min')
             ->assertSee($existingRequest->student->name)
-            ->assertSee('Depuis 10 min')
+            ->assertSee('Since 10 min')
             ->assertDontSee('minutes')
             ->assertDontSee($waitingRequest->student->name);
 
@@ -266,8 +266,8 @@ class TeacherSpaceTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
-            ->assertSee('Prendre en charge et terminer')
-            ->assertSee('Annuler cette demande')
+            ->assertSee('Take and complete')
+            ->assertSee('Cancel this request')
             ->call('assignAndComplete', $supportRequest->id)
             ->assertDispatched('toast')
             ->assertDispatched('teacher-requests-updated');
@@ -326,7 +326,7 @@ class TeacherSpaceTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
             ->call('confirmCancel', $localRequest->id)
-            ->assertSee('Annuler la demande')
+            ->assertSee('Cancel request')
             ->call('cancel')
             ->assertDispatched('toast')
             ->call('confirmCancel', $otherRequest->id)
@@ -407,7 +407,7 @@ class TeacherSpaceTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(OtherTeacherRequests::class)
             ->call('openManagementModal', $toRequeue->id)
-            ->assertSee('Gerer la demande')
+            ->assertSee('Manage request')
             ->call('requeue')
             ->assertDispatched('toast')
             ->assertDispatched('teacher-requests-updated')
@@ -512,18 +512,18 @@ class TeacherSpaceTest extends TestCase
                 $olderPaused->student->name,
                 $olderAssigned->student->name,
             ])
-            ->assertDontSee('Attribuee')
-            ->assertSee('En pause')
+            ->assertDontSee('Assigned')
+            ->assertSee('Paused')
             ->assertSee('bg-amber-100', false)
             ->assertSee('opacity-60', false)
             ->assertSee('bg-emerald-600', false)
-            ->assertSee('Mettre en pause');
+            ->assertSee('Pause');
 
         session(['current_classroom_id' => $pausedOnlyClassroom->id]);
 
         Livewire::actingAs($teacher)
             ->test(MyRequests::class)
-            ->assertDontSee('Mettre en pause');
+            ->assertDontSee('>Pause<', false);
     }
 
     public function test_teacher_request_change_watcher_dispatches_refresh_only_when_classroom_marker_changes(): void
@@ -570,7 +570,7 @@ class TeacherSpaceTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(DashboardView::class)
-            ->assertSee('Voir l’historique')
+            ->assertSee('View history')
             ->assertSee(route('teacher.history'), false)
             ->assertSee('teacher.my-requests', false)
             ->assertSee('teacher.waiting-queue', false)
@@ -587,9 +587,9 @@ class TeacherSpaceTest extends TestCase
             ->withSession(['current_classroom_id' => $classroom->id])
             ->get(route('teacher.history'))
             ->assertOk()
-            ->assertSee('Historique')
+            ->assertSee('History')
             ->assertSee('Local 203')
-            ->assertSee('Retour aux demandes')
+            ->assertSee('Back to requests')
             ->assertSee(route('teacher.classroom.edit'), false)
             ->assertSee(route('teacher.dashboard'), false)
             ->assertSee('teacher.request-history', false)
@@ -635,7 +635,7 @@ class TeacherSpaceTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(RequestHistory::class)
-            ->assertSee('Historique')
+            ->assertSee('History')
             ->assertSee($todayRequest->student->name)
             ->assertDontSee($oldRequest->student->name)
             ->assertDontSee($otherClassroomRequest->student->name);

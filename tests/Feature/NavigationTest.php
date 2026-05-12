@@ -25,9 +25,9 @@ class NavigationTest extends TestCase
             ->assertOk()
             ->assertDontSee('Dashboard')
             ->assertDontSee('Administration')
-            ->assertDontSee('Utilisateurs')
-            ->assertDontSee('Locaux')
-            ->assertDontSee('Matieres');
+            ->assertDontSee('Users')
+            ->assertDontSee('Rooms')
+            ->assertDontSee('Subjects');
     }
 
     public function test_student_history_is_available_from_main_navigation_only(): void
@@ -42,7 +42,7 @@ class NavigationTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Historique')
+            ->assertSee('History')
             ->assertSee(route('student.history'), false);
 
         $this->assertSame(2, substr_count($response->getContent(), route('student.history')));
@@ -61,10 +61,10 @@ class NavigationTest extends TestCase
             ->assertOk()
             ->assertDontSee('Dashboard')
             ->assertSee('Administration')
-            ->assertSee('Utilisateurs')
-            ->assertSee('Locaux')
-            ->assertSee('Matieres')
-            ->assertSee('Parametres');
+            ->assertSee('Users')
+            ->assertSee('Rooms')
+            ->assertSee('Subjects')
+            ->assertSee('Settings');
     }
 
     public function test_admin_dashboard_shows_settings_card(): void
@@ -77,7 +77,7 @@ class NavigationTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('Paramètres')
+            ->assertSee('Settings')
             ->assertSee(route('admin.settings.edit'), false);
     }
 
@@ -91,16 +91,16 @@ class NavigationTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.users.index'))
             ->assertOk()
-            ->assertSee('Fil d Ariane')
+            ->assertSee('Breadcrumb')
             ->assertSee('Administration')
-            ->assertSee('Utilisateurs')
+            ->assertSee('Users')
             ->assertSee(route('admin.dashboard'), false);
 
         $this->actingAs($admin)
             ->get(route('admin.settings.edit'))
             ->assertOk()
             ->assertSee('Administration')
-            ->assertSee('Paramètres')
+            ->assertSee('Settings')
             ->assertSee(route('admin.dashboard'), false);
     }
 

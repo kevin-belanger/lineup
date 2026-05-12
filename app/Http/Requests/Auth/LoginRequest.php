@@ -55,7 +55,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => 'Ce compte est desactive.',
+                'email' => 'This account is deactivated.',
             ]);
         }
 

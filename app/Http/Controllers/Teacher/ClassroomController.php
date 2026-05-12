@@ -37,13 +37,13 @@ class ClassroomController extends Controller
 
         if ($hasActiveRequestInAnotherClassroom) {
             return back()->withErrors([
-                'classroom_id' => 'Des demandes sont encore en cours dans le local actuel.',
+                'classroom_id' => 'There are still active requests in the current room.',
             ]);
         }
 
         $request->session()->put('current_classroom_id', $newClassroomId);
 
-        return redirect()->route('teacher.dashboard')->with('status', 'Local courant mis a jour.');
+        return redirect()->route('teacher.dashboard')->with('status', 'Current room mis a jour.');
     }
 
     private function assignedActiveRequests(Request $request)

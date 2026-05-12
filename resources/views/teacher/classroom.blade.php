@@ -12,9 +12,9 @@
                         @method('PUT')
 
                         <div>
-                            <x-input-label for="classroom_id" :value="__('Local')" />
+                            <x-input-label for="classroom_id" :value="__('Room')" />
                             <select id="classroom_id" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                <option value="">{{ __('Selectionner un local') }}</option>
+                                <option value="">{{ __('Select a room') }}</option>
                                 @foreach ($classrooms as $classroom)
                                     <option value="{{ $classroom->id }}" @selected((int) old('classroom_id', $currentClassroomId) === $classroom->id)>
                                         {{ $classroom->name }}
@@ -26,8 +26,8 @@
 
                         @if ($activeRequests->isNotEmpty())
                             <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                                <p class="font-medium">{{ __('Changement bloque pendant une prise en charge') }}</p>
-                                <p class="mt-1">{{ __('Veuillez terminer, mettre en pause ou remettre les demandes dans la file avant de changer de local.') }}</p>
+                                <p class="font-medium">{{ __('Change blocked while requests are active') }}</p>
+                                <p class="mt-1">{{ __('Please complete, pause, or return requests to the queue before changing rooms.') }}</p>
                                 <ul class="mt-3 space-y-1">
                                     @foreach ($activeRequests as $supportRequest)
                                         <li>
@@ -44,7 +44,7 @@
                             </div>
                         @endif
 
-                        <x-primary-button>{{ __('Continuer') }}</x-primary-button>
+                        <x-primary-button>{{ __('Continue') }}</x-primary-button>
                     </form>
                 </div>
             </div>

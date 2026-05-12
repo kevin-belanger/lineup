@@ -53,16 +53,16 @@ class UserController extends Controller
             'users' => $users,
             'filters' => $filters,
             'statusOptions' => [
-                'all' => 'Tous les statuts',
-                'active' => 'Actifs',
-                'inactive' => 'Inactifs',
-                'approved' => 'Approuvés',
-                'pending' => 'En attente d’approbation',
+                'all' => 'All statuses',
+                'active' => 'Active',
+                'inactive' => 'Inactive',
+                'approved' => 'Approved',
+                'pending' => 'Pending approval',
             ],
             'roleOptions' => [
-                'all' => 'Tous les rôles',
-                'student' => 'Étudiants',
-                'teacher' => 'Enseignants',
+                'all' => 'All roles',
+                'student' => 'Students',
+                'teacher' => 'Teachers',
                 'admin' => 'Admins',
             ],
             'emailValidationOptions' => User::query()
@@ -92,7 +92,7 @@ class UserController extends Controller
             'approved_by' => ($validated['is_approved'] ?? false) ? $request->user()->id : null,
         ]);
 
-        return back()->with('status', 'Utilisateur cree.');
+        return back()->with('status', 'User created.');
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -102,14 +102,14 @@ class UserController extends Controller
         if ($request->user()->is($user) && ! ($validated['is_admin'] ?? false)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Vous ne pouvez pas retirer votre propre rôle admin.',
+                'message' => 'You cannot remove your own admin role.',
             ]);
         }
 
         if ($request->user()->is($user) && ! ($validated['is_active'] ?? false)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Vous ne pouvez pas désactiver votre propre compte.',
+                'message' => 'You cannot deactivate your own account.',
             ]);
         }
 
@@ -128,7 +128,7 @@ class UserController extends Controller
             'approved_by' => $isApproved ? ($wasApproved ? $user->approved_by : $request->user()->id) : null,
         ])->save();
 
-        return back()->with('status', 'Utilisateur mis a jour.');
+        return back()->with('status', 'User updated.');
     }
 
     public function updatePassword(Request $request, User $user): RedirectResponse
@@ -141,7 +141,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
         ])->save();
 
-        return back()->with('status', 'Mot de passe mis a jour.');
+        return back()->with('status', 'Password updated.');
     }
 
     public function approve(Request $request, User $user): RedirectResponse
@@ -152,7 +152,7 @@ class UserController extends Controller
             'approved_by' => $request->user()->id,
         ])->save();
 
-        return back()->with('status', 'Compte approuve.');
+        return back()->with('status', 'Account approved.');
     }
 
     public function updateRoles(Request $request, User $user): RedirectResponse
@@ -172,14 +172,14 @@ class UserController extends Controller
         if (! in_array(true, $roles, true)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Un utilisateur doit avoir au moins un role.',
+                'message' => 'A user must have at least one role.',
             ]);
         }
 
         if ($request->user()->is($user) && ! $roles['is_admin']) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Vous ne pouvez pas retirer votre propre rôle admin.',
+                'message' => 'You cannot remove your own admin role.',
             ]);
         }
 
@@ -189,7 +189,7 @@ class UserController extends Controller
             'is_admin' => $roles['is_admin'],
         ])->save();
 
-        return back()->with('status', 'Roles mis a jour.');
+        return back()->with('status', 'Roles updated.');
     }
 
     public function toggleActive(Request $request, User $user): RedirectResponse
@@ -197,7 +197,7 @@ class UserController extends Controller
         if ($request->user()->is($user)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Vous ne pouvez pas désactiver votre propre compte.',
+                'message' => 'You cannot deactivate your own account.',
             ]);
         }
 
@@ -205,7 +205,7 @@ class UserController extends Controller
             'is_active' => ! $user->is_active,
         ])->save();
 
-        return back()->with('status', $user->is_active ? 'Compte active.' : 'Compte desactive.');
+        return back()->with('status', $user->is_active ? 'Account activated.' : 'Account deactivated.');
     }
 
     /**
@@ -238,7 +238,7 @@ class UserController extends Controller
         if (! in_array(true, $roles, true)) {
             return back()->with('toast', [
                 'type' => 'error',
-                'message' => 'Un utilisateur doit avoir au moins un role.',
+                'message' => 'A user must have at least one role.',
             ])->throwResponse();
         }
 

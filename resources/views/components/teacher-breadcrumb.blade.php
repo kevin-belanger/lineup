@@ -3,15 +3,15 @@
     'history' => false,
 ])
 
-<nav aria-label="{{ __('Fil d Ariane') }}">
+<nav aria-label="{{ __('Breadcrumb') }}">
     <ol class="flex items-center gap-2 text-sm text-gray-500">
         <li>
             @if ($classroomName)
                 <a href="{{ route('teacher.classroom.edit') }}" class="font-medium text-indigo-700 transition hover:text-indigo-900">
-                    {{ __('Enseignant') }}
+                    {{ __('Teacher') }}
                 </a>
             @else
-                <span class="font-semibold text-gray-800">{{ __('Enseignant') }}</span>
+                <span class="font-semibold text-gray-800">{{ __('Teacher') }}</span>
             @endif
         </li>
 
@@ -39,7 +39,7 @@
                 </svg>
             </li>
             <li class="font-semibold text-gray-800" aria-current="page">
-                {{ __('Historique') }}
+                {{ __('History') }}
             </li>
         @endif
     </ol>

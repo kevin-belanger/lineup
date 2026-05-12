@@ -234,7 +234,7 @@ class ReferenceDataManagementTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
-            ->assertSee('Ouvrir le lien de la matiere')
+            ->assertSee('Open the subject link')
             ->assertSee('https://moodle.example.com/course/view.php?id=12&amp;section=3&amp;table=5', false);
     }
 

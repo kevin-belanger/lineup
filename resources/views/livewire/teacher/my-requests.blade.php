@@ -1,8 +1,8 @@
 <section class="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 shadow-sm">
     <div class="mb-4 flex items-start justify-between gap-3">
         <div>
-            <h3 class="text-lg font-semibold text-gray-950">{{ __('Demandes en cours') }}</h3>
-            <p class="text-sm text-gray-600">{{ __('Demandes prises en charge dans ce local.') }}</p>
+            <h3 class="text-lg font-semibold text-gray-950">{{ __('Active requests') }}</h3>
+            <p class="text-sm text-gray-600">{{ __('Requests taken in this room.') }}</p>
         </div>
         <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-800">{{ $requests->count() }}</span>
     </div>
@@ -40,27 +40,27 @@
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $priorityBadgeClass }}">{{ __('Prioritaire') }}</span>
-                                    <span class="font-semibold text-gray-950">{{ __('Envoyee par') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}</span>
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $priorityBadgeClass }}">{{ __('Priority') }}</span>
+                                    <span class="font-semibold text-gray-950">{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}</span>
                                 </div>
                                 <div class="mt-2 text-sm text-gray-700">{{ $supportRequest->comment }}</div>
                             </div>
 
                             <button type="button" wire:click="complete({{ $supportRequest->id }})" wire:loading.attr="disabled" wire:target="complete({{ $supportRequest->id }})" class="inline-flex min-h-12 w-32 shrink-0 items-center justify-center self-end rounded-md border border-transparent px-3 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-widest transition focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 {{ $completeButtonClass }}">
-                                {{ __('Terminer') }}
+                                {{ __('Complete') }}
                             </button>
                         </div>
 
                         <div class="flex flex-wrap gap-2 text-sm">
                             @if ($supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED)
-                                <span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">{{ __('En pause') }}</span>
+                                <span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">{{ __('Paused') }}</span>
                             @endif
                             <span
                                 class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100"
                                 data-live-duration
-                                data-live-duration-prefix="{{ __('Depuis') }}"
+                                data-live-duration-prefix="{{ __('Since') }}"
                                 data-started-at="{{ $durationStartedAt->toIso8601String() }}"
-                            >{{ __('Depuis') }} {{ $durationMinutes }} min</span>
+                            >{{ __('Since') }} {{ $durationMinutes }} min</span>
                         </div>
                     </div>
                 </article>
@@ -109,10 +109,10 @@
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="block truncate rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                aria-label="{{ __('Ouvrir le lien de la matiere') }}"
+                                aria-label="{{ __('Open the subject link') }}"
                             >
                                 <span class="inline-flex min-w-0 items-center gap-1.5">
-                                    <span class="truncate">{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tuile') }} {{ $supportRequest->moodle_tile_number }}</span>
+                                    <span class="truncate">{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}</span>
                                     <svg class="h-3.5 w-3.5 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
                                     </svg>
@@ -120,7 +120,7 @@
                             </a>
                         @else
                             <div class="truncate px-2 py-1.5 text-sm font-medium text-gray-700">
-                                {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tuile') }} {{ $supportRequest->moodle_tile_number }}
+                                {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
                             </div>
                         @endif
                     </div>
@@ -141,13 +141,13 @@
                                 wire:target="complete({{ $supportRequest->id }})"
                                 class="inline-flex min-h-12 w-32 items-center justify-center rounded-l-md border border-transparent px-3 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-widest transition focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 {{ $completeButtonClass }}"
                             >
-                                {{ __('Terminer') }}
+                                {{ __('Complete') }}
                             </button>
 
                             <details class="js-my-requests-action-menu relative flex">
                                 <summary
                                     class="flex h-full cursor-pointer list-none items-center justify-center rounded-r-md border-l px-2 transition focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $completeMenuClass }}"
-                                    aria-label="{{ __('Ouvrir le menu des actions') }}"
+                                    aria-label="{{ __('Open actions menu') }}"
                                     aria-haspopup="true"
                                 >
                                     <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
@@ -165,7 +165,7 @@
                                             class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
                                             role="menuitem"
                                         >
-                                            {{ __('Mettre en pause') }}
+                                            {{ __('Pause') }}
                                         </button>
                                     @endif
 
@@ -177,7 +177,7 @@
                                         class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
                                         role="menuitem"
                                     >
-                                        {{ __('Remettre dans la file') }}
+                                        {{ __('Return to queue') }}
                                     </button>
                                 </div>
                             </details>
@@ -189,16 +189,16 @@
                     <div class="float-right mb-1 ml-3 flex flex-wrap justify-end gap-1.5 text-xs">
                         @if ($supportRequest->status !== \App\Models\SupportRequest::STATUS_ASSIGNED)
                             <span class="rounded-full px-2.5 py-0.5 font-medium {{ $badgeClass }}">
-                                {{ $supportRequest->status === \App\Models\SupportRequest::STATUS_READY ? __('Prêt à revoir') : ($statusLabels[$supportRequest->status] ?? $supportRequest->status) }}
+                                {{ $supportRequest->status === \App\Models\SupportRequest::STATUS_READY ? __('Ready to review') : ($statusLabels[$supportRequest->status] ?? $supportRequest->status) }}
                             </span>
                         @endif
                         <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-indigo-700 ring-1 ring-indigo-100">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
                         <span
                             class="rounded-full bg-white px-2.5 py-0.5 font-medium text-gray-700 ring-1 ring-gray-200"
                             data-live-duration
-                            data-live-duration-prefix="{{ __('Depuis') }}"
+                            data-live-duration-prefix="{{ __('Since') }}"
                             data-started-at="{{ $durationStartedAt->toIso8601String() }}"
-                        >{{ __('Depuis') }} {{ $durationMinutes }} min</span>
+                        >{{ __('Since') }} {{ $durationMinutes }} min</span>
                     </div>
 
                     @if ($supportRequest->comment)
@@ -210,7 +210,7 @@
             </article>
         @empty
             <div class="rounded-lg border border-dashed border-indigo-200 bg-white/70 p-6 text-center text-sm text-gray-600">
-                {{ __('Aucune demande en cours.') }}
+                {{ __('No active requests.') }}
             </div>
         @endforelse
     </div>

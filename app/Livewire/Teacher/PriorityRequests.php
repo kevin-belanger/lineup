@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class PriorityRequests extends Component
 {
-    public const DEFAULT_MESSAGE = 'Assistance en salle d’évaluation';
+    public const DEFAULT_MESSAGE = 'Assessment room assistance';
 
     #[Validate('required|exists:classrooms,id')]
     public ?int $classroomId = null;
@@ -41,7 +41,7 @@ class PriorityRequests extends Component
             ->first();
 
         if ($classroom === null) {
-            $this->toast('error', 'Le local selectionne n est pas disponible.');
+            $this->toast('error', 'The selected room is not available.');
 
             return;
         }
@@ -65,7 +65,7 @@ class PriorityRequests extends Component
         $this->reset('classroomId');
         $this->message = self::DEFAULT_MESSAGE;
         $this->formResetKey++;
-        $this->toast('success', 'Demande prioritaire envoyee.');
+        $this->toast('success', 'Priority request sent.');
         app(SupportRequestChangeMarker::class)->touch($classroom->id);
         $this->trackedVersions = $this->priorityRequestVersions(app(SupportRequestChangeMarker::class));
         DB::afterCommit(fn () => $this->dispatchPriorityRefresh());
@@ -78,7 +78,7 @@ class PriorityRequests extends Component
             'cancelled_by' => SupportRequest::CANCELLED_BY_TEACHER,
             'cancel_reason' => SupportRequest::CANCEL_REASON_TEACHER_CANCELLED,
             'updated_at' => now(),
-        ], 'Demande prioritaire annulee.');
+        ], 'Priority request cancelled.');
     }
 
     public function complete(int $supportRequestId): void
@@ -87,7 +87,7 @@ class PriorityRequests extends Component
             'status' => SupportRequest::STATUS_COMPLETED,
             'completed_at' => now(),
             'updated_at' => now(),
-        ], 'Demande prioritaire terminee.');
+        ], 'Priority request completed.');
     }
 
     public function checkForPriorityRequestChanges(SupportRequestChangeMarker $changeMarker): void
@@ -135,7 +135,7 @@ class PriorityRequests extends Component
             ->first(['id', 'classroom_id']);
 
         if ($supportRequest === null) {
-            $this->toast('info', 'Cette demande prioritaire ne peut plus etre modifiee.');
+            $this->toast('info', 'This priority request can no longer be changed.');
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
@@ -149,7 +149,7 @@ class PriorityRequests extends Component
             ->update($values);
 
         if ($updated === 0) {
-            $this->toast('info', 'Cette demande prioritaire ne peut plus etre modifiee.');
+            $this->toast('info', 'This priority request can no longer be changed.');
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;

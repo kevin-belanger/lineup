@@ -38,22 +38,22 @@ class DemoDataSeeder extends Seeder
                 'is_admin' => false,
             ],
             [
-                'name' => 'Pierre',
-                'email' => 'pierre@example.com',
+                'name' => 'Peter',
+                'email' => 'peter@example.com',
                 'is_student' => false,
                 'is_teacher' => true,
                 'is_admin' => false,
             ],
             [
-                'name' => 'Jean',
-                'email' => 'jean@example.com',
+                'name' => 'Nancy',
+                'email' => 'nancy@example.com',
                 'is_student' => false,
                 'is_teacher' => true,
                 'is_admin' => false,
             ],
             [
-                'name' => 'Jacques',
-                'email' => 'jacques@example.com',
+                'name' => 'Jack',
+                'email' => 'jack@example.com',
                 'is_student' => false,
                 'is_teacher' => true,
                 'is_admin' => false,
@@ -97,8 +97,8 @@ class DemoDataSeeder extends Seeder
         }
 
         $classrooms = [
-            ['name' => 'Local 101', 'description' => 'Classe principale'],
-            ['name' => 'Local 102', 'description' => 'Classe de support'],
+            ['name' => 'Room 101', 'description' => 'Main room'],
+            ['name' => 'Room 102', 'description' => 'Support room'],
         ];
 
         $createdClassrooms = collect();

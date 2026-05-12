@@ -1,12 +1,12 @@
 @php
     $flashToasts = [];
     $statusMessages = [
-        'password-updated' => __('Mot de passe mis a jour.'),
-        'profile-updated' => __('Profil mis a jour.'),
-        'verification-link-sent' => __('Un nouveau lien de verification a ete envoye.'),
+        'password-updated' => __('Password updated.'),
+        'profile-updated' => __('Profile updated.'),
+        'verification-link-sent' => __('A new verification link has been sent.'),
     ];
     $statusTypes = [
-        'Ce compte est desactive.' => 'error',
+        'This account is deactivated.' => 'error',
     ];
 
     if (session('toast')) {
@@ -177,7 +177,7 @@
                     type="button"
                     x-on:click="remove(toast.id)"
                     class="font-semibold opacity-70 transition hover:opacity-100"
-                    aria-label="{{ __('Fermer') }}"
+                    aria-label="{{ __('Close') }}"
                 >
                     &times;
                 </button>

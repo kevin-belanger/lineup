@@ -24,7 +24,7 @@ class PriorityRequestsTest extends TestCase
         $this->actingAs($teacher)
             ->get(route('teacher.priority-requests.index'))
             ->assertOk()
-            ->assertSee('Demandes prioritaires');
+            ->assertSee('Priority requests');
     }
 
     public function test_teacher_can_create_priority_request_without_student_fields(): void
@@ -76,16 +76,16 @@ class PriorityRequestsTest extends TestCase
             'table_number' => null,
             'type' => null,
             'status' => SupportRequest::STATUS_WAITING,
-            'comment' => 'Assistance en salle d’évaluation',
+            'comment' => 'Assessment room assistance',
             'created_at' => now()->subMinutes(15),
         ]);
 
         $component = Livewire::actingAs($requester)
             ->test(PriorityRequests::class)
-            ->assertSee('Assistance en salle d’évaluation')
-            ->assertSee('Depuis 15 min')
+            ->assertSee('Assessment room assistance')
+            ->assertSee('Since 15 min')
             ->assertDontSee('minutes')
-            ->assertDontSee('Pris par Jean');
+            ->assertDontSee('Taken by Jean');
 
         $priorityRequest->update([
             'assigned_teacher_id' => $targetTeacher->id,
@@ -96,7 +96,7 @@ class PriorityRequestsTest extends TestCase
 
         $component
             ->call('checkForPriorityRequestChanges')
-            ->assertSee('Pris par')
+            ->assertSee('Taken by')
             ->assertSee('Jean');
 
         $priorityRequest->update([
@@ -107,7 +107,7 @@ class PriorityRequestsTest extends TestCase
 
         $component
             ->call('checkForPriorityRequestChanges')
-            ->assertDontSee('Assistance en salle d’évaluation');
+            ->assertDontSee('Assessment room assistance');
     }
 
     public function test_priority_requests_are_shown_before_student_requests_and_can_be_assigned_once(): void
@@ -140,7 +140,7 @@ class PriorityRequestsTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
-            ->assertSeeInOrder(['Prioritaire', $studentRequest->student->name])
+            ->assertSeeInOrder(['Priority', $studentRequest->student->name])
             ->call('assign', $priorityRequest->id)
             ->assertDispatched('toast');
 
@@ -181,12 +181,12 @@ class PriorityRequestsTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(MyRequests::class)
-            ->assertSee('Prioritaire')
+            ->assertSee('Priority')
             ->assertSee('Jacques')
             ->assertSee('Besoin d aide avec un eleve.')
-            ->assertSee('Terminer')
-            ->assertDontSee('Mettre en pause')
-            ->assertDontSee('Remettre dans la file')
+            ->assertSee('Complete')
+            ->assertDontSee('Pause')
+            ->assertDontSee('Return to queue')
             ->call('complete', $priorityRequest->id)
             ->assertDispatched('toast');
 

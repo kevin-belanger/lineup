@@ -1,8 +1,8 @@
 <section class="space-y-4 rounded-lg border border-gray-200 bg-white/60 p-4 shadow-sm">
     <div class="flex items-center justify-between">
         <div>
-            <h3 class="text-lg font-semibold text-gray-900">{{ __('En attente') }}</h3>
-            <p class="text-sm text-gray-600">{{ __('Demandes du local courant, plus anciennes en premier.') }}</p>
+            <h3 class="text-lg font-semibold text-gray-900">{{ __('Waiting') }}</h3>
+            <p class="text-sm text-gray-600">{{ __('Requests for the current room, oldest first.') }}</p>
         </div>
         <span class="rounded-full bg-gray-200 px-3 py-1 text-sm font-medium text-gray-700">{{ $requests->count() }}</span>
     </div>
@@ -18,8 +18,8 @@
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0 space-y-3">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-800">{{ __('Prioritaire') }}</span>
-                                <span class="text-base font-semibold text-gray-900">{{ __('Envoyee par') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}</span>
+                                <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-800">{{ __('Priority') }}</span>
+                                <span class="text-base font-semibold text-gray-900">{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}</span>
                             </div>
 
                             <p class="text-sm text-gray-800">{{ $supportRequest->comment }}</p>
@@ -28,9 +28,9 @@
                                 <span
                                     class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100"
                                     data-live-duration
-                                    data-live-duration-prefix="{{ __('Attente') }}"
+                                    data-live-duration-prefix="{{ __('Waiting') }}"
                                     data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
-                                >{{ __('Attente') }} {{ $waitMinutes }} min</span>
+                                >{{ __('Waiting') }} {{ $waitMinutes }} min</span>
                             </div>
                         </div>
 
@@ -42,7 +42,7 @@
                                 wire:target="assign({{ $supportRequest->id }})"
                                 class="inline-flex justify-center rounded-md border border-transparent bg-rose-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 disabled:opacity-50"
                             >
-                                {{ __('Prendre en charge') }}
+                                {{ __('Take') }}
                             </button>
                         </div>
                     </div>
@@ -67,10 +67,10 @@
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="block truncate rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                    aria-label="{{ __('Ouvrir le lien de la matiere') }}"
+                                    aria-label="{{ __('Open the subject link') }}"
                                 >
                                     <span class="inline-flex min-w-0 items-center gap-1.5">
-                                        <span class="truncate">{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tuile') }} {{ $supportRequest->moodle_tile_number }}</span>
+                                        <span class="truncate">{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}</span>
                                         <svg class="h-3.5 w-3.5 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
                                         </svg>
@@ -78,7 +78,7 @@
                                 </a>
                             @else
                                 <div class="truncate px-2 py-1.5 text-sm font-medium text-gray-700">
-                                    {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tuile') }} {{ $supportRequest->moodle_tile_number }}
+                                    {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
                                 </div>
                             @endif
 
@@ -101,14 +101,14 @@
                                     class="inline-flex uppercase w-32 items-center justify-center rounded-l-md border border-transparent bg-indigo-600 px-3 py-2 text-center text-xs font-semibold leading-tight text-white transition hover:bg-indigo-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
                                 >
                                     <span class="block leading-tight">
-                                        {{ __('Prendre en charge') }}
+                                        {{ __('Take') }}
                                     </span>
                                 </button>
 
                                 <details class="js-waiting-action-menu relative flex">
                                     <summary
                                         class="flex h-full cursor-pointer list-none items-center justify-center rounded-r-md border-l border-indigo-500 bg-indigo-600 px-2 text-white transition hover:bg-indigo-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                        aria-label="{{ __('Ouvrir le menu des actions') }}"
+                                        aria-label="{{ __('Open actions menu') }}"
                                         aria-haspopup="true"
                                     >
                                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
@@ -125,7 +125,7 @@
                                             class="block w-full whitespace-nowrap px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:bg-gray-50 disabled:opacity-50"
                                             role="menuitem"
                                         >
-                                            {{ __('Prendre en charge et terminer') }}
+                                            {{ __('Take and complete') }}
                                         </button>
 
                                         <button
@@ -136,7 +136,7 @@
                                             class="block w-full whitespace-nowrap px-4 py-2 text-left text-sm text-red-700 transition hover:bg-red-50 focus:outline-none focus:bg-red-50 disabled:opacity-50"
                                             role="menuitem"
                                         >
-                                            {{ __('Annuler cette demande') }}
+                                            {{ __('Cancel this request') }}
                                         </button>
                                     </div>
                                 </details>
@@ -150,9 +150,9 @@
                             <span
                                 class="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700"
                                 data-live-duration
-                                data-live-duration-prefix="{{ __('Attente') }}"
+                                data-live-duration-prefix="{{ __('Waiting') }}"
                                 data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
-                            >{{ __('Attente') }} {{ $waitMinutes }} min</span>
+                            >{{ __('Waiting') }} {{ $waitMinutes }} min</span>
                         </div>
 
                         @if ($supportRequest->comment)
@@ -165,26 +165,26 @@
             @endif
         @empty
             <div class="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
-                {{ __('Aucune demande en attente pour ce local.') }}
+                {{ __('No waiting requests for this room.') }}
             </div>
         @endforelse
     </div>
 
     @if ($confirmingCancellationId)
         <div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-            <button type="button" class="absolute inset-0 bg-gray-500 opacity-75" wire:click="dismissCancel" aria-label="{{ __('Retour') }}"></button>
+            <button type="button" class="absolute inset-0 bg-gray-500 opacity-75" wire:click="dismissCancel" aria-label="{{ __('Back') }}"></button>
 
             <x-confirmation-panel
-                :title="__('Annuler la demande')"
-                :message="__('Cette demande sera annulée et ne sera plus visible dans la file d’attente. Voulez-vous continuer ?')"
+                :title="__('Cancel request')"
+                :message="__('This request will be cancelled and will no longer be visible in the queue. Do you want to continue?')"
             >
                 <x-slot name="actions">
                     <x-secondary-button type="button" wire:click="dismissCancel">
-                        {{ __('Retour') }}
+                        {{ __('Back') }}
                     </x-secondary-button>
 
                     <x-danger-button type="button" wire:click="cancel" wire:loading.attr="disabled" wire:target="cancel">
-                        {{ __('Annuler la demande') }}
+                        {{ __('Cancel request') }}
                     </x-danger-button>
                 </x-slot>
             </x-confirmation-panel>

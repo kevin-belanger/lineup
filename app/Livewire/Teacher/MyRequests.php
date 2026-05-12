@@ -19,7 +19,7 @@ class MyRequests extends Component
             'status' => SupportRequest::STATUS_COMPLETED,
             'completed_at' => now(),
             'updated_at' => now(),
-        ], 'Demande terminee.');
+        ], 'Request completed.');
     }
 
     public function pause(int $supportRequestId): void
@@ -27,7 +27,7 @@ class MyRequests extends Component
         $this->updateAssignedRequest($supportRequestId, [
             'status' => SupportRequest::STATUS_PAUSED,
             'updated_at' => now(),
-        ], 'Demande mise en pause.', false);
+        ], 'Request paused.', false);
     }
 
     public function unassign(int $supportRequestId): void
@@ -37,7 +37,7 @@ class MyRequests extends Component
             'assigned_at' => null,
             'status' => SupportRequest::STATUS_WAITING,
             'updated_at' => now(),
-        ], 'Demande remise dans la file.', false);
+        ], 'Request returned to the queue.', false);
     }
 
     #[On('teacher-requests-updated')]
@@ -81,7 +81,7 @@ class MyRequests extends Component
         $updated = $query->update($values);
 
         if ($updated === 0) {
-            $this->toast('error', 'Cette demande ne peut pas etre modifiee.');
+            $this->toast('error', 'This request cannot be changed.');
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;

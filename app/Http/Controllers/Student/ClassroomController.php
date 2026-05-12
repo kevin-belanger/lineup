@@ -39,7 +39,7 @@ class ClassroomController extends Controller
 
         if ($hasActiveRequestsInAnotherClassroom && ! $request->boolean('confirm_cancel_active_requests')) {
             return back()->withErrors([
-                'confirm_cancel_active_requests' => 'Veuillez confirmer le changement de local pour annuler les demandes en cours.',
+                'confirm_cancel_active_requests' => 'Please confirm the room change to cancel active requests.',
             ])->withInput();
         }
 
@@ -60,7 +60,7 @@ class ClassroomController extends Controller
 
         $request->session()->put('current_classroom_id', $newClassroomId);
 
-        return redirect()->route('student.dashboard')->with('status', 'Local courant mis a jour.');
+        return redirect()->route('student.dashboard')->with('status', 'Current room mis a jour.');
     }
 
     private function activeRequests(Request $request)

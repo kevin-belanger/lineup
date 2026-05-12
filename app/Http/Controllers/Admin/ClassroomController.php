@@ -40,9 +40,9 @@ class ClassroomController extends Controller
                 ->withQueryString(),
             'filters' => $filters,
             'statusOptions' => [
-                'all' => 'Tous les statuts',
-                'active' => 'Actifs',
-                'inactive' => 'Inactifs',
+                'all' => 'All statuses',
+                'active' => 'Active',
+                'inactive' => 'Inactive',
             ],
             'classroomValidationOptions' => Classroom::query()
                 ->pluck('name')
@@ -55,14 +55,14 @@ class ClassroomController extends Controller
     {
         Classroom::query()->create($this->validatedData($request));
 
-        return back()->with('status', 'Local cree.');
+        return back()->with('status', 'Room created.');
     }
 
     public function update(Request $request, Classroom $classroom): RedirectResponse
     {
         $classroom->update($this->validatedData($request, $classroom));
 
-        return back()->with('status', 'Local mis a jour.');
+        return back()->with('status', 'Room updated.');
     }
 
     public function toggleActive(Classroom $classroom): RedirectResponse
@@ -71,14 +71,14 @@ class ClassroomController extends Controller
             'is_active' => ! $classroom->is_active,
         ]);
 
-        return back()->with('status', $classroom->is_active ? 'Local active.' : 'Local desactive.');
+        return back()->with('status', $classroom->is_active ? 'Room activated.' : 'Room deactivated.');
     }
 
     public function destroy(Classroom $classroom): RedirectResponse
     {
         $classroom->delete();
 
-        return back()->with('status', 'Local supprime. Les demandes associees conservent leur historique.');
+        return back()->with('status', 'Room deleted. Associated requests keep their history.');
     }
 
     /**

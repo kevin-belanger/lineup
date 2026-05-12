@@ -16,7 +16,7 @@ class OtherTeacherRequests extends Component
     public function openManagementModal(int $supportRequestId): void
     {
         if (! $this->manageableRequestQuery($supportRequestId)->exists()) {
-            $this->toast('error', 'Cette demande ne peut pas etre geree.');
+            $this->toast('error', 'This request cannot be managed.');
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
@@ -37,7 +37,7 @@ class OtherTeacherRequests extends Component
             'assigned_at' => null,
             'status' => SupportRequest::STATUS_WAITING,
             'updated_at' => now(),
-        ], 'Demande remise en attente.');
+        ], 'Request returned to waiting.');
     }
 
     public function complete(): void
@@ -46,7 +46,7 @@ class OtherTeacherRequests extends Component
             'status' => SupportRequest::STATUS_COMPLETED,
             'completed_at' => now(),
             'updated_at' => now(),
-        ], 'Demande terminee.');
+        ], 'Request completed.');
     }
 
     public function cancel(): void
@@ -56,7 +56,7 @@ class OtherTeacherRequests extends Component
             'cancelled_by' => SupportRequest::CANCELLED_BY_TEACHER,
             'cancel_reason' => SupportRequest::CANCEL_REASON_TEACHER_CANCELLED,
             'updated_at' => now(),
-        ], 'Demande annulee.');
+        ], 'Request cancelled.');
     }
 
     #[On('teacher-requests-updated')]
@@ -87,7 +87,7 @@ class OtherTeacherRequests extends Component
         $supportRequestId = $this->managingRequestId;
 
         if ($supportRequestId === null) {
-            $this->toast('error', 'Aucune demande selectionnee.');
+            $this->toast('error', 'No request selected.');
 
             return;
         }
@@ -99,7 +99,7 @@ class OtherTeacherRequests extends Component
         $this->managingRequestId = null;
 
         if ($updated === 0) {
-            $this->toast('error', 'Cette demande ne peut pas etre modifiee.');
+            $this->toast('error', 'This request cannot be changed.');
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
