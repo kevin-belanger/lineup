@@ -1,0 +1,265 @@
+string,file,line
+A new verification link has been sent.,resources/views/components/toast-stack.blade.php,6
+A user must have at least one role.,app/Http/Controllers/Admin/UserController.php,175
+Account activated.,app/Http/Controllers/Admin/UserController.php,208
+Account approved.,app/Http/Controllers/Admin/UserController.php,155
+Account deactivated.,app/Http/Controllers/Admin/UserController.php,208
+Account pending,resources/views/auth/approval-pending.blade.php,4
+Actions,resources/views/admin/classrooms/index.blade.php,191
+Active,app/Http/Controllers/Admin/ClassroomController.php,44
+Active priority requests sent.,resources/views/livewire/teacher/priority-requests.blade.php,36
+Active request,resources/views/student/classroom.blade.php,28
+Active requests,resources/views/livewire/teacher/my-requests.blade.php,4
+Add a subject associated with a room.,resources/views/admin/subjects/index.blade.php,16
+Add an account and define its roles.,resources/views/admin/users/index.blade.php,53
+Add an available room to the application.,resources/views/admin/classrooms/index.blade.php,16
+Admin,resources/views/admin/users/index.blade.php,102
+Administration,resources/views/components/admin-breadcrumb.blade.php,8
+Admins,app/Http/Controllers/Admin/UserController.php,66
+All requests,resources/views/livewire/teacher/request-history.blade.php,18
+All roles,app/Http/Controllers/Admin/UserController.php,63
+All rooms,resources/views/admin/subjects/index.blade.php,221
+All statuses,app/Http/Controllers/Admin/ClassroomController.php,43
+All teachers,resources/views/livewire/teacher/request-history.blade.php,38
+Already registered?,resources/views/auth/register.blade.php,44
+An administrator must approve your account. You will then be able to access your area according to your roles.,resources/views/auth/approval-pending.blade.php,16
+Application name,resources/views/admin/settings/edit.blade.php,14
+Application time zone,resources/views/admin/settings/edit.blade.php,21
+Approval and roles,resources/views/admin/dashboard.blade.php,13
+Approved,app/Http/Controllers/Admin/UserController.php,59
+Approved by :name,resources/views/admin/users/partials/user-table.blade.php,19
+Are you sure you want to delete your account?,resources/views/profile/partials/delete-user-form.blade.php,23
+Assigned,app/Models/SupportRequest.php,78
+"Associated requests will remain in history, but the room will show N/A. Do you want to delete this room?",resources/views/admin/classrooms/index.blade.php,267
+"Associated requests will remain in history, but the subject will show N/A. Do you want to delete this subject?",resources/views/admin/subjects/index.blade.php,367
+Automatic cancellation time,resources/views/admin/settings/edit.blade.php,64
+Back,resources/views/admin/classrooms/index.blade.php,271
+Back to requests,resources/views/teacher/history.blade.php,9
+Breadcrumb,resources/views/components/admin-breadcrumb.blade.php,3
+Cancel,resources/views/admin/classrooms/index.blade.php,254
+Cancel my request,resources/views/livewire/student/active-requests.blade.php,95
+Cancel request,resources/views/livewire/student/active-requests.blade.php,65
+Cancel this request,resources/views/livewire/teacher/waiting-queue.blade.php,139
+Cancelled,app/Models/SupportRequest.php,82
+Change blocked while requests are active,resources/views/teacher/classroom.blade.php,29
+Change password,resources/views/admin/users/partials/user-table.blade.php,145
+Change room,resources/views/student/dashboard.blade.php,19
+Changing to another room will cancel active requests.,resources/views/student/classroom.blade.php,30
+Choose,resources/views/admin/subjects/index.blade.php,96
+Choose a room,resources/views/livewire/teacher/priority-requests.blade.php,12
+Click here to re-send the verification email.,resources/views/profile/partials/update-profile-information-form.blade.php,37
+Close,resources/views/components/toast-stack.blade.php,180
+Close creation section,resources/views/admin/classrooms/index.blade.php,19
+Close filters,resources/views/admin/classrooms/index.blade.php,123
+Comment,resources/views/livewire/teacher/other-teacher-requests.blade.php,124
+Complete,resources/views/livewire/teacher/my-requests.blade.php,50
+Completed,app/Models/SupportRequest.php,81
+Confirm,resources/views/auth/confirm-password.blade.php,23
+Confirm Password,resources/views/auth/register.blade.php,33
+Continue,resources/views/teacher/classroom.blade.php,47
+Copy,resources/views/admin/users/partials/user-table.blade.php,222
+Copy this password and send it to the user securely.,resources/views/admin/users/partials/user-table.blade.php,210
+Correction,app/Models/SupportRequest.php,70
+Course subjects,resources/views/admin/dashboard.blade.php,21
+Create,resources/views/admin/classrooms/index.blade.php,82
+Create a new room,resources/views/admin/classrooms/index.blade.php,15
+Create a new subject,resources/views/admin/subjects/index.blade.php,15
+Create a new user,resources/views/admin/users/index.blade.php,52
+Created,resources/views/livewire/teacher/request-history.blade.php,112
+Current Password,resources/views/profile/partials/update-password-form.blade.php,17
+Current room,resources/views/student/dashboard.blade.php,11
+Current room updated.,app/Http/Controllers/Student/ClassroomController.php,63
+Dashboard,resources/views/dashboard.blade.php,4
+Date,resources/views/student/history.blade.php,15
+Date or date range,resources/views/livewire/teacher/request-history.blade.php,19
+Delete,resources/views/admin/classrooms/index.blade.php,278
+Delete Account,resources/views/profile/partials/delete-user-form.blade.php,4
+Delete room,resources/views/admin/classrooms/index.blade.php,266
+Delete subject,resources/views/admin/subjects/index.blade.php,366
+Delete this room,resources/views/admin/classrooms/index.blade.php,249
+Delete this subject,resources/views/admin/subjects/index.blade.php,349
+Description,resources/views/admin/classrooms/index.blade.php,69
+Duration,resources/views/livewire/teacher/request-history.blade.php,129
+Edit,resources/views/admin/classrooms/index.blade.php,214
+Edit request,resources/views/student/requests/form.blade.php,4
+Email,resources/views/auth/forgot-password.blade.php,11
+Email Password Reset Link,resources/views/auth/forgot-password.blade.php,18
+Email address,resources/views/admin/users/index.blade.php,77
+End date,resources/views/livewire/teacher/request-history.blade.php,30
+"Ensure your account is using a long, random password to stay secure.",resources/views/profile/partials/update-password-form.blade.php,8
+Explanation,app/Models/SupportRequest.php,68
+Filter,resources/views/admin/classrooms/index.blade.php,174
+Filters,resources/views/admin/classrooms/index.blade.php,120
+Forgot your password?,resources/views/auth/login.blade.php,35
+Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.,resources/views/auth/forgot-password.blade.php,3
+Generate another password,resources/views/admin/users/partials/user-table.blade.php,232
+Global configuration,resources/views/admin/dashboard.blade.php,25
+History,resources/views/components/student-breadcrumb.blade.php,10
+I confirm that active requests will be cancelled if the room is changed.,resources/views/student/classroom.blade.php,46
+Inactive,app/Http/Controllers/Admin/ClassroomController.php,45
+Inactive room,resources/views/admin/subjects/index.blade.php,283
+Initial password,resources/views/admin/users/index.blade.php,84
+Log Out,resources/views/auth/verify-email.blade.php,21
+Log in,resources/views/auth/login.blade.php,40
+Manage request,resources/views/livewire/teacher/other-teacher-requests.blade.php,62
+Mark request as completed,resources/views/livewire/teacher/other-teacher-requests.blade.php,135
+Message,resources/views/livewire/teacher/priority-requests.blade.php,21
+Moodle tile,resources/views/livewire/teacher/other-teacher-requests.blade.php,116
+Moodle tile :tile,resources/views/livewire/student/active-requests.blade.php,15
+My requests,resources/views/livewire/teacher/request-history.blade.php,39
+Name,resources/views/admin/classrooms/index.blade.php,62
+Name or description,resources/views/admin/classrooms/index.blade.php,160
+Name or email,resources/views/admin/users/index.blade.php,200
+"Name, subject, comment, status...",resources/views/livewire/teacher/request-history.blade.php,48
+New Password,resources/views/profile/partials/update-password-form.blade.php,23
+New password,resources/views/admin/users/partials/user-table.blade.php,218
+New priority request,resources/views/livewire/teacher/priority-requests.blade.php,4
+New request,resources/views/student/dashboard.blade.php,23
+No active priority requests.,resources/views/livewire/teacher/priority-requests.blade.php,83
+No active requests.,resources/views/livewire/student/active-requests.blade.php,76
+No comment.,resources/views/livewire/teacher/other-teacher-requests.blade.php,125
+No description.,resources/views/admin/classrooms/index.blade.php,203
+No request selected.,app/Livewire/Teacher/OtherTeacherRequests.php,90
+No requests assigned to other teachers.,resources/views/livewire/teacher/other-teacher-requests.blade.php,74
+No requests in history.,resources/views/student/history.blade.php,46
+No requests match the filters.,resources/views/livewire/teacher/request-history.blade.php,136
+No room,resources/views/admin/subjects/index.blade.php,222
+No room selected,resources/views/student/dashboard.blade.php,13
+No rooms.,resources/views/admin/classrooms/index.blade.php,289
+No subjects.,resources/views/admin/subjects/index.blade.php,389
+No users match the filters.,resources/views/admin/users/index.blade.php,234
+No waiting requests for this room.,resources/views/livewire/teacher/waiting-queue.blade.php,168
+None,resources/views/admin/subjects/index.blade.php,281
+"Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.",resources/views/profile/partials/delete-user-form.blade.php,8
+"Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.",resources/views/profile/partials/delete-user-form.blade.php,27
+One-time action on a request assigned to another teacher.,resources/views/livewire/teacher/other-teacher-requests.blade.php,88
+Open,resources/views/livewire/teacher/other-teacher-requests.blade.php,11
+Open actions menu,resources/views/livewire/teacher/my-requests.blade.php,150
+Open creation section,resources/views/admin/classrooms/index.blade.php,19
+Open filters,resources/views/admin/classrooms/index.blade.php,123
+Open the subject link,resources/views/components/subject-request-link.blade.php,13
+Other teachers,resources/views/livewire/teacher/other-teacher-requests.blade.php,5
+Password,resources/views/auth/confirm-password.blade.php,11
+Password copied.,resources/views/admin/users/partials/user-table.blade.php,225
+Password updated.,app/Http/Controllers/Admin/UserController.php,144
+Pause,resources/views/livewire/teacher/my-requests.blade.php,168
+Paused,app/Models/SupportRequest.php,79
+Pending approval,app/Http/Controllers/Admin/UserController.php,60
+Period,resources/views/livewire/teacher/request-history.blade.php,15
+Physical rooms,resources/views/admin/dashboard.blade.php,17
+Please choose a room before creating a request.,app/Http/Controllers/Student/SupportRequestController.php,31
+"Please complete, pause, or return requests to the queue before changing rooms.",resources/views/teacher/classroom.blade.php,30
+Please confirm the room change to cancel active requests.,app/Http/Controllers/Student/ClassroomController.php,42
+Priority,resources/views/livewire/teacher/my-requests.blade.php,43
+Priority request,resources/views/livewire/teacher/request-history.blade.php,79
+Priority request cancelled.,app/Livewire/Teacher/PriorityRequests.php,82
+Priority request completed.,app/Livewire/Teacher/PriorityRequests.php,91
+Priority request sent.,app/Livewire/Teacher/PriorityRequests.php,69
+Priority requests,resources/views/layouts/navigation.blade.php,31
+Profile,resources/views/layouts/navigation.blade.php,82
+Profile Information,resources/views/profile/partials/update-profile-information-form.blade.php,4
+Profile updated.,resources/views/components/toast-stack.blade.php,5
+Quickly ask another teacher for help in a target room.,resources/views/livewire/teacher/priority-requests.blade.php,5
+Ready to review,app/Models/SupportRequest.php,80
+Register,resources/views/auth/register.blade.php,48
+Remember me,resources/views/auth/login.blade.php,28
+Request,resources/views/student/history.blade.php,13
+Request cancelled.,app/Http/Controllers/Student/SupportRequestController.php,134
+Request completed.,app/Livewire/Teacher/MyRequests.php,22
+Request created.,app/Http/Controllers/Student/SupportRequestController.php,78
+Request paused.,app/Livewire/Teacher/MyRequests.php,30
+Request returned to the queue.,app/Livewire/Teacher/MyRequests.php,40
+Request returned to waiting.,app/Livewire/Teacher/OtherTeacherRequests.php,40
+Request taken and completed.,app/Livewire/Teacher/WaitingQueue.php,71
+Request taken.,app/Livewire/Teacher/WaitingQueue.php,40
+Request type,resources/views/student/requests/form.blade.php,49
+Request updated.,app/Http/Controllers/Student/SupportRequestController.php,108
+"Requests assigned in this room, occasional management.",resources/views/livewire/teacher/other-teacher-requests.blade.php,6
+Requests for the current room based on the selected filters.,resources/views/livewire/teacher/request-history.blade.php,5
+"Requests for the current room, oldest first.",resources/views/livewire/teacher/waiting-queue.blade.php,5
+Requests taken in this room.,resources/views/livewire/teacher/my-requests.blade.php,5
+Resend Verification Email,resources/views/auth/verify-email.blade.php,12
+Reset,resources/views/admin/classrooms/index.blade.php,178
+Reset Password,resources/views/auth/reset-password.blade.php,35
+Return request to waiting,resources/views/livewire/teacher/other-teacher-requests.blade.php,131
+Return to queue,resources/views/livewire/teacher/my-requests.blade.php,180
+Role,resources/views/admin/users/index.blade.php,213
+Roles,resources/views/admin/users/index.blade.php,90
+Roles updated.,app/Http/Controllers/Admin/UserController.php,192
+Room,resources/views/admin/classrooms/index.blade.php,189
+Room :name,resources/views/student/requests/form.blade.php,12
+Room activated.,app/Http/Controllers/Admin/ClassroomController.php,74
+Room created.,app/Http/Controllers/Admin/ClassroomController.php,58
+Room deactivated.,app/Http/Controllers/Admin/ClassroomController.php,74
+Room deleted. Associated requests keep their history.,app/Http/Controllers/Admin/ClassroomController.php,81
+Room updated.,app/Http/Controllers/Admin/ClassroomController.php,65
+Rooms,resources/views/admin/classrooms/index.blade.php,3
+Save,resources/views/admin/classrooms/index.blade.php,258
+Save password,resources/views/admin/users/partials/user-table.blade.php,241
+Search,resources/views/admin/classrooms/index.blade.php,159
+Select a room,resources/views/teacher/classroom.blade.php,17
+Send request,resources/views/livewire/teacher/priority-requests.blade.php,27
+Sent by,resources/views/livewire/teacher/my-requests.blade.php,44
+Sent requests,resources/views/livewire/teacher/priority-requests.blade.php,35
+Settings,resources/views/admin/dashboard.blade.php,24
+Settings saved.,app/Http/Controllers/Admin/SettingController.php,49
+Since,resources/views/livewire/teacher/my-requests.blade.php,61
+Start date,resources/views/livewire/teacher/request-history.blade.php,25
+Status,resources/views/admin/classrooms/index.blade.php,164
+Statuses,resources/views/admin/users/partials/user-table.blade.php,121
+Student,resources/views/admin/users/index.blade.php,94
+Students,app/Http/Controllers/Admin/UserController.php,64
+Subject,resources/views/admin/subjects/index.blade.php,257
+Subject activated.,app/Http/Controllers/Admin/SubjectController.php,90
+Subject created.,app/Http/Controllers/Admin/SubjectController.php,74
+Subject deactivated.,app/Http/Controllers/Admin/SubjectController.php,90
+Subject deleted. Associated requests keep their history.,app/Http/Controllers/Admin/SubjectController.php,97
+Subject updated.,app/Http/Controllers/Admin/SubjectController.php,81
+Subjects,resources/views/admin/dashboard.blade.php,20
+Table,resources/views/livewire/teacher/my-requests.blade.php,129
+Table :table,resources/views/livewire/student/active-requests.blade.php,17
+Table number,resources/views/student/requests/form.blade.php,42
+Take,resources/views/livewire/teacher/waiting-queue.blade.php,45
+Take and complete,resources/views/livewire/teacher/waiting-queue.blade.php,128
+Taken,resources/views/components/student-request-badges.blade.php,19
+Taken by,resources/views/livewire/teacher/priority-requests.blade.php,66
+Taken by :name,resources/views/components/student-request-badges.blade.php,17
+Target room,resources/views/livewire/teacher/priority-requests.blade.php,10
+Teacher,resources/views/admin/users/index.blade.php,98
+Teachers,app/Http/Controllers/Admin/UserController.php,65
+The URL must be valid.,app/Http/Controllers/Admin/SubjectController.php,120
+The request has been updated.,app/Http/Controllers/Student/SupportRequestController.php,128
+The room associated with this request no longer exists.,app/Http/Controllers/Student/SupportRequestController.php,87
+The selected room is not available.,app/Livewire/Teacher/PriorityRequests.php,45
+The teacher will see that you are ready.,app/Http/Controllers/Student/SupportRequestController.php,148
+There are still active requests in the current room.,app/Http/Controllers/Teacher/ClassroomController.php,40
+This is a secure area of the application. Please confirm your password before continuing.,resources/views/auth/confirm-password.blade.php,3
+This priority request can no longer be changed.,app/Livewire/Teacher/PriorityRequests.php,139
+This request can no longer be cancelled from the queue.,app/Livewire/Teacher/WaitingQueue.php,107
+This request can no longer be taken and completed.,app/Livewire/Teacher/WaitingQueue.php,65
+This request cannot be changed.,app/Livewire/Teacher/MyRequests.php,84
+This request cannot be managed.,app/Livewire/Teacher/OtherTeacherRequests.php,19
+This request has already been taken by a teacher. Do you really want to cancel it?,resources/views/livewire/student/active-requests.blade.php,87
+This request was taken by another teacher.,app/Livewire/Teacher/WaitingQueue.php,34
+This request will be cancelled and will no longer be visible in the queue. Do you want to continue?,resources/views/livewire/teacher/waiting-queue.blade.php,179
+Tile,resources/views/livewire/teacher/my-requests.blade.php,115
+Today,resources/views/livewire/teacher/request-history.blade.php,17
+Type,resources/views/livewire/teacher/other-teacher-requests.blade.php,120
+URL,resources/views/admin/subjects/index.blade.php,121
+Update Password,resources/views/profile/partials/update-password-form.blade.php,4
+Use this room,resources/views/student/classroom.blade.php,53
+User,resources/views/admin/users/partials/user-table.blade.php,5
+User created.,app/Http/Controllers/Admin/UserController.php,95
+User updated.,app/Http/Controllers/Admin/UserController.php,131
+Users,resources/views/admin/dashboard.blade.php,12
+Validation,app/Models/SupportRequest.php,69
+View history,resources/views/livewire/teacher/dashboard-view.blade.php,6
+Waiting,app/Models/SupportRequest.php,77
+With,resources/views/livewire/teacher/other-teacher-requests.blade.php,46
+You already have an active request.,app/Http/Controllers/Student/SupportRequestController.php,22
+You can use [table] to insert the table number and [section] to insert the Moodle tile number in the URL.,resources/views/admin/subjects/index.blade.php,124
+You cannot deactivate your own account.,app/Http/Controllers/Admin/UserController.php,112
+You cannot remove your own admin role.,app/Http/Controllers/Admin/UserController.php,105
+Your account must be approved before you can use LineUp.,resources/views/auth/approval-pending.blade.php,13
+Your email address is unverified.,resources/views/profile/partials/update-profile-information-form.blade.php,34
+auth.password,app/Http/Controllers/Auth/ConfirmablePasswordController.php,32

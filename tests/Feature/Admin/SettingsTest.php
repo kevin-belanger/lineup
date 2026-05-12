@@ -20,6 +20,7 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
             'display_name' => 'Atelier Algo',
+            'default_locale' => 'en',
             'timezone' => 'America/Vancouver',
             'auto_cancel_requests_enabled' => '1',
             'auto_cancel_requests_time' => '16:45',
@@ -32,6 +33,7 @@ class SettingsTest extends TestCase
         $settings = app(ApplicationSettings::class);
 
         $this->assertSame('Atelier Algo', $settings->displayName());
+        $this->assertSame('en', $settings->defaultLocale());
         $this->assertSame('America/Vancouver', $settings->timezone());
         $this->assertTrue($settings->autoCancelRequestsEnabled());
         $this->assertSame('16:45', $settings->autoCancelRequestsTime());
@@ -40,6 +42,7 @@ class SettingsTest extends TestCase
             ->get(route('admin.settings.edit'))
             ->assertOk()
             ->assertSee('Atelier Algo')
+            ->assertSee('Default language')
             ->assertSee('America/Vancouver')
             ->assertSee('16:45');
     }
@@ -61,6 +64,7 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
             'display_name' => 'LineUp',
+            'default_locale' => 'en',
             'timezone' => 'America/Toronto',
             'auto_cancel_requests_enabled' => '1',
             'auto_cancel_requests_time' => '',
@@ -75,6 +79,7 @@ class SettingsTest extends TestCase
 
         $response = $this->actingAs($admin)->patch(route('admin.settings.update'), [
             'display_name' => 'LineUp',
+            'default_locale' => 'en',
             'timezone' => 'Not/AZone',
             'auto_cancel_requests_enabled' => '0',
             'auto_cancel_requests_time' => '16:30',

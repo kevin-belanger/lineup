@@ -23,6 +23,7 @@ use Illuminate\Notifications\Notifiable;
     'approved_at',
     'approved_by',
     'is_active',
+    'preferred_locale',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable

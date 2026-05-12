@@ -67,6 +67,24 @@ class NavigationTest extends TestCase
             ->assertSee('Settings');
     }
 
+    public function test_user_menu_keeps_language_choice_out_of_navigation(): void
+    {
+        $user = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.dashboard'));
+
+        $response
+            ->assertOk()
+            ->assertSee('Profile')
+            ->assertSee('Log Out')
+            ->assertDontSee('Use application default')
+            ->assertDontSee(route('profile.language.update'), false);
+    }
+
     public function test_admin_dashboard_shows_settings_card(): void
     {
         $admin = User::factory()->admin()->create([

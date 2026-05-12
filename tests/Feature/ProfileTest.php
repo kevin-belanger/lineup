@@ -18,7 +18,55 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->get('/profile');
 
-        $response->assertOk();
+        $response
+            ->assertOk()
+            ->assertSee('Language')
+            ->assertSee('Choose the language used to display the application.')
+            ->assertSee('Use application default')
+            ->assertSee('en')
+            ->assertSee('fr');
+    }
+
+    public function test_language_preference_can_be_updated_from_profile(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->post(route('profile.language.update'), [
+                '_method' => 'PATCH',
+                'preferred_locale' => 'fr',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile')
+            ->assertSessionHas('toast');
+
+        $this->assertSame('fr', $user->refresh()->preferred_locale);
+    }
+
+    public function test_language_preference_can_return_to_application_default_from_profile(): void
+    {
+        $user = User::factory()->create([
+            'preferred_locale' => 'fr',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->post(route('profile.language.update'), [
+                '_method' => 'PATCH',
+                'preferred_locale' => '',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile')
+            ->assertSessionHas('toast');
+
+        $this->assertNull($user->refresh()->preferred_locale);
     }
 
     public function test_profile_information_can_be_updated(): void

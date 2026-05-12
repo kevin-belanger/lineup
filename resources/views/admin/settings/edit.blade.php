@@ -17,6 +17,18 @@
                     </section>
 
                     <section class="border-t border-gray-200 pt-6">
+                        <x-input-label for="default_locale" :value="__('Default language')" />
+                        <select id="default_locale" name="default_locale" required class="mt-1 block w-48 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @foreach ($availableLocales as $locale)
+                                <option value="{{ $locale }}" @selected(old('default_locale', $defaultLocale) === $locale)>
+                                    {{ $locale }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('default_locale')" class="mt-2" />
+                    </section>
+
+                    <section class="border-t border-gray-200 pt-6">
                         <div>
                             <x-input-label for="timezone" :value="__('Application time zone')" />
                             <p class="mt-1 text-sm text-gray-600">

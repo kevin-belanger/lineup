@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\LocaleManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -14,10 +16,11 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request, LocaleManager $localeManager): View
     {
         return view('profile.edit', [
             'user' => $request->user(),
+            'availableLocales' => $localeManager->availableLocales(),
         ]);
     }
 
@@ -35,6 +38,25 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Update the user's display language preference.
+     */
+    public function updateLanguage(Request $request, LocaleManager $localeManager): RedirectResponse
+    {
+        $validated = $request->validate([
+            'preferred_locale' => ['nullable', 'string', Rule::in($localeManager->availableLocales())],
+        ]);
+
+        $request->user()->forceFill([
+            'preferred_locale' => $validated['preferred_locale'] ?: null,
+        ])->save();
+
+        return Redirect::route('profile.edit')->with('toast', [
+            'type' => 'success',
+            'message' => __('Language preference updated.'),
+        ]);
     }
 
     /**

@@ -10,6 +10,8 @@ class ApplicationSettings
 {
     public const APP_NAME_KEY = 'app.display_name';
 
+    public const DEFAULT_LOCALE_KEY = 'app.default_locale';
+
     public const AUTO_CANCEL_REQUESTS_ENABLED_KEY = 'requests.auto_cancel_enabled';
 
     public const AUTO_CANCEL_REQUESTS_TIME_KEY = 'requests.auto_cancel_time';
@@ -48,6 +50,33 @@ class ApplicationSettings
         );
 
         Cache::forget(self::APP_NAME_KEY);
+    }
+
+    public function defaultLocale(): string
+    {
+        return Cache::rememberForever(self::DEFAULT_LOCALE_KEY, function (): string {
+            $value = Setting::query()->where('key', self::DEFAULT_LOCALE_KEY)->value('value');
+            $locale = app(LocaleManager::class)->normalize($value);
+
+            if ($value !== null && $value !== $locale) {
+                Setting::query()->updateOrCreate(
+                    ['key' => self::DEFAULT_LOCALE_KEY],
+                    ['value' => $locale],
+                );
+            }
+
+            return $locale;
+        });
+    }
+
+    public function updateDefaultLocale(?string $locale): void
+    {
+        Setting::query()->updateOrCreate(
+            ['key' => self::DEFAULT_LOCALE_KEY],
+            ['value' => app(LocaleManager::class)->normalize($locale)],
+        );
+
+        Cache::forget(self::DEFAULT_LOCALE_KEY);
     }
 
     public function autoCancelRequestsEnabled(): bool
