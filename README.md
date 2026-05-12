@@ -282,6 +282,41 @@ The script does not delete Docker volumes. Application data, uploaded files, Red
 
 You can also verify the installed application version from the admin settings page.
 
+## Database backup and restore
+
+LineUp includes a database backup option in the admin interface.
+
+From the admin settings page, an administrator can download a SQL backup of the current application database. The generated file includes metadata in the SQL header, including the installed LineUp version. This version information is used to help validate compatibility before restoring the backup.
+
+The backup download is intended for manual safekeeping before updates, server maintenance, or migration to another installation.
+
+To restore a backup, copy the SQL file to the server, place it in the project directory, and run:
+
+```bash
+./restore-data.sh backup-file.sql
+```
+
+Replace `backup-file.sql` with the actual backup filename.
+
+The restore script will:
+
+- verify that the SQL file exists;
+- verify that the MySQL container is running;
+- test the database connection using the credentials from `.env`;
+- read the backup version from the SQL header;
+- compare the backup version with the installed application version;
+- warn the administrator before replacing the current application data;
+- ask for explicit confirmation before continuing;
+- import the SQL file into the MySQL container;
+- run database migrations;
+- refresh Laravel caches.
+
+If the backup version does not match the installed application version, the script will display an additional warning. It is recommended to install the matching LineUp version before restoring the backup.
+
+Restoring a backup replaces the current application data. Use this only when you understand that the current database content will be overwritten by the backup.
+
+It is not possible to restore a database backup by uploading it directly through the web interface. Database restoration is handled from the server with `restore-data.sh`.
+
 ## Development with Laravel Sail
 
 The production Docker setup uses:

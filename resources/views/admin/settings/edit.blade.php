@@ -127,6 +127,24 @@
                         {{ __('Save') }}
                     </x-primary-button>
                 </form>
+
+                <section class="border-t border-gray-200 p-6">
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-900">{{ __('Database backup') }}</h3>
+                        <p class="mt-1 text-sm text-gray-600">
+                            {{ __('Download a SQL dump of the current application database. Keep this file private because it may contain sensitive data.') }}
+                        </p>
+                    </div>
+
+                    <div class="mt-5">
+                        <a
+                            href="{{ route('admin.database.backup.download') }}"
+                            class="inline-flex items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-gray-900"
+                        >
+                            {{ __('Download database backup') }}
+                        </a>
+                    </div>
+                </section>
             </section>
         </div>
     </div>

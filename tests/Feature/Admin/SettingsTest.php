@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\User;
 use App\Services\ApplicationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -52,7 +53,114 @@ class SettingsTest extends TestCase
             ->assertSee('Default language')
             ->assertSee('Application version')
             ->assertSee('America/Vancouver')
-            ->assertSee('16:45');
+            ->assertSee('16:45')
+            ->assertSee('Database backup')
+            ->assertSee(route('admin.database.backup.download'), false);
+    }
+
+    public function test_admin_can_download_database_backup(): void
+    {
+        config([
+            'app.version' => 'v0.0.3',
+            'app.repository_url' => 'https://github.com/kevin-belanger/lineup',
+        ]);
+
+        $admin = User::factory()->admin()->create([
+            'name' => 'Backup Admin',
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        DB::table('sessions')->insert([
+            'id' => 'runtime-session-id',
+            'user_id' => $admin->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Runtime Session Browser',
+            'payload' => 'transient-session-payload',
+            'last_activity' => 1,
+        ]);
+
+        DB::table('cache')->insert([
+            'key' => 'runtime-cache-key',
+            'value' => 'transient-cache-value',
+            'expiration' => 1,
+        ]);
+
+        DB::table('cache_locks')->insert([
+            'key' => 'runtime-cache-lock-key',
+            'owner' => 'transient-cache-lock-owner',
+            'expiration' => 1,
+        ]);
+
+        DB::table('jobs')->insert([
+            'queue' => 'runtime-queue',
+            'payload' => 'transient-job-payload',
+            'attempts' => 0,
+            'reserved_at' => null,
+            'available_at' => 1,
+            'created_at' => 1,
+        ]);
+
+        DB::table('job_batches')->insert([
+            'id' => 'runtime-job-batch-id',
+            'name' => 'Runtime job batch',
+            'total_jobs' => 1,
+            'pending_jobs' => 1,
+            'failed_jobs' => 0,
+            'failed_job_ids' => '[]',
+            'options' => null,
+            'cancelled_at' => null,
+            'created_at' => 1,
+            'finished_at' => null,
+        ]);
+
+        DB::table('failed_jobs')->insert([
+            'uuid' => 'runtime-failed-job-uuid',
+            'connection' => 'database',
+            'queue' => 'runtime-failed-queue',
+            'payload' => 'transient-failed-job-payload',
+            'exception' => 'Runtime failed job exception',
+            'failed_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->get(route('admin.database.backup.download'));
+
+        $response
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/sql; charset=UTF-8');
+
+        $this->assertStringStartsWith('attachment; filename="lineup-database-backup-', $response->headers->get('Content-Disposition'));
+
+        $content = $response->getContent();
+
+        $this->assertStringContainsString('-- LineUp database backup', $content);
+        $this->assertStringContainsString('-- Application: LineUp', $content);
+        $this->assertStringContainsString('-- App version: v0.0.3', $content);
+        $this->assertStringContainsString('-- Repository: https://github.com/kevin-belanger/lineup', $content);
+        $this->assertStringContainsString('-- Generated at:', $content);
+        $this->assertStringContainsString('-- Database:', $content);
+        $this->assertStringContainsString('CREATE TABLE `users`', $content);
+        $this->assertStringContainsString('INSERT INTO `users`', $content);
+        $this->assertStringContainsString('Backup Admin', $content);
+        $this->assertStringContainsString('CREATE TABLE `sessions`', $content);
+        $this->assertStringContainsString('-- Data for table `sessions` was excluded from this backup.', $content);
+        $this->assertStringNotContainsString('INSERT INTO `sessions`', $content);
+        $this->assertStringNotContainsString('transient-session-payload', $content);
+        $this->assertStringNotContainsString('transient-cache-value', $content);
+        $this->assertStringNotContainsString('transient-job-payload', $content);
+        $this->assertStringNotContainsString('transient-failed-job-payload', $content);
+    }
+
+    public function test_non_admin_can_not_download_database_backup(): void
+    {
+        $user = User::factory()->create();
+
+        $this
+            ->actingAs($user)
+            ->get(route('admin.database.backup.download'))
+            ->assertForbidden();
     }
 
     public function test_admin_settings_show_available_application_update(): void
@@ -87,7 +195,7 @@ class SettingsTest extends TestCase
             ->assertSee('v0.1.0-beta')
             ->assertSee('A newer version is available.')
             ->assertSee('Run update.sh on the server to update the application.')
-            ->assertSee(config('app.repository_url').'#readme', false);
+            ->assertSee(config('app.repository_url').'#updating-the-application', false);
     }
 
     public function test_admin_settings_show_up_to_date_application_status(): void
