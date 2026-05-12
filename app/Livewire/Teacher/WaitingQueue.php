@@ -31,13 +31,13 @@ class WaitingQueue extends Component
             ]);
 
         if ($updated === 0) {
-            $this->toast('warning', 'This request was taken by another teacher.');
+            $this->toast('warning', __('This request was taken by another teacher.'));
             $this->dispatchRefresh();
 
             return;
         }
 
-        $this->toast('success', 'Request taken.');
+        $this->toast('success', __('Request taken.'));
         app(SupportRequestChangeMarker::class)->touch($classroomId);
         $this->dispatchRefresh();
     }
@@ -62,13 +62,13 @@ class WaitingQueue extends Component
             ]);
 
         if ($updated === 0) {
-            $this->toast('warning', 'This request can no longer be taken and completed.');
+            $this->toast('warning', __('This request can no longer be taken and completed.'));
             $this->dispatchRefresh();
 
             return;
         }
 
-        $this->toast('success', 'Request taken and completed.');
+        $this->toast('success', __('Request taken and completed.'));
         app(SupportRequestChangeMarker::class)->touch($classroomId);
         $this->dispatchRefresh();
     }
@@ -104,13 +104,13 @@ class WaitingQueue extends Component
         $this->confirmingCancellationId = null;
 
         if ($updated === 0) {
-            $this->toast('info', 'This request can no longer be cancelled from the queue.');
+            $this->toast('info', __('This request can no longer be cancelled from the queue.'));
             $this->dispatchRefresh();
 
             return;
         }
 
-        $this->toast('success', 'Request cancelled.');
+        $this->toast('success', __('Request cancelled.'));
         app(SupportRequestChangeMarker::class)->touch($classroomId);
         $this->dispatchRefresh();
     }

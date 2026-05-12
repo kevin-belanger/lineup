@@ -29,7 +29,7 @@ class ActiveRequests extends Component
                 'updated_at' => now(),
             ]);
 
-        $this->toast($updated === 1 ? 'success' : 'info', $updated === 1 ? 'Request cancelled.' : 'The request has been updated.');
+        $this->toast($updated === 1 ? 'success' : 'info', $updated === 1 ? __('Request cancelled.') : __('The request has been updated.'));
 
         if ($updated === 1) {
             app(SupportRequestChangeMarker::class)->touch($supportRequest?->classroom_id);
@@ -66,7 +66,7 @@ class ActiveRequests extends Component
             ]);
 
         $this->confirmingAssignedCancellationId = null;
-        $this->toast($updated === 1 ? 'success' : 'info', $updated === 1 ? 'Request cancelled.' : 'The request has been updated.');
+        $this->toast($updated === 1 ? 'success' : 'info', $updated === 1 ? __('Request cancelled.') : __('The request has been updated.'));
 
         if ($updated === 1) {
             app(SupportRequestChangeMarker::class)->touch($supportRequest?->classroom_id);

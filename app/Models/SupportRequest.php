@@ -65,21 +65,21 @@ class SupportRequest extends Model
     public static function typeLabels(): array
     {
         return [
-            self::TYPE_EXPLANATION => 'Explanation',
-            self::TYPE_VALIDATION => 'Validation',
-            self::TYPE_CORRECTION => 'Correction',
+            self::TYPE_EXPLANATION => __('Explanation'),
+            self::TYPE_VALIDATION => __('Validation'),
+            self::TYPE_CORRECTION => __('Correction'),
         ];
     }
 
     public static function statusLabels(): array
     {
         return [
-            self::STATUS_WAITING => 'Waiting',
-            self::STATUS_ASSIGNED => 'Assigned',
-            self::STATUS_PAUSED => 'Paused',
-            self::STATUS_READY => 'Ready to review',
-            self::STATUS_COMPLETED => 'Completed',
-            self::STATUS_CANCELLED => 'Cancelled',
+            self::STATUS_WAITING => __('Waiting'),
+            self::STATUS_ASSIGNED => __('Assigned'),
+            self::STATUS_PAUSED => __('Paused'),
+            self::STATUS_READY => __('Ready to review'),
+            self::STATUS_COMPLETED => __('Completed'),
+            self::STATUS_CANCELLED => __('Cancelled'),
         ];
     }
 

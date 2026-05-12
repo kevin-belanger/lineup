@@ -19,7 +19,7 @@ class PriorityRequests extends Component
     public ?int $classroomId = null;
 
     #[Validate('required|string|max:500')]
-    public string $message = self::DEFAULT_MESSAGE;
+    public string $message = '';
 
     /** @var array<int, int> */
     public array $trackedVersions = [];
@@ -28,6 +28,7 @@ class PriorityRequests extends Component
 
     public function mount(SupportRequestChangeMarker $changeMarker): void
     {
+        $this->message = $this->defaultMessage();
         $this->trackedVersions = $this->priorityRequestVersions($changeMarker);
     }
 
@@ -41,7 +42,7 @@ class PriorityRequests extends Component
             ->first();
 
         if ($classroom === null) {
-            $this->toast('error', 'The selected room is not available.');
+            $this->toast('error', __('The selected room is not available.'));
 
             return;
         }
@@ -63,9 +64,9 @@ class PriorityRequests extends Component
         ]);
 
         $this->reset('classroomId');
-        $this->message = self::DEFAULT_MESSAGE;
+        $this->message = $this->defaultMessage();
         $this->formResetKey++;
-        $this->toast('success', 'Priority request sent.');
+        $this->toast('success', __('Priority request sent.'));
         app(SupportRequestChangeMarker::class)->touch($classroom->id);
         $this->trackedVersions = $this->priorityRequestVersions(app(SupportRequestChangeMarker::class));
         DB::afterCommit(fn () => $this->dispatchPriorityRefresh());
@@ -78,7 +79,7 @@ class PriorityRequests extends Component
             'cancelled_by' => SupportRequest::CANCELLED_BY_TEACHER,
             'cancel_reason' => SupportRequest::CANCEL_REASON_TEACHER_CANCELLED,
             'updated_at' => now(),
-        ], 'Priority request cancelled.');
+        ], __('Priority request cancelled.'));
     }
 
     public function complete(int $supportRequestId): void
@@ -87,7 +88,7 @@ class PriorityRequests extends Component
             'status' => SupportRequest::STATUS_COMPLETED,
             'completed_at' => now(),
             'updated_at' => now(),
-        ], 'Priority request completed.');
+        ], __('Priority request completed.'));
     }
 
     public function checkForPriorityRequestChanges(SupportRequestChangeMarker $changeMarker): void
@@ -135,7 +136,7 @@ class PriorityRequests extends Component
             ->first(['id', 'classroom_id']);
 
         if ($supportRequest === null) {
-            $this->toast('info', 'This priority request can no longer be changed.');
+            $this->toast('info', __('This priority request can no longer be changed.'));
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
@@ -149,7 +150,7 @@ class PriorityRequests extends Component
             ->update($values);
 
         if ($updated === 0) {
-            $this->toast('info', 'This priority request can no longer be changed.');
+            $this->toast('info', __('This priority request can no longer be changed.'));
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
@@ -164,6 +165,11 @@ class PriorityRequests extends Component
     private function toast(string $type, string $message): void
     {
         $this->dispatch('toast', type: $type, message: $message);
+    }
+
+    private function defaultMessage(): string
+    {
+        return __(self::DEFAULT_MESSAGE);
     }
 
     /**

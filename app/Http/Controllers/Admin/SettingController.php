@@ -46,7 +46,7 @@ class SettingController extends Controller
             ->route('admin.settings.edit')
             ->with('toast', [
                 'type' => 'success',
-                'message' => 'Settings saved.',
+                'message' => __('Settings saved.'),
             ]);
     }
 }
