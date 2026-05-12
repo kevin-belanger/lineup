@@ -158,6 +158,64 @@ class TeacherSpaceTest extends TestCase
         $this->assertSame($otherTeacher->id, $supportRequest->refresh()->assigned_teacher_id);
     }
 
+    public function test_teacher_can_assign_and_complete_waiting_request_from_current_classroom(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+            'assigned_at' => null,
+            'completed_at' => null,
+            'is_priority' => false,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->assertSee('Prendre en charge et terminer')
+            ->assertSee('Annuler cette demande')
+            ->call('assignAndComplete', $supportRequest->id)
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated');
+
+        $supportRequest->refresh();
+
+        $this->assertSame($teacher->id, $supportRequest->assigned_teacher_id);
+        $this->assertSame(SupportRequest::STATUS_COMPLETED, $supportRequest->status);
+        $this->assertNotNull($supportRequest->assigned_at);
+        $this->assertNotNull($supportRequest->completed_at);
+        $this->assertSame(1, app(SupportRequestChangeMarker::class)->current($classroom->id));
+    }
+
+    public function test_teacher_can_not_assign_and_complete_priority_request_from_waiting_queue_menu_action(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+            'is_priority' => true,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->call('assignAndComplete', $supportRequest->id)
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated');
+
+        $supportRequest->refresh();
+
+        $this->assertNull($supportRequest->assigned_teacher_id);
+        $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->status);
+        $this->assertNull($supportRequest->completed_at);
+    }
+
     public function test_teacher_can_cancel_only_waiting_request_from_current_classroom(): void
     {
         $teacher = User::factory()->teacher()->create();

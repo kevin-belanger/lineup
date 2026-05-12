@@ -16,6 +16,7 @@ class WaitingQueue extends Component
     public function assign(int $supportRequestId): void
     {
         $classroomId = $this->currentClassroomId();
+        $assignedAt = now();
 
         $updated = SupportRequest::query()
             ->whereKey($supportRequestId)
@@ -24,9 +25,9 @@ class WaitingQueue extends Component
             ->whereNull('assigned_teacher_id')
             ->update([
                 'assigned_teacher_id' => auth()->id(),
-                'assigned_at' => now(),
+                'assigned_at' => $assignedAt,
                 'status' => SupportRequest::STATUS_ASSIGNED,
-                'updated_at' => now(),
+                'updated_at' => $assignedAt,
             ]);
 
         if ($updated === 0) {
@@ -37,6 +38,37 @@ class WaitingQueue extends Component
         }
 
         $this->toast('success', 'Demande prise en charge.');
+        app(SupportRequestChangeMarker::class)->touch($classroomId);
+        $this->dispatchRefresh();
+    }
+
+    public function assignAndComplete(int $supportRequestId): void
+    {
+        $classroomId = $this->currentClassroomId();
+        $completedAt = now();
+
+        $updated = SupportRequest::query()
+            ->whereKey($supportRequestId)
+            ->where('classroom_id', $classroomId)
+            ->where('status', SupportRequest::STATUS_WAITING)
+            ->whereNull('assigned_teacher_id')
+            ->where('is_priority', false)
+            ->update([
+                'assigned_teacher_id' => auth()->id(),
+                'assigned_at' => $completedAt,
+                'status' => SupportRequest::STATUS_COMPLETED,
+                'completed_at' => $completedAt,
+                'updated_at' => $completedAt,
+            ]);
+
+        if ($updated === 0) {
+            $this->toast('warning', 'Cette demande ne peut plus etre prise en charge et terminee.');
+            $this->dispatchRefresh();
+
+            return;
+        }
+
+        $this->toast('success', 'Demande prise en charge et terminee.');
         app(SupportRequestChangeMarker::class)->touch($classroomId);
         $this->dispatchRefresh();
     }

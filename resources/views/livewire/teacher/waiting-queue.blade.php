@@ -108,16 +108,27 @@
                                         </svg>
                                     </summary>
 
-                                    <div class="absolute right-0 top-full z-20 mt-2 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg" role="menu">
+                                    <div class="absolute right-0 top-full z-20 mt-2 w-max min-w-full max-w-xs rounded-md border border-gray-200 bg-white py-1 shadow-lg" role="menu">
+                                        <button
+                                            type="button"
+                                            wire:click="assignAndComplete({{ $supportRequest->id }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="assignAndComplete({{ $supportRequest->id }})"
+                                            class="block w-full whitespace-nowrap px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:bg-gray-50 disabled:opacity-50"
+                                            role="menuitem"
+                                        >
+                                            {{ __('Prendre en charge et terminer') }}
+                                        </button>
+
                                         <button
                                             type="button"
                                             wire:click="confirmCancel({{ $supportRequest->id }})"
                                             wire:loading.attr="disabled"
                                             wire:target="confirmCancel({{ $supportRequest->id }})"
-                                            class="block w-full px-4 py-2 text-left text-sm text-red-700 transition hover:bg-red-50 focus:outline-none focus:bg-red-50 disabled:opacity-50"
+                                            class="block w-full whitespace-nowrap px-4 py-2 text-left text-sm text-red-700 transition hover:bg-red-50 focus:outline-none focus:bg-red-50 disabled:opacity-50"
                                             role="menuitem"
                                         >
-                                            {{ __('Annuler') }}
+                                            {{ __('Annuler cette demande') }}
                                         </button>
                                     </div>
                                 </details>
