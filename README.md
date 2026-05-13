@@ -22,7 +22,7 @@ The Docker setup uses:
 
 Caddy is used as the public web entry point. By default, the provided `Caddyfile` uses plain HTTP on port 80. It also contains commented examples for internal domain names and public HTTPS with automatic Let's Encrypt certificates.
 
-## Server requirements
+### Server requirements
 
 Use a fresh Ubuntu server.
 
@@ -33,7 +33,7 @@ sudo apt update
 sudo apt install -y git openssl ca-certificates curl
 ```
 
-## Install Docker
+### Install Docker
 
 Remove conflicting old packages if they exist:
 
@@ -83,14 +83,37 @@ docker --version
 docker compose version
 ```
 
-## Clone the project
+### Clone the project
+
+Clone the repository and switch to the latest release tag:
 
 ```bash
 git clone https://github.com/kevin-belanger/lineup.git lineup
 cd lineup
+
+git fetch --tags
+
+LATEST_TAG="$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.*$' | head -n 1)"
+
+if [ -z "$LATEST_TAG" ]; then
+    echo "No valid release tag found."
+    exit 1
+fi
+
+git checkout "$LATEST_TAG"
 ```
 
-## Create the environment file
+Production installations should use tagged releases instead of the `main` branch.
+
+Release tags must start with `vX.X.X`, for example:
+
+```text
+v0.0.1
+v0.1.0
+v1.0.0
+```
+
+### Create the environment file
 
 Copy the example environment file:
 
@@ -98,21 +121,39 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-## Set APP_URL in the environment file
+Set the installed application version from the checked-out release tag:
 
-Edit `.env` and set the application URL:
+```bash
+sed -i "s|^APP_VERSION=.*|APP_VERSION=${LATEST_TAG}|" .env
+```
+
+### Create the environment file
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Set the installed application version from the checked-out release tag:
+
+```bash
+sed -i "s|^APP_VERSION=.*|APP_VERSION=${LATEST_TAG}|" .env
+```
+
+Edit the `.env` file:
 
 ```bash
 nano .env
 ```
 
-Set APP_URL to the address that users will use to access the application.
+At minimum, configure the following values.
 
-Example:
+Set the application URL to the address users will use to access LineUp:
+
+```env
 APP_URL=https://lineup.example.com
-
-
-## Generate required secret values
+```
 
 Generate the Laravel application key:
 
@@ -128,28 +169,48 @@ DB_PASSWORD="$(openssl rand -hex 24)"
 sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${DB_PASSWORD}|" .env
 ```
 
-## Initial administrator account
+Configure the initial administrator account.
 
-By default, a fresh installation creates this administrator account:
+If these values are left empty, LineUp will create the default administrator account:
 
 ```text
 Email: admin@example.com
 Password: password
 ```
 
-Change this password immediately after the first login.
-
-You can also define a custom initial administrator in `.env` before installation:
+For a production installation, it is recommended to define a custom administrator before running the seeders:
 
 ```env
-LINEUP_ADMIN_NAME="Admin LineUp"
-LINEUP_ADMIN_EMAIL=admin@example.com
-LINEUP_ADMIN_PASSWORD=change-this-password
+ADMIN_NAME="Admin LineUp"
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change-this-password
 ```
 
-If these values are left empty, the default administrator account will be used.
+Configure outgoing email.
 
-## Configure Caddy
+LineUp uses email for features such as password reset and account-related messages. For production, configure SMTP in `.env`:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=your-smtp-username
+MAIL_PASSWORD=your-smtp-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="lineup@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+Common SMTP configurations are:
+
+- port `587` with `tls`;
+- port `465` with `ssl`.
+
+The `MAIL_FROM_ADDRESS` must be a valid sender address accepted by your SMTP provider.
+
+If email is not configured, password reset and email-based features may not work correctly in production.
+
+### Configure Caddy
 
 The default `Caddyfile` works with HTTP on port 80:
 
@@ -177,7 +238,7 @@ For automatic HTTPS to work:
 - ports 80 and 443 must be reachable from the Internet;
 - the server must be publicly accessible.
 
-## Start the application
+### Start the application
 
 Build and start the containers:
 
@@ -199,43 +260,13 @@ docker compose exec app php artisan db:seed --force
 
 The application should now be available at the `APP_URL` configured in `.env`.
 
-## Useful commands
+### Notes
 
-View running containers:
+Do not run `php artisan key:generate` manually inside the production container to create the application key.
 
-```bash
-docker compose ps
-```
+In this Docker setup, the `.env` file belongs to the server and is not copied into the Docker image. The `APP_KEY` value should be generated directly in the server `.env` file before starting the containers.
 
-View logs:
-
-```bash
-docker compose logs -f
-```
-
-View application logs:
-
-```bash
-docker compose exec app tail -n 100 storage/logs/laravel.log
-```
-
-Restart the containers:
-
-```bash
-docker compose restart
-```
-
-Rebuild after code changes:
-
-```bash
-docker compose up -d --build
-```
-
-Run migrations after an update:
-
-```bash
-docker compose exec app php artisan migrate --force
-```
+If the database is new, always run migrations before using the application. The application may fail with a server error if required database tables such as `cache`, `sessions`, or `jobs` do not exist yet.
 
 ## Updating the application
 
@@ -295,16 +326,6 @@ LOG_DAILY_DAYS=14
 ```
 
 With the default production database-backed session and queue settings, the Laravel scheduler also prunes expired database sessions once per day and prunes failed queue jobs older than seven days once per day. These tasks only clean transient runtime records. They do not delete application history such as support requests.
-
-Do not use the following commands for routine cleanup on a production server:
-
-```bash
-docker compose down -v
-docker volume prune
-docker system prune --volumes
-```
-
-Those commands can delete Docker volumes that contain LineUp data, including the MySQL database, Redis data, Caddy data, or Laravel storage.
 
 ## Database backup and restore
 
@@ -420,10 +441,3 @@ docker compose -f compose.sail.yaml exec app npm run dev
 
 The Sail setup is intended for local development. The production setup should use `compose.yaml`.
 
-## Notes
-
-Do not run `php artisan key:generate` manually inside the production container to create the application key.
-
-In this Docker setup, the `.env` file belongs to the server and is not copied into the Docker image. The `APP_KEY` value should be generated directly in the server `.env` file before starting the containers.
-
-If the database is new, always run migrations before using the application. The application may fail with a server error if required database tables such as `cache`, `sessions`, or `jobs` do not exist yet.
