@@ -10,7 +10,19 @@ Administrators can manage application settings, users, classrooms, subjects, and
 
 The recommended production installation method is the automated installer.
 
-Use a fresh Ubuntu server, then run:
+Use a fresh Ubuntu server.
+
+Before running the installer, update the server packages and make sure `curl` is available:
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y curl ca-certificates
+```
+
+If the upgrade installs indicates that a reboot is required, reboot the server before continuing.
+
+Then run the installer:
 
 ```bash
 cd /tmp
