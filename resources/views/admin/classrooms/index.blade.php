@@ -264,7 +264,7 @@
                                         <x-modal name="delete-classroom-{{ $classroom->id }}" maxWidth="md" focusable>
                                             <x-confirmation-panel
                                                 :title="__('Delete room')"
-                                                :message="__('Associated requests will remain in history, but the room will show N/A. Do you want to delete this room?')"
+                                                :message="__('Deleting this room will also remove its associations with subjects, but it will not delete any subjects. Associated requests will remain in history, but the room will show N/A.')"
                                             >
                                                 <x-slot name="actions">
                                                     <x-secondary-button type="button" x-on:click="$dispatch('close')">

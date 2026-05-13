@@ -31,15 +31,9 @@
                         action="{{ route('admin.subjects.store') }}"
                         class="space-y-4 border-t border-gray-100 p-6"
                         x-data="{
-                            classroomId: '',
                             name: '',
                             url: '',
                             urlError: '',
-                            nameError: '',
-                            subjects: @js($subjectValidationOptions),
-                            normalize(value) {
-                                return value.trim().toLowerCase();
-                            },
                             validateUrl() {
                                 this.urlError = '';
 
@@ -58,55 +52,23 @@
                                     return false;
                                 }
                             },
-                            validateName() {
-                                this.nameError = '';
-
-                                if (this.classroomId === '' || this.name.trim() === '') {
-                                    return true;
-                                }
-
-                                const exists = this.subjects.some((subject) => String(subject.classroom_id) === String(this.classroomId) && subject.name === this.normalize(this.name));
-
-                                if (exists) {
-                                    this.nameError = 'A subject with this name already exists in this room.';
-
-                                    return false;
-                                }
-
-                                return true;
-                            },
                             validateCreate() {
-                                const nameIsValid = this.validateName();
                                 const urlIsValid = this.validateUrl();
 
-                                return nameIsValid && urlIsValid;
+                                return urlIsValid;
                             },
                             hasClientErrors() {
-                                return this.nameError !== '' || this.urlError !== '';
+                                return this.urlError !== '';
                             },
                         }"
                         x-on:submit="if (! validateCreate()) $event.preventDefault()"
                     >
                         @csrf
 
-                        <div class="grid gap-4 md:grid-cols-[1fr_1fr_2fr] md:items-end">
-                            <div>
-                                <x-input-label for="classroom_id" :value="__('Room')" />
-                                <select id="classroom_id" name="classroom_id" x-model="classroomId" x-on:change="validateName()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                    <option value="">{{ __('Choose') }}</option>
-                                    @foreach ($classrooms as $classroom)
-                                        <option value="{{ $classroom->id }}" @selected((int) old('classroom_id') === $classroom->id)>
-                                            {{ $classroom->name }}{{ $classroom->is_active ? '' : ' - inactive' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
-                            </div>
-
+                        <div class="grid gap-4 md:grid-cols-[1fr_2fr] md:items-end">
                             <div>
                                 <x-input-label for="name" :value="__('Name')" />
-                                <x-text-input id="name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
-                                <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
+                                <x-text-input id="name" name="name" x-model="name" class="mt-1 block w-full" required />
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
@@ -125,6 +87,34 @@
                             </p>
                             <p x-show="urlError" x-text="urlError" class="mt-2 text-sm text-red-600"></p>
                             <x-input-error :messages="$errors->get('url')" class="mt-2" />
+                        </div>
+
+                        @php
+                            $selectedLocalIds = collect(old('local_ids', []))->map(fn ($localId) => (int) $localId)->all();
+                        @endphp
+
+                        <div class="rounded-md border border-gray-100 bg-gray-50 p-4">
+                            <div class="flex flex-col gap-1">
+                                <div class="text-sm font-medium text-gray-900">{{ __('Associated rooms') }}</div>
+                                <p class="text-sm text-gray-500">{{ __('If no room is selected, this subject remains available in the admin interface but will not be offered to students in any room.') }}</p>
+                            </div>
+
+                            <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                @foreach ($classrooms as $classroom)
+                                    <label class="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm {{ $classroom->is_active ? 'text-gray-700' : 'text-gray-500' }}">
+                                        <input type="checkbox" name="local_ids[]" value="{{ $classroom->id }}" @checked(in_array($classroom->id, $selectedLocalIds, true)) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <span>
+                                            {{ $classroom->name }}
+                                            @unless ($classroom->is_active)
+                                                <span class="text-xs text-amber-700">({{ __('Inactive') }})</span>
+                                            @endunless
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+
+                            <x-input-error :messages="$errors->get('local_ids')" class="mt-2" />
+                            <x-input-error :messages="$errors->get('local_ids.*')" class="mt-2" />
                         </div>
 
                         <div class="flex items-center justify-between gap-4">
@@ -219,11 +209,11 @@
                                 <x-input-label for="subject-classroom" :value="__('Room')" />
                                 <select id="subject-classroom" name="classroom" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="all" @selected($filters['classroom'] === 'all')>{{ __('All rooms') }}</option>
-                                    <option value="none" @selected($filters['classroom'] === 'none')>{{ __('No room') }}</option>
+                                    <option value="none" @selected($filters['classroom'] === 'none')>{{ __('No room associated') }}</option>
                                     @foreach ($classrooms as $classroom)
-                                        <option value="{{ $classroom->id }}" @selected($filters['classroom'] === (string) $classroom->id)>
-                                            {{ $classroom->name }}{{ $classroom->is_active ? '' : ' - inactive' }}
-                                        </option>
+                                    <option value="{{ $classroom->id }}" @selected($filters['classroom'] === (string) $classroom->id)>
+                                            {{ $classroom->name }}@unless ($classroom->is_active) - {{ __('Inactive') }}@endunless
+                                    </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -255,7 +245,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Subject') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Room') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Rooms') }}</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Status') }}</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Actions') }}</th>
                             </tr>
@@ -278,9 +268,16 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm">
-                                        <div class="font-medium text-gray-900">{{ $subject->classroom?->name ?? __('None') }}</div>
-                                        @if ($subject->classroom && ! $subject->classroom->is_active)
-                                            <div class="text-xs text-amber-700">{{ __('Inactive room') }}</div>
+                                        @if ($subject->locals->isEmpty())
+                                            <span class="text-gray-400">{{ __('No room associated') }}</span>
+                                        @else
+                                            <div class="flex flex-wrap gap-2">
+                                                @foreach ($subject->locals as $classroom)
+                                                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium {{ $classroom->is_active ? 'bg-gray-100 text-gray-700' : 'bg-amber-50 text-amber-700' }}">
+                                                        {{ $classroom->name }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm">
@@ -301,19 +298,7 @@
                                             @csrf
                                             @method('PATCH')
 
-                                            <div class="grid gap-3 md:grid-cols-[1fr_1fr_2fr] md:items-end">
-                                                <div>
-                                                    <x-input-label for="subject-{{ $subject->id }}-classroom" :value="__('Room')" />
-                                                    <select id="subject-{{ $subject->id }}-classroom" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                                        @foreach ($classrooms as $classroom)
-                                                            <option value="{{ $classroom->id }}" @selected($subject->classroom_id === $classroom->id)>
-                                                                {{ $classroom->name }}{{ $classroom->is_active ? '' : ' - inactive' }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
-                                                </div>
-
+                                            <div class="grid gap-3 md:grid-cols-[1fr_2fr] md:items-end">
                                                 <div>
                                                     <x-input-label for="subject-{{ $subject->id }}-name" :value="__('Name')" />
                                                     <x-text-input id="subject-{{ $subject->id }}-name" name="name" value="{{ $subject->name }}" class="mt-1 block w-full" required />
@@ -334,6 +319,34 @@
                                                     {{ __('You can use [table] to insert the table number and [section] to insert the Moodle tile number in the URL.') }}
                                                 </p>
                                                 <x-input-error :messages="$errors->get('url')" class="mt-2" />
+                                            </div>
+
+                                            @php
+                                                $selectedLocalIds = collect(old('local_ids', $subject->locals->pluck('id')->all()))->map(fn ($localId) => (int) $localId)->all();
+                                            @endphp
+
+                                            <div class="rounded-md border border-gray-100 bg-gray-50 p-4">
+                                                <div class="flex flex-col gap-1">
+                                                    <div class="text-sm font-medium text-gray-900">{{ __('Associated rooms') }}</div>
+                                                    <p class="text-sm text-gray-500">{{ __('If no room is selected, this subject remains available in the admin interface but will not be offered to students in any room.') }}</p>
+                                                </div>
+
+                                                <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                                    @foreach ($classrooms as $classroom)
+                                                        <label class="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm {{ $classroom->is_active ? 'text-gray-700' : 'text-gray-500' }}">
+                                                            <input type="checkbox" name="local_ids[]" value="{{ $classroom->id }}" @checked(in_array($classroom->id, $selectedLocalIds, true)) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                            <span>
+                                                                {{ $classroom->name }}
+                                                                @unless ($classroom->is_active)
+                                                                    <span class="text-xs text-amber-700">({{ __('Inactive') }})</span>
+                                                                @endunless
+                                                            </span>
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+
+                                                <x-input-error :messages="$errors->get('local_ids')" class="mt-2" />
+                                                <x-input-error :messages="$errors->get('local_ids.*')" class="mt-2" />
                                             </div>
 
                                             <div class="flex items-center justify-between gap-4">
@@ -364,7 +377,7 @@
                                         <x-modal name="delete-subject-{{ $subject->id }}" maxWidth="md" focusable>
                                             <x-confirmation-panel
                                                 :title="__('Delete subject')"
-                                                :message="__('Associated requests will remain in history, but the subject will show N/A. Do you want to delete this subject?')"
+                                                :message="__('Deleting this subject will also remove its associations with rooms, but it will not delete any rooms. Associated requests will remain in history, but the subject will show N/A.')"
                                             >
                                                 <x-slot name="actions">
                                                     <x-secondary-button type="button" x-on:click="$dispatch('close')">

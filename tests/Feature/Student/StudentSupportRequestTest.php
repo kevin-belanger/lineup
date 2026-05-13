@@ -148,6 +148,36 @@ class StudentSupportRequestTest extends TestCase
         ]);
     }
 
+    public function test_student_subject_choices_use_selected_classroom_associations(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $otherClassroom = Classroom::factory()->create();
+        $availableSubject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Available subject',
+        ]);
+        $unassociatedSubject = Subject::factory()->create([
+            'classroom_id' => null,
+            'name' => 'Unassociated subject',
+        ]);
+        $otherClassroomSubject = Subject::factory()->create([
+            'classroom_id' => $otherClassroom->id,
+            'name' => 'Other room subject',
+        ]);
+
+        $response = $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.requests.create'));
+
+        $response
+            ->assertOk()
+            ->assertSee($availableSubject->name)
+            ->assertDontSee($unassociatedSubject->name)
+            ->assertDontSee($otherClassroomSubject->name);
+    }
+
     public function test_student_can_have_only_one_active_request(): void
     {
         $student = User::factory()->create();
@@ -290,7 +320,7 @@ class StudentSupportRequestTest extends TestCase
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
             ->call('confirmAssignedCancellation', $supportRequest->id)
-            ->assertSee("This request has already been taken by a teacher. Do you really want to cancel it?")
+            ->assertSee('This request has already been taken by a teacher. Do you really want to cancel it?')
             ->assertSee('Cancel my request')
             ->call('cancelAssignedRequest')
             ->assertDispatched('toast');

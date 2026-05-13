@@ -114,13 +114,17 @@ class DemoDataSeeder extends Seeder
 
         $subjects = ['Mathematiques', 'Francais'];
 
-        foreach ($createdClassrooms as $classroom) {
-            foreach ($subjects as $subjectName) {
-                Subject::query()->firstOrCreate(
-                    ['classroom_id' => $classroom->id, 'name' => $subjectName],
-                    ['description' => null, 'is_active' => true],
-                );
-            }
+        foreach ($subjects as $subjectName) {
+            $subject = Subject::query()->firstOrCreate(
+                ['name' => $subjectName],
+                [
+                    'classroom_id' => $createdClassrooms->first()?->id,
+                    'description' => null,
+                    'is_active' => true,
+                ],
+            );
+
+            $subject->locals()->syncWithoutDetaching($createdClassrooms->pluck('id')->all());
         }
     }
 }

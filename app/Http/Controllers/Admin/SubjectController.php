@@ -7,7 +7,9 @@ use App\Models\Classroom;
 use App\Models\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class SubjectController extends Controller
@@ -33,7 +35,7 @@ class SubjectController extends Controller
 
         return view('admin.subjects.index', [
             'subjects' => Subject::query()
-                ->with('classroom:id,name,is_active')
+                ->with('locals:id,name,is_active')
                 ->when($filters['search'] !== '', function ($query) use ($filters): void {
                     $query->where(function ($query) use ($filters): void {
                         $query
@@ -41,12 +43,11 @@ class SubjectController extends Controller
                             ->orWhere('description', 'like', "%{$filters['search']}%");
                     });
                 })
-                ->when($filters['classroom'] === 'none', fn ($query) => $query->whereNull('classroom_id'))
-                ->when(! in_array($filters['classroom'], ['all', 'none'], true), fn ($query) => $query->where('classroom_id', (int) $filters['classroom']))
+                ->when($filters['classroom'] === 'none', fn ($query) => $query->whereDoesntHave('locals'))
+                ->when(! in_array($filters['classroom'], ['all', 'none'], true), fn ($query) => $query->whereHas('locals', fn ($query) => $query->whereKey((int) $filters['classroom'])))
                 ->when($filters['status'] === 'active', fn ($query) => $query->where('is_active', true))
                 ->when($filters['status'] === 'inactive', fn ($query) => $query->where('is_active', false))
                 ->orderByDesc('is_active')
-                ->orderBy('classroom_id')
                 ->orderBy('name')
                 ->paginate(20)
                 ->withQueryString(),
@@ -57,26 +58,25 @@ class SubjectController extends Controller
                 'active' => __('Active'),
                 'inactive' => __('Inactive'),
             ],
-            'subjectValidationOptions' => Subject::query()
-                ->get(['classroom_id', 'name'])
-                ->map(fn (Subject $subject): array => [
-                    'classroom_id' => $subject->classroom_id,
-                    'name' => mb_strtolower(trim($subject->name)),
-                ])
-                ->values(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        Subject::query()->create($this->validatedData($request));
+        [$data, $localIds] = $this->validatedData($request);
+
+        $subject = Subject::query()->create($data);
+        $subject->locals()->sync($localIds);
 
         return back()->with('status', __('Subject created.'));
     }
 
     public function update(Request $request, Subject $subject): RedirectResponse
     {
-        $subject->update($this->validatedData($request, $subject));
+        [$data, $localIds] = $this->validatedData($request, $subject);
+
+        $subject->update($data);
+        $subject->locals()->sync($localIds);
 
         return back()->with('status', __('Subject updated.'));
     }
@@ -98,19 +98,17 @@ class SubjectController extends Controller
     }
 
     /**
-     * @return array{classroom_id: int, name: string, description: ?string, url: ?string, is_active: bool}
+     * @return array{0: array{classroom_id: ?int, name: string, description: ?string, url: ?string, is_active: bool}, 1: array<int, int>}
      */
     private function validatedData(Request $request, ?Subject $subject = null): array
     {
         $validated = $request->validate([
-            'classroom_id' => ['required', 'integer', Rule::exists('classrooms', 'id')->where('is_active', true)],
+            'local_ids' => ['nullable', 'array'],
+            'local_ids.*' => ['integer', Rule::exists('classrooms', 'id')],
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('subjects', 'name')
-                    ->where('classroom_id', $request->integer('classroom_id'))
-                    ->ignore($subject),
             ],
             'description' => ['nullable', 'string', 'max:2000'],
             'url' => ['nullable', 'string', 'max:2000', function (string $attribute, mixed $value, \Closure $fail): void {
@@ -123,12 +121,52 @@ class SubjectController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        return [
-            'classroom_id' => (int) $validated['classroom_id'],
+        $localIds = $this->normalizedLocalIds($validated['local_ids'] ?? []);
+        $this->ensureNameIsAvailableForLocals($validated['name'], $localIds, $subject);
+
+        return [[
+            'classroom_id' => $localIds[0] ?? null,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'url' => $validated['url'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? false),
-        ];
+        ], $localIds];
+    }
+
+    /**
+     * @param  array<int, mixed>  $localIds
+     * @return array<int, int>
+     */
+    private function normalizedLocalIds(array $localIds): array
+    {
+        return collect($localIds)
+            ->map(fn (mixed $localId): int => (int) $localId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, int>|array<int, int>  $localIds
+     */
+    private function ensureNameIsAvailableForLocals(string $name, Collection|array $localIds, ?Subject $subject): void
+    {
+        $localIds = collect($localIds);
+
+        if ($localIds->isEmpty()) {
+            return;
+        }
+
+        $exists = Subject::query()
+            ->where('name', $name)
+            ->when($subject !== null, fn ($query) => $query->whereKeyNot($subject->id))
+            ->whereHas('locals', fn ($query) => $query->whereIn('classrooms.id', $localIds))
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'name' => __('A subject with this name already exists in one of the selected rooms.'),
+            ]);
+        }
     }
 }

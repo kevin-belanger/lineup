@@ -10,6 +10,7 @@ use App\Services\SupportRequestChangeMarker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class SupportRequestController extends Controller
@@ -171,15 +172,25 @@ class SupportRequestController extends Controller
             'subject_id' => [
                 'required',
                 'integer',
-                Rule::exists('subjects', 'id')
-                    ->where('is_active', true)
-                    ->where('classroom_id', $classroom->id),
+                Rule::exists('subjects', 'id')->where('is_active', true),
             ],
             'moodle_tile_number' => ['required', 'integer', 'min:1', 'max:9999'],
             'table_number' => ['required', 'string', 'max:50'],
             'type' => ['required', 'string', Rule::in(array_keys(SupportRequest::typeLabels()))],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        $subjectIsAvailable = Subject::query()
+            ->whereKey((int) $validated['subject_id'])
+            ->where('is_active', true)
+            ->whereHas('locals', fn ($query) => $query->whereKey($classroom->id))
+            ->exists();
+
+        if (! $subjectIsAvailable) {
+            throw ValidationException::withMessages([
+                'subject_id' => __('The selected subject is not available in this room.'),
+            ]);
+        }
 
         return [
             'subject_id' => (int) $validated['subject_id'],
@@ -206,11 +217,10 @@ class SupportRequestController extends Controller
 
     private function activeSubjects(Classroom $classroom)
     {
-        return Subject::query()
-            ->where('classroom_id', $classroom->id)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        return $classroom->subjects()
+            ->where('subjects.is_active', true)
+            ->orderBy('subjects.name')
+            ->get(['subjects.id', 'subjects.name']);
     }
 
     private function authorizeStudentRequest(Request $request, SupportRequest $supportRequest): void

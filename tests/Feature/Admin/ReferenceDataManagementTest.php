@@ -100,7 +100,7 @@ class ReferenceDataManagementTest extends TestCase
         $newClassroom = Classroom::factory()->create(['name' => 'Local 402']);
 
         $this->actingAs($admin)->post(route('admin.subjects.store'), [
-            'classroom_id' => $classroom->id,
+            'local_ids' => [$classroom->id],
             'name' => 'Sciences',
             'description' => 'Cours de sciences',
             'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
@@ -110,7 +110,7 @@ class ReferenceDataManagementTest extends TestCase
         $subject = Subject::query()->where('name', 'Sciences')->firstOrFail();
 
         $this->actingAs($admin)->patch(route('admin.subjects.update', $subject), [
-            'classroom_id' => $newClassroom->id,
+            'local_ids' => [$newClassroom->id],
             'name' => 'Science',
             'description' => 'Cours renomme',
             'url' => 'https://moodle.example.com/course/view.php?id=13',
@@ -122,9 +122,46 @@ class ReferenceDataManagementTest extends TestCase
         $subject->refresh();
 
         $this->assertSame($newClassroom->id, $subject->classroom_id);
+        $this->assertSame([$newClassroom->id], $subject->locals()->pluck('classrooms.id')->all());
         $this->assertSame('Science', $subject->name);
         $this->assertSame('https://moodle.example.com/course/view.php?id=13', $subject->url);
         $this->assertFalse($subject->is_active);
+    }
+
+    public function test_admin_can_create_subject_with_no_classroom(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->post(route('admin.subjects.store'), [
+            'name' => 'General help',
+            'is_active' => '1',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $subject = Subject::query()->where('name', 'General help')->firstOrFail();
+
+        $this->assertNull($subject->classroom_id);
+        $this->assertSame(0, $subject->locals()->count());
+    }
+
+    public function test_admin_can_create_subject_with_multiple_classrooms(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create();
+        $otherClassroom = Classroom::factory()->create();
+
+        $this->actingAs($admin)->post(route('admin.subjects.store'), [
+            'local_ids' => [$classroom->id, $otherClassroom->id],
+            'name' => 'Shared subject',
+            'is_active' => '1',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $subject = Subject::query()->where('name', 'Shared subject')->firstOrFail();
+
+        $this->assertSame($classroom->id, $subject->classroom_id);
+        $this->assertEqualsCanonicalizing(
+            [$classroom->id, $otherClassroom->id],
+            $subject->locals()->pluck('classrooms.id')->all(),
+        );
     }
 
     public function test_subject_url_must_be_valid_after_replacing_supported_variables(): void
@@ -133,14 +170,14 @@ class ReferenceDataManagementTest extends TestCase
         $classroom = Classroom::factory()->create();
 
         $this->actingAs($admin)->post(route('admin.subjects.store'), [
-            'classroom_id' => $classroom->id,
+            'local_ids' => [$classroom->id],
             'name' => 'Informatique',
             'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
             'is_active' => '1',
         ])->assertSessionHasNoErrors();
 
         $this->actingAs($admin)->post(route('admin.subjects.store'), [
-            'classroom_id' => $classroom->id,
+            'local_ids' => [$classroom->id],
             'name' => 'Robotique',
             'url' => 'pas une url',
             'is_active' => '1',
@@ -250,13 +287,13 @@ class ReferenceDataManagementTest extends TestCase
         ]);
 
         $this->actingAs($admin)->post(route('admin.subjects.store'), [
-            'classroom_id' => $classroom->id,
+            'local_ids' => [$classroom->id],
             'name' => 'Francais',
             'is_active' => '1',
         ])->assertSessionHasErrors('name');
 
         $this->actingAs($admin)->post(route('admin.subjects.store'), [
-            'classroom_id' => $otherClassroom->id,
+            'local_ids' => [$otherClassroom->id],
             'name' => 'Francais',
             'is_active' => '1',
         ])->assertSessionHasNoErrors();
@@ -277,6 +314,7 @@ class ReferenceDataManagementTest extends TestCase
         $this->actingAs($admin)->delete(route('admin.subjects.destroy', $subject))->assertRedirect();
 
         $this->assertDatabaseMissing('subjects', ['id' => $subject->id]);
+        $this->assertDatabaseMissing('local_subject', ['subject_id' => $subject->id]);
         $this->assertDatabaseHas('support_requests', [
             'id' => $supportRequest->id,
             'subject_id' => null,
@@ -298,6 +336,7 @@ class ReferenceDataManagementTest extends TestCase
         $this->actingAs($admin)->delete(route('admin.classrooms.destroy', $classroom))->assertRedirect();
 
         $this->assertDatabaseMissing('classrooms', ['id' => $classroom->id]);
+        $this->assertDatabaseMissing('local_subject', ['local_id' => $classroom->id]);
         $this->assertDatabaseHas('subjects', [
             'id' => $subject->id,
             'classroom_id' => null,

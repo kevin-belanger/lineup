@@ -11,6 +11,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SubjectFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Subject $subject): void {
+            if ($subject->classroom_id !== null) {
+                $subject->locals()->syncWithoutDetaching([$subject->classroom_id]);
+            }
+        });
+    }
+
     /**
      * Define the model's default state.
      *
