@@ -9,7 +9,7 @@ Backups are not created or restored from the web interface. This keeps database 
 To create a SQL backup of the current application database:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 ./scripts/backup.sh database
 ```
 
@@ -33,7 +33,7 @@ Runtime data such as sessions, cache entries, queued jobs, and failed jobs is ex
 To list existing SQL backups stored in the `backups/` directory:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 ./scripts/backup.sh list
 ```
 
@@ -42,7 +42,7 @@ cd /home/lineup
 To restore a backup using an interactive menu:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 ./scripts/backup.sh restore
 ```
 

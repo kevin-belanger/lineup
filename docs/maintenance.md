@@ -23,7 +23,7 @@ With the default production database-backed session and queue settings, the Lara
 Verify the scheduler is running:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 docker compose ps scheduler
 docker compose logs --tail=100 scheduler
 ```
@@ -33,7 +33,7 @@ docker compose logs --tail=100 scheduler
 View running containers:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 docker compose ps
 ```
 

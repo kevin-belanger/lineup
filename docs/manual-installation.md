@@ -82,7 +82,7 @@ docker compose version
 Clone the repository and switch to the latest release tag:
 
 ```bash
-cd /home
+cd /opt
 git clone https://github.com/kevin-belanger/lineup.git lineup
 cd lineup
 

@@ -13,7 +13,7 @@ The recommended production installation method is the automated installer.
 Use a fresh Ubuntu server, then run:
 
 ```bash
-cd /home
+cd /tmp
 curl -fsSL https://raw.githubusercontent.com/kevin-belanger/lineup/main/scripts/install.sh -o install.sh
 chmod +x install.sh
 ./install.sh
@@ -46,7 +46,7 @@ Production updates are deployed through Git version tags, not through every comm
 To update an existing installation:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 ./scripts/update.sh
 ```
 
@@ -65,7 +65,7 @@ Database backups and restores are handled from the server with `backup.sh`.
 Create a backup:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 ./scripts/backup.sh database
 ```
 
@@ -94,7 +94,7 @@ Production uses Docker log rotation and Laravel daily logs to avoid uncontrolled
 Useful commands:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 docker compose ps
 docker compose logs --tail=100 app
 docker compose logs --tail=100 scheduler

@@ -28,7 +28,7 @@ v1.0.0-rc.1
 Connect to the server and run:
 
 ```bash
-cd /home/lineup
+cd /opt/lineup
 ./scripts/update.sh
 ```
 

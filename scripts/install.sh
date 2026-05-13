@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPOSITORY_URL="https://github.com/kevin-belanger/lineup.git"
-INSTALL_DIR="/home/lineup"
+INSTALL_DIR="/opt/lineup"
 VERSION_TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+.*$'
 
 APP_SERVICE="app"
@@ -156,6 +156,15 @@ require_sudo() {
 
     if ! sudo -v; then
         echo "Error: this user must have sudo privileges."
+        exit 1
+    fi
+}
+
+require_non_root_user() {
+    if [ "$EUID" -eq 0 ]; then
+        echo "Error: do not run this installer with sudo."
+        echo "Run it as a regular user with sudo privileges:"
+        echo "./install.sh"
         exit 1
     fi
 }
@@ -482,6 +491,7 @@ main() {
 
     require_ubuntu
     require_sudo
+    require_non_root_user
     check_fresh_install
     check_ports
     install_base_packages
