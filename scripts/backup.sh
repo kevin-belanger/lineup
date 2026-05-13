@@ -130,6 +130,35 @@ test_mysql_connection() {
     fi
 }
 
+drop_all_database_tables() {
+    echo "Dropping existing database tables..."
+
+    local drop_statements
+
+    drop_statements="$(docker compose exec -T "$DB_SERVICE" mysql \
+        -u"$DB_USERNAME" \
+        -p"$DB_PASSWORD" \
+        -N -B \
+        "$DB_DATABASE" \
+        -e "SELECT CONCAT('DROP TABLE IF EXISTS \`', REPLACE(TABLE_NAME, '\`', '\`\`'), '\`;') FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE';")"
+
+    if [ -z "$drop_statements" ]; then
+        echo "No existing tables found."
+        return
+    fi
+
+    {
+        echo "SET FOREIGN_KEY_CHECKS=0;"
+        echo "$drop_statements"
+        echo "SET FOREIGN_KEY_CHECKS=1;"
+    } | docker compose exec -T "$DB_SERVICE" mysql \
+        -u"$DB_USERNAME" \
+        -p"$DB_PASSWORD" \
+        "$DB_DATABASE"
+
+    echo "Existing tables dropped."
+}
+
 table_exists() {
     local table="$1"
 
@@ -381,6 +410,9 @@ restore_database_backup() {
             exit 0
         fi
     fi
+
+    echo
+    drop_all_database_tables
 
     echo
     echo "Importing SQL backup into MySQL..."
