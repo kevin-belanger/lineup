@@ -2,406 +2,123 @@
 
 LineUp is a Laravel application used to manage student help requests in a classroom or training center.
 
-Students can create support requests, choose a subject, add a comment, and wait in a queue. Teachers can view pending requests, take charge of a request, pause it, complete it, or return it to the queue.
+Students create support requests, choose a subject, add a comment, and wait in a queue. Teachers can view pending requests, take charge of requests, pause them, complete them, or return them to the queue.
 
 Administrators can manage application settings, users, classrooms, subjects, and other configuration options.
 
-The application is designed for environments where students work individually and teachers need a clear view of who needs help, where they are seated, and what they are working on.
+## Recommended production installation
 
-## Production installation with Docker
+The recommended production installation method is the automated installer.
 
-This is the recommended production installation method.
-
-The Docker setup uses:
-
-- a Laravel application container;
-- a scheduler container for Laravel scheduled tasks;
-- a MySQL database container;
-- a Redis container;
-- a Caddy reverse proxy container.
-
-Caddy is used as the public web entry point. By default, the provided `Caddyfile` uses plain HTTP on port 80. It also contains commented examples for internal domain names and public HTTPS with automatic Let's Encrypt certificates.
-
-### Server requirements
-
-Use a fresh Ubuntu server.
-
-Install the basic tools:
+Use a fresh Ubuntu server, then run:
 
 ```bash
-sudo apt update
-sudo apt install -y git openssl ca-certificates curl
+cd /home
+curl -fsSL https://raw.githubusercontent.com/kevin-belanger/lineup/main/scripts/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
 ```
 
-### Install Docker
+The installer will:
 
-Remove conflicting old packages if they exist:
+- validate that the server is suitable for a fresh installation;
+- install required packages;
+- install Docker from Docker’s official repository;
+- clone the latest official LineUp release tag;
+- create and configure `.env`;
+- configure Caddy;
+- build and start the Docker containers;
+- run database migrations and initial seeders;
+- display the initial administrator account information.
 
-```bash
-sudo apt remove -y docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc
-```
+The installer is for fresh installations only. Do not use it to update an existing installation.
 
-Add Docker's official repository:
-
-```bash
-sudo install -m 0755 -d /etc/apt/keyrings
-
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-    -o /etc/apt/keyrings/docker.asc
-
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-sudo tee /etc/apt/sources.list.d/docker.sources > /dev/null <<EOF
-Types: deb
-URIs: https://download.docker.com/linux/ubuntu
-Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
-Components: stable
-Architectures: $(dpkg --print-architecture)
-Signed-By: /etc/apt/keyrings/docker.asc
-EOF
-```
-
-Install Docker and Docker Compose:
-
-```bash
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-```
-
-Allow your user to use Docker:
-
-```bash
-sudo usermod -aG docker $USER
-```
-
-Log out, then log back in.
-
-Verify the installation:
-
-```bash
-docker --version
-docker compose version
-```
-
-### Clone the project
-
-Clone the repository and switch to the latest release tag:
-
-```bash
-git clone https://github.com/kevin-belanger/lineup.git lineup
-cd lineup
-
-git fetch --tags
-
-LATEST_TAG="$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.*$' | head -n 1)"
-
-if [ -z "$LATEST_TAG" ]; then
-    echo "No valid release tag found."
-    exit 1
-fi
-
-git checkout "$LATEST_TAG"
-```
-
-Production installations should use tagged releases instead of the `main` branch.
-
-Release tags must start with `vX.X.X`, for example:
+For the manual installation procedure, see:
 
 ```text
-v0.0.1
-v0.1.0
-v1.0.0
+docs/manual-installation.md
 ```
 
-### Create the environment file
+## Updating LineUp
 
-Copy the example environment file:
+Production updates are deployed through Git version tags, not through every commit on `main`.
+
+To update an existing installation:
 
 ```bash
-cp .env.example .env
+cd /home/lineup
+./scripts/update.sh
 ```
 
-Set the installed application version from the checked-out release tag:
+The update script installs the latest valid release tag, updates `APP_VERSION`, rebuilds the containers, runs migrations, and refreshes Laravel caches.
 
-```bash
-sed -i "s|^APP_VERSION=.*|APP_VERSION=${LATEST_TAG}|" .env
-```
-
-### Create the environment file
-
-Copy the example environment file:
-
-```bash
-cp .env.example .env
-```
-
-Set the installed application version from the checked-out release tag:
-
-```bash
-sed -i "s|^APP_VERSION=.*|APP_VERSION=${LATEST_TAG}|" .env
-```
-
-Edit the `.env` file:
-
-```bash
-nano .env
-```
-
-At minimum, configure the following values.
-
-Set the application URL to the address users will use to access LineUp:
-
-```env
-APP_URL=https://lineup.example.com
-```
-
-Generate the Laravel application key:
-
-```bash
-APP_KEY="base64:$(openssl rand -base64 32)"
-sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env
-```
-
-Generate a MySQL password:
-
-```bash
-DB_PASSWORD="$(openssl rand -hex 24)"
-sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${DB_PASSWORD}|" .env
-```
-
-Configure the initial administrator account.
-
-If these values are left empty, LineUp will create the default administrator account:
+For details, see:
 
 ```text
-Email: admin@example.com
-Password: password
+docs/update.md
 ```
-
-For a production installation, it is recommended to define a custom administrator before running the seeders:
-
-```env
-ADMIN_NAME="Admin LineUp"
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=change-this-password
-```
-
-Configure outgoing email.
-
-LineUp uses email for features such as password reset and account-related messages. For production, configure SMTP in `.env`:
-
-```env
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.example.com
-MAIL_PORT=587
-MAIL_USERNAME=your-smtp-username
-MAIL_PASSWORD=your-smtp-password
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS="lineup@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-```
-
-Common SMTP configurations are:
-
-- port `587` with `tls`;
-- port `465` with `ssl`.
-
-The `MAIL_FROM_ADDRESS` must be a valid sender address accepted by your SMTP provider.
-
-If email is not configured, password reset and email-based features may not work correctly in production.
-
-### Configure Caddy
-
-The default `Caddyfile` works with HTTP on port 80:
-
-```caddyfile
-:80 {
-    reverse_proxy app:80
-}
-```
-
-This is enough for a local test, an intranet server, or a server accessed directly by IP address.
-
-For a public domain with HTTPS, edit the `Caddyfile` and use the commented HTTPS example:
-
-```caddyfile
-lineup.example.com {
-    reverse_proxy app:80
-}
-```
-
-Replace `lineup.example.com` with your real domain name.
-
-For automatic HTTPS to work:
-
-- the domain must point to the server;
-- ports 80 and 443 must be reachable from the Internet;
-- the server must be publicly accessible.
-
-### Start the application
-
-Build and start the containers:
-
-```bash
-docker compose up -d --build
-```
-
-Run the database migrations:
-
-```bash
-docker compose exec app php artisan migrate --force
-```
-
-Run the seeders:
-
-```bash
-docker compose exec app php artisan db:seed --force
-```
-
-The application should now be available at the `APP_URL` configured in `.env`.
-
-### Notes
-
-Do not run `php artisan key:generate` manually inside the production container to create the application key.
-
-In this Docker setup, the `.env` file belongs to the server and is not copied into the Docker image. The `APP_KEY` value should be generated directly in the server `.env` file before starting the containers.
-
-If the database is new, always run migrations before using the application. The application may fail with a server error if required database tables such as `cache`, `sessions`, or `jobs` do not exist yet.
-
-## Updating the application
-
-LineUp production updates are deployed through Git version tags, not through every commit on the `main` branch.
-
-Official release tags must use this format:
-
-```text
-vX.X.X
-```
-
-Examples:
-
-```text
-v0.0.1
-v0.1.0
-v1.0.0
-```
-
-Tags may also include an optional suffix after the version number, for example:
-
-```text
-v0.1.0-beta
-v1.0.0-rc.1
-```
-
-To update an existing production installation, connect to the server, go to the project directory, and run:
-
-```bash
-./update.sh
-```
-
-The update script will:
-
-- fetch the latest Git tags;
-- find the latest valid version tag;
-- switch the project to that version;
-- update the installed version in `.env`;
-- rebuild and restart the Docker containers;
-- run database migrations;
-- refresh Laravel caches.
-
-The script does not delete Docker volumes. Application data, uploaded files, Redis data, Caddy data, and the MySQL database are preserved.
-
-You can also verify the installed application version from the admin settings page.
-
-## Production log rotation and cleanup
-
-Production Docker services in `compose.yaml` use the Docker `json-file` logging driver with rotation enabled. The `app`, `scheduler`, `caddy`, `mysql`, and `redis` services each keep up to five 10 MB Docker log files.
-
-Laravel should use daily application logs in production so files in `storage/logs` do not grow indefinitely. The recommended production values are:
-
-```env
-LOG_CHANNEL=daily
-LOG_LEVEL=warning
-LOG_DAILY_DAYS=14
-```
-
-With the default production database-backed session and queue settings, the Laravel scheduler also prunes expired database sessions once per day and prunes failed queue jobs older than seven days once per day. These tasks only clean transient runtime records. They do not delete application history such as support requests.
 
 ## Database backup and restore
 
-LineUp database backups and restores are handled from the server with `backup.sh`.
+Database backups and restores are handled from the server with `backup.sh`.
 
-Backups are not created or restored from the web interface. This keeps database operations outside the Laravel application and avoids giving the web interface direct control over critical server actions.
-
-### Create a database backup
-
-To create a SQL backup of the current application database, connect to the server, go to the project directory, and run:
+Create a backup:
 
 ```bash
-./backup.sh database
+cd /home/lineup
+./scripts/backup.sh database
 ```
 
-The script creates the `backups/` directory if it does not already exist and saves the SQL file there.
-
-The generated backup includes metadata in the SQL header, including:
-
-- application name;
-- installed LineUp version;
-- repository URL;
-- generation date and time;
-- application time zone;
-- database name.
-
-This version information is used to help validate compatibility before restoring the backup.
-
-Runtime data such as sessions, cache entries, queued jobs, and failed jobs is excluded from the backup. The table structures remain available, but their temporary data is not restored.
-
-### List available backups
-
-To list existing SQL backups stored in the `backups/` directory, run:
+List available backups:
 
 ```bash
-./backup.sh list
+./scripts/backup.sh list
 ```
 
-### Restore a database backup
-
-To restore a backup using an interactive menu, run:
+Restore a backup:
 
 ```bash
-./backup.sh restore
+./scripts/backup.sh restore
 ```
 
-The script will display the available backup files and ask which one should be restored.
+For details, see:
 
-You can also restore a specific backup file:
+```text
+docs/backup-restore.md
+```
+
+## Maintenance
+
+Production uses Docker log rotation and Laravel daily logs to avoid uncontrolled disk usage.
+
+Useful commands:
 
 ```bash
-./backup.sh restore backups/backup-file.sql
+cd /home/lineup
+docker compose ps
+docker compose logs --tail=100 app
+docker compose logs --tail=100 scheduler
 ```
 
-Replace `backup-file.sql` with the actual backup filename.
+Do not use these commands during normal maintenance:
 
-The restore process will:
+```bash
+docker compose down -v
+docker volume prune
+docker system prune --volumes
+```
 
-- verify that the SQL file exists;
-- verify that the MySQL container is running;
-- test the database connection using the credentials from `.env`;
-- read the backup version from the SQL header;
-- compare the backup version with the installed application version;
-- warn the administrator before replacing the current application data;
-- ask for explicit confirmation before continuing;
-- import the SQL file into the MySQL container;
-- run database migrations;
-- refresh Laravel caches.
+They can delete Docker volumes, including the MySQL database volume.
 
-If the backup version does not match the installed application version, the script will display an additional warning. It is recommended to install the matching LineUp version before restoring the backup.
+For details, see:
 
-Restoring a backup replaces the current application data. Use this only when you understand that the current database content will be overwritten by the backup.
-
-The `backups/` directory should not be committed to Git.
+```text
+docs/maintenance.md
+```
 
 ## Development with Laravel Sail
+
+This section is only for developers who want to run LineUp locally to modify or test the application. If you only want to install and use LineUp in production, you can ignore this section and use the recommended production installation procedure above.
 
 The production Docker setup uses:
 
@@ -415,29 +132,28 @@ The local development setup uses:
 compose.sail.yaml
 ```
 
-To start the development environment:
+Start the development environment:
 
 ```bash
 docker compose -f compose.sail.yaml up -d --build
 ```
 
-Run migrations in development:
+Run migrations:
 
 ```bash
 docker compose -f compose.sail.yaml exec app php artisan migrate
 ```
 
-Run the seeders in development:
+Run seeders:
 
 ```bash
 docker compose -f compose.sail.yaml exec app php artisan db:seed
 ```
 
-Start Vite in development:
+Start Vite:
 
 ```bash
 docker compose -f compose.sail.yaml exec app npm run dev
 ```
 
-The Sail setup is intended for local development. The production setup should use `compose.yaml`.
-
+The Sail setup is intended for local development only.

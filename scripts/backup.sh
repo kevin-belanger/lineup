@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_DIR"
+
 APP_SERVICE="app"
 DB_SERVICE="mysql"
 BACKUP_DIR="backups"
@@ -23,10 +27,10 @@ echo_title() {
 usage() {
     cat <<EOF
 Usage:
-  ./backup.sh database
-  ./backup.sh list
-  ./backup.sh restore
-  ./backup.sh restore backups/backup-file.sql
+  ./scripts/backup.sh database
+  ./scripts/backup.sh list
+  ./scripts/backup.sh restore
+  ./scripts/backup.sh restore backups/backup-file.sql
 
 Commands:
   database    Create a SQL backup in the backups/ directory.

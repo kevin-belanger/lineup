@@ -2,18 +2,22 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_DIR"
+
 APP_SERVICE="app"
 VERSION_TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+.*$'
 
 echo "=== LineUp update ==="
 
 if [ ! -d ".git" ]; then
-    echo "Error: this script must be run from the root of the Git repository."
+    echo "Error: this script must be located in the scripts directory of a Git repository."
     exit 1
 fi
 
 if [ ! -f ".env" ]; then
-    echo "Error: .env file not found."
+    echo "Error: .env file not found in project root: $PROJECT_DIR"
     exit 1
 fi
 
@@ -27,6 +31,8 @@ if [ -n "$(git status --porcelain)" ]; then
     echo "Commit or discard them before updating."
     exit 1
 fi
+
+echo "Project directory: $PROJECT_DIR"
 
 echo "Fetching latest version tags..."
 git fetch --tags origin
