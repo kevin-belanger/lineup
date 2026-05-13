@@ -123,24 +123,6 @@
                         </div>
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Database backup') }}</h3>
-                            <p class="mt-1 text-sm text-gray-600">
-                                {{ __('Download a SQL dump of the current application database. Keep this file private because it may contain sensitive data.') }}
-                            </p>
-                        </div>
-
-                        <div class="mt-4">
-                            <a
-                                href="{{ route('admin.database.backup.download') }}"
-                                class="text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                            >
-                                {{ __('Download database backup') }}
-                            </a>
-                        </div>
-                    </section>
-
                     <section class="border-t border-gray-200 bg-gray-50 p-6">
                         <x-primary-button>
                             {{ __('Save') }}

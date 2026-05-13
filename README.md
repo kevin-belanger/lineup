@@ -284,21 +284,60 @@ You can also verify the installed application version from the admin settings pa
 
 ## Database backup and restore
 
-LineUp includes a database backup option in the admin interface.
+LineUp database backups and restores are handled from the server with `backup.sh`.
 
-From the admin settings page, an administrator can download a SQL backup of the current application database. The generated file includes metadata in the SQL header, including the installed LineUp version. This version information is used to help validate compatibility before restoring the backup.
+Backups are not created or restored from the web interface. This keeps database operations outside the Laravel application and avoids giving the web interface direct control over critical server actions.
 
-The backup download is intended for manual safekeeping before updates, server maintenance, or migration to another installation.
+### Create a database backup
 
-To restore a backup, copy the SQL file to the server, place it in the project directory, and run:
+To create a SQL backup of the current application database, connect to the server, go to the project directory, and run:
 
 ```bash
-./restore-data.sh backup-file.sql
+./backup.sh database
+```
+
+The script creates the `backups/` directory if it does not already exist and saves the SQL file there.
+
+The generated backup includes metadata in the SQL header, including:
+
+- application name;
+- installed LineUp version;
+- repository URL;
+- generation date and time;
+- application time zone;
+- database name.
+
+This version information is used to help validate compatibility before restoring the backup.
+
+Runtime data such as sessions, cache entries, queued jobs, and failed jobs is excluded from the backup. The table structures remain available, but their temporary data is not restored.
+
+### List available backups
+
+To list existing SQL backups stored in the `backups/` directory, run:
+
+```bash
+./backup.sh list
+```
+
+### Restore a database backup
+
+To restore a backup using an interactive menu, run:
+
+```bash
+./backup.sh restore
+```
+
+The script will display the available backup files and ask which one should be restored.
+
+You can also restore a specific backup file:
+
+```bash
+./backup.sh restore backups/backup-file.sql
 ```
 
 Replace `backup-file.sql` with the actual backup filename.
 
-The restore script will:
+The restore process will:
 
 - verify that the SQL file exists;
 - verify that the MySQL container is running;
@@ -315,7 +354,7 @@ If the backup version does not match the installed application version, the scri
 
 Restoring a backup replaces the current application data. Use this only when you understand that the current database content will be overwritten by the backup.
 
-It is not possible to restore a database backup by uploading it directly through the web interface. Database restoration is handled from the server with `restore-data.sh`.
+The `backups/` directory should not be committed to Git.
 
 ## Development with Laravel Sail
 
