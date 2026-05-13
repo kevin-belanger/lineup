@@ -18,6 +18,11 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "5"
 
     scheduler:
         image: lineup-app:latest
@@ -37,6 +42,11 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "5"
 
     caddy:
         image: caddy:alpine
@@ -52,6 +62,11 @@ services:
             - lineup
         depends_on:
             - app
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "5"
 
     mysql:
         image: mysql:8.4
@@ -75,6 +90,11 @@ services:
                 - '-p${DB_PASSWORD}'
             retries: 3
             timeout: 5s
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "5"
 
     redis:
         image: redis:alpine
@@ -91,6 +111,11 @@ services:
                 - ping
             retries: 3
             timeout: 5s
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "5"
 
 networks:
     lineup:

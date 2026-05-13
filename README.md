@@ -282,6 +282,30 @@ The script does not delete Docker volumes. Application data, uploaded files, Red
 
 You can also verify the installed application version from the admin settings page.
 
+## Production log rotation and cleanup
+
+Production Docker services in `compose.yaml` use the Docker `json-file` logging driver with rotation enabled. The `app`, `scheduler`, `caddy`, `mysql`, and `redis` services each keep up to five 10 MB Docker log files.
+
+Laravel should use daily application logs in production so files in `storage/logs` do not grow indefinitely. The recommended production values are:
+
+```env
+LOG_CHANNEL=daily
+LOG_LEVEL=warning
+LOG_DAILY_DAYS=14
+```
+
+With the default production database-backed session and queue settings, the Laravel scheduler also prunes expired database sessions once per day and prunes failed queue jobs older than seven days once per day. These tasks only clean transient runtime records. They do not delete application history such as support requests.
+
+Do not use the following commands for routine cleanup on a production server:
+
+```bash
+docker compose down -v
+docker volume prune
+docker system prune --volumes
+```
+
+Those commands can delete Docker volumes that contain LineUp data, including the MySQL database, Redis data, Caddy data, or Laravel storage.
+
 ## Database backup and restore
 
 LineUp database backups and restores are handled from the server with `backup.sh`.
@@ -403,4 +427,3 @@ Do not run `php artisan key:generate` manually inside the production container t
 In this Docker setup, the `.env` file belongs to the server and is not copied into the Docker image. The `APP_KEY` value should be generated directly in the server `.env` file before starting the containers.
 
 If the database is new, always run migrations before using the application. The application may fail with a server error if required database tables such as `cache`, `sessions`, or `jobs` do not exist yet.
-
