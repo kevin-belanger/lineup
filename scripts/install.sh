@@ -58,10 +58,10 @@ ask_value() {
 
     if [ -n "$default_value" ]; then
         read -r -p "$prompt [$default_value]: " value
-        echo "${value:-$default_value}"
+        printf '%s' "${value:-$default_value}"
     else
         read -r -p "$prompt: " value
-        echo "$value"
+        printf '%s' "$value"
     fi
 }
 
@@ -73,11 +73,11 @@ ask_required_value() {
         read -r -p "$prompt: " value
 
         if [ -z "$value" ]; then
-            echo "This value is required."
+            echo "This value is required." >&2
         fi
     done
 
-    echo "$value"
+    printf '%s' "$value"
 }
 
 ask_secret_value() {
@@ -86,14 +86,14 @@ ask_secret_value() {
 
     while [ -z "$value" ]; do
         read -r -s -p "$prompt: " value
-        echo
+        printf '\n' >&2
 
         if [ -z "$value" ]; then
-            echo "This value is required."
+            echo "This value is required." >&2
         fi
     done
 
-    echo "$value"
+    printf '%s' "$value"
 }
 
 generate_password() {
