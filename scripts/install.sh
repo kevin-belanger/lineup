@@ -11,8 +11,8 @@ DEFAULT_APP_NAME="LineUp"
 DEFAULT_ADMIN_NAME="Administrator"
 DEFAULT_ADMIN_EMAIL="admin@example.com"
 
-DOCKER_CMD="docker"
-COMPOSE_CMD="docker compose"
+DOCKER_CMD="sudo docker"
+COMPOSE_CMD="sudo docker compose"
 
 echo
 echo "=== LineUp production installer ==="
@@ -234,9 +234,6 @@ EOF
     sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
     sudo usermod -aG docker "$USER" || true
-    
-    DOCKER_CMD="sudo docker"
-    COMPOSE_CMD="sudo docker compose"
 
     $DOCKER_CMD --version
     $COMPOSE_CMD version
