@@ -234,14 +234,9 @@ EOF
     sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
     sudo usermod -aG docker "$USER" || true
-
-    if docker --version >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-        DOCKER_CMD="docker"
-        COMPOSE_CMD="docker compose"
-    else
-        DOCKER_CMD="sudo docker"
-        COMPOSE_CMD="sudo docker compose"
-    fi
+    
+    DOCKER_CMD="sudo docker"
+    COMPOSE_CMD="sudo docker compose"
 
     $DOCKER_CMD --version
     $COMPOSE_CMD version
