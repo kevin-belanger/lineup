@@ -312,8 +312,11 @@ configure_caddy() {
     echo
     echo "Caddy configuration"
     echo
+    echo "If you choose public HTTPS with a domain name, the domain DNS must already point to this server's public IP address."
+    echo "Ports 80 and 443 must also be reachable from the Internet for automatic Let's Encrypt certificates to work."
+    echo
 
-    if confirm "Use a public HTTPS domain with automatic Let's Encrypt certificates?"; then
+    if confirm "Use a public HTTPS domain with automatic Let's Encrypt certificates?" "yes"; then
         CADDY_DOMAIN="$(ask_required_value "Domain name")"
 
         cat > Caddyfile <<EOF
@@ -345,7 +348,7 @@ configure_initial_admin() {
     ADMIN_NAME_VALUE="$(ask_value "Initial admin name" "$DEFAULT_ADMIN_NAME")"
     ADMIN_EMAIL_VALUE="$(ask_value "Initial admin email" "$DEFAULT_ADMIN_EMAIL")"
 
-    if confirm "Generate a secure initial admin password automatically?"; then
+    if confirm "Generate a secure initial admin password automatically?" "yes"; then
         ADMIN_PASSWORD_VALUE="$(generate_password)"
         ADMIN_PASSWORD_WAS_GENERATED="yes"
     else
@@ -361,6 +364,9 @@ configure_initial_admin() {
 configure_mail() {
     echo
     echo "Email configuration"
+    echo
+    echo "LineUp uses email for features such as password reset and account-related messages."
+    echo "If SMTP is not configured, the application will not be able to send emails and some features will not work correctly."
     echo
 
     if confirm "Configure SMTP now?" "yes"; then
@@ -459,20 +465,9 @@ print_summary() {
     fi
 
     echo
-    echo "Useful commands:"
-    echo "  cd $INSTALL_DIR"
-    echo "  ./update.sh"
-    echo "  ./backup.sh database"
-    echo "  ./backup.sh restore"
-    echo "  docker compose ps"
-    echo
-    echo "Important:"
-    echo "  Do not use docker compose down -v for normal maintenance."
-    echo "  Do not use docker volume prune or docker system prune --volumes."
-    echo
     echo "Docker group note:"
     echo "  Your user was added to the docker group."
-    echo "  Log out and log back in before running docker commands without sudo."
+    echo "  Log out and log back in before running commands."
 }
 
 main() {
