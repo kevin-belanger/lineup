@@ -368,6 +368,82 @@ class UserManagementTest extends TestCase
         $this->assertFalse($teacher->refresh()->is_admin);
     }
 
+    public function test_teacher_can_add_student_role_to_themselves(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => false,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'is_student' => '1',
+            'is_teacher' => '1',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ])
+            ->assertRedirect()
+            ->assertSessionMissing('toast');
+
+        $teacher->refresh();
+
+        $this->assertTrue($teacher->is_student);
+        $this->assertTrue($teacher->is_teacher);
+        $this->assertFalse($teacher->is_admin);
+    }
+
+    public function test_teacher_can_remove_student_role_from_themselves(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => true,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'is_teacher' => '1',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ])
+            ->assertRedirect()
+            ->assertSessionMissing('toast');
+
+        $teacher->refresh();
+
+        $this->assertFalse($teacher->is_student);
+        $this->assertTrue($teacher->is_teacher);
+        $this->assertFalse($teacher->is_admin);
+    }
+
+    public function test_teacher_can_not_remove_their_own_teacher_role(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => true,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'is_student' => '1',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'You cannot remove your own teacher role.',
+            ]);
+
+        $teacher->refresh();
+
+        $this->assertTrue($teacher->is_student);
+        $this->assertTrue($teacher->is_teacher);
+        $this->assertFalse($teacher->is_admin);
+    }
+
     public function test_teacher_can_not_assign_admin_role_to_another_user(): void
     {
         $teacher = User::factory()->teacher()->create();
@@ -444,6 +520,66 @@ class UserManagementTest extends TestCase
 
         $this->assertFalse($user->is_student);
         $this->assertTrue($user->is_teacher);
+        $this->assertFalse($user->is_admin);
+    }
+
+    public function test_teacher_can_assign_student_role_to_another_user(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create([
+            'is_student' => false,
+            'is_teacher' => true,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.roles', $user), [
+            'is_student' => '1',
+            'is_teacher' => '1',
+        ])->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertTrue($user->is_student);
+        $this->assertTrue($user->is_teacher);
+        $this->assertFalse($user->is_admin);
+    }
+
+    public function test_teacher_can_remove_student_role_from_another_user(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create([
+            'is_student' => true,
+            'is_teacher' => true,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.roles', $user), [
+            'is_teacher' => '1',
+        ])->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertFalse($user->is_student);
+        $this->assertTrue($user->is_teacher);
+        $this->assertFalse($user->is_admin);
+    }
+
+    public function test_teacher_can_remove_teacher_role_from_another_user(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->teacher()->create([
+            'is_student' => true,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.roles', $user), [
+            'is_student' => '1',
+        ])->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertTrue($user->is_student);
+        $this->assertFalse($user->is_teacher);
         $this->assertFalse($user->is_admin);
     }
 
@@ -695,5 +831,55 @@ class UserManagementTest extends TestCase
         $response->assertRedirect();
 
         $this->assertFalse($user->refresh()->is_active);
+    }
+
+    public function test_admin_can_manage_own_lower_roles_while_keeping_admin_role(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.update', $admin), [
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'is_student' => '1',
+            'is_teacher' => '1',
+            'is_admin' => '1',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ])->assertRedirect();
+
+        $admin->refresh();
+
+        $this->assertTrue($admin->is_student);
+        $this->assertTrue($admin->is_teacher);
+        $this->assertTrue($admin->is_admin);
+
+        $this->actingAs($admin)->patch(route('admin.users.update', $admin), [
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'is_admin' => '1',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ])->assertRedirect();
+
+        $admin->refresh();
+
+        $this->assertFalse($admin->is_student);
+        $this->assertFalse($admin->is_teacher);
+        $this->assertTrue($admin->is_admin);
+    }
+
+    public function test_student_only_user_can_not_remove_their_own_student_role(): void
+    {
+        $student = User::factory()->create([
+            'is_student' => true,
+            'is_teacher' => false,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($student)->patch(route('admin.users.roles', $student), [])
+            ->assertForbidden();
     }
 }

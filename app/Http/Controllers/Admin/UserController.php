@@ -123,12 +123,7 @@ class UserController extends Controller
         ];
         $isActive = (bool) ($validated['is_active'] ?? false);
 
-        if ($request->user()->is($user) && ! $roles['is_admin']) {
-            return back()->with('toast', [
-                'type' => 'error',
-                'message' => __('You cannot remove your own admin role.'),
-            ]);
-        }
+        $this->ensureCanKeepOwnHighestRole($request, $user, $roles);
 
         $this->ensureCanDeactivateUser($request, $user, $isActive);
 
@@ -215,12 +210,7 @@ class UserController extends Controller
             ]);
         }
 
-        if ($request->user()->is($user) && ! $roles['is_admin']) {
-            return back()->with('toast', [
-                'type' => 'error',
-                'message' => __('You cannot remove your own admin role.'),
-            ]);
-        }
+        $this->ensureCanKeepOwnHighestRole($request, $user, $roles);
 
         $this->ensureRoleApprovalConsistency($request, $roles, $user->is_approved);
 
@@ -334,6 +324,35 @@ class UserController extends Controller
         if (! $request->user()->is_admin && $user->is_admin) {
             abort(403, __('Only administrators can deactivate administrator accounts.'));
         }
+    }
+
+    /**
+     * @param  array{is_student: bool, is_teacher: bool, is_admin: bool}  $roles
+     */
+    private function ensureCanKeepOwnHighestRole(Request $request, User $user, array $roles): void
+    {
+        if (! $request->user()->is($user)) {
+            return;
+        }
+
+        $message = null;
+
+        if ($user->is_admin) {
+            $message = $roles['is_admin'] ? null : __('You cannot remove your own admin role.');
+        } elseif ($user->is_teacher) {
+            $message = $roles['is_teacher'] ? null : __('You cannot remove your own teacher role.');
+        } elseif ($user->is_student) {
+            $message = $roles['is_student'] ? null : __('You cannot remove your own student role.');
+        }
+
+        if ($message === null) {
+            return;
+        }
+
+        back()->with('toast', [
+            'type' => 'error',
+            'message' => $message,
+        ])->throwResponse();
     }
 
     /**

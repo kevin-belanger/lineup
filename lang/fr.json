@@ -317,6 +317,8 @@
     "You can use [table] to insert the table number and [section] to insert the Moodle tile number in the URL.": "Vous pouvez utiliser [table] pour insérer le numéro de table et [section] pour insérer le numéro de tuile Moodle dans l’URL.",
     "You cannot deactivate your own account.": "Vous ne pouvez pas désactiver votre propre compte.",
     "You cannot remove your own admin role.": "Vous ne pouvez pas retirer votre propre rôle administrateur.",
+    "You cannot remove your own student role.": "Vous ne pouvez pas retirer votre propre rôle étudiant.",
+    "You cannot remove your own teacher role.": "Vous ne pouvez pas retirer votre propre rôle enseignant.",
     "Your account must be approved before you can use LineUp.": "Votre compte doit être approuvé avant que vous puissiez utiliser LineUp.",
     "Your email address is unverified.": "Votre adresse courriel n’est pas vérifiée.",
     "Your selected language is no longer available. The application default language is now used.": "La langue sélectionnée n’est plus disponible. La langue par défaut de l’application est maintenant utilisée.",
