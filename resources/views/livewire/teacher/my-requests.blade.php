@@ -35,7 +35,7 @@
             @endphp
 
             @if ($supportRequest->is_priority)
-                <article wire:key="my-request-priority-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
+                <article wire:key="my-request-priority-{{ $supportRequest->id }}" wire:transition="teacher-my-priority-request-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
                     <div class="space-y-3">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
@@ -94,7 +94,7 @@
                 $subjectUrl = $supportRequest->subjectUrl();
             @endphp
 
-            <article wire:key="my-request-regular-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
+            <article wire:key="my-request-regular-{{ $supportRequest->id }}" wire:transition="teacher-my-regular-request-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="min-w-0 flex-1 space-y-2">
                         <div class="px-2">

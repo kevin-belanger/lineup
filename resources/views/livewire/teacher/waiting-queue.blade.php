@@ -14,7 +14,7 @@
             @endphp
 
             @if ($supportRequest->is_priority)
-                <article wire:key="waiting-request-{{ $supportRequest->id }}" class="rounded-lg border border-rose-200 bg-rose-50 p-5 shadow-sm ring-1 ring-rose-100">
+                <article wire:key="waiting-request-{{ $supportRequest->id }}" wire:transition="teacher-waiting-request-{{ $supportRequest->id }}" class="rounded-lg border border-rose-200 bg-rose-50 p-5 shadow-sm ring-1 ring-rose-100">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0 space-y-3">
                             <div class="flex flex-wrap items-center gap-2">
@@ -52,7 +52,7 @@
                     $subjectUrl = $supportRequest->subjectUrl();
                 @endphp
 
-                <article wire:key="waiting-request-{{ $supportRequest->id }}" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <article wire:key="waiting-request-{{ $supportRequest->id }}" wire:transition="teacher-waiting-request-{{ $supportRequest->id }}" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0 flex-1 space-y-2">
                             <div class="px-2">

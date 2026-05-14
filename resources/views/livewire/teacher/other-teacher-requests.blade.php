@@ -24,7 +24,7 @@
                         };
                     @endphp
 
-                    <article wire:key="other-teacher-request-{{ $supportRequest->id }}" class="relative rounded-md border border-gray-100 bg-gray-50 p-3 pb-9">
+                    <article wire:key="other-teacher-request-{{ $supportRequest->id }}" wire:transition="teacher-other-request-{{ $supportRequest->id }}" class="relative rounded-md border border-gray-100 bg-gray-50 p-3 pb-9">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <div class="truncate text-sm font-semibold text-gray-800">

@@ -5,3 +5,27 @@
 [x-cloak] {
     display: none !important;
 }
+
+::view-transition-group(*) {
+    animation-duration: 150ms;
+    animation-timing-function: ease-out;
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+    mix-blend-mode: normal;
+}
+
+::view-transition-old(*) {
+    animation-name: lineup-view-transition-fade-out;
+}
+
+::view-transition-new(*) {
+    animation-name: none;
+}
+
+@keyframes lineup-view-transition-fade-out {
+    to {
+        opacity: 0;
+    }
+}

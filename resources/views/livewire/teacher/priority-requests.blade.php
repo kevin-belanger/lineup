@@ -44,7 +44,7 @@
                     $durationMinutes = intdiv((int) $supportRequest->created_at->diffInSeconds(now(), true), 60);
                 @endphp
 
-                <article wire:key="sent-priority-request-{{ $supportRequest->id }}" class="rounded-lg border border-rose-200 bg-rose-50/70 p-4 shadow-sm">
+                <article wire:key="sent-priority-request-{{ $supportRequest->id }}" wire:transition="teacher-sent-priority-request-{{ $supportRequest->id }}" class="rounded-lg border border-rose-200 bg-rose-50/70 p-4 shadow-sm">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0 space-y-2">
                             <div class="flex flex-wrap items-center gap-2">

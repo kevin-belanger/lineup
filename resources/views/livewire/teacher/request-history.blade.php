@@ -70,7 +70,7 @@
                     : null;
             @endphp
 
-            <article wire:key="teacher-history-request-{{ $supportRequest->id }}" class="py-4">
+            <article wire:key="teacher-history-request-{{ $supportRequest->id }}" wire:transition="teacher-history-request-{{ $supportRequest->id }}" class="py-4">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0 space-y-2">
                         <div class="flex flex-wrap items-center gap-2">
