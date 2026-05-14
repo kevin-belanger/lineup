@@ -3,10 +3,34 @@
         <x-admin-breadcrumb :current="__('Subjects')" />
     </x-slot>
 
+    @php
+        $shouldRestoreSubjectCreateInput = old('create_panel') === 'create-subject' && ($errors->any() || session('subject_create_validation_failed') || session('subject_duplicate_name'));
+        $openCreatePanel = session('open_create_panel') === 'subjects' || $shouldRestoreSubjectCreateInput;
+    @endphp
+
     <div class="py-8">
-        <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
+        <div
+            class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8"
+            x-data="{
+                subjects: @js($subjectValidationOptions),
+                duplicateSubjectMessage: @js(__('A subject with this name already exists.')),
+                invalidUrlMessage: @js(__('The URL must be valid.')),
+                normalize(value) {
+                    return value.trim().toLowerCase();
+                },
+                subjectNameExists(value, ignoredId = null) {
+                    const name = this.normalize(value);
+
+                    if (name === '') {
+                        return false;
+                    }
+
+                    return this.subjects.some((subject) => subject.name === name && Number(subject.id) !== Number(ignoredId));
+                },
+            }"
+        >
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <details x-data="{ open: false }" x-on:toggle="open = $el.open">
+                <details @if ($openCreatePanel) open @endif x-data="{ open: @js($openCreatePanel) }" x-on:toggle="open = $el.open">
                     <summary
                         class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 transition hover:bg-gray-50"
                         x-bind:aria-expanded="open.toString()"
@@ -31,9 +55,17 @@
                         action="{{ route('admin.subjects.store') }}"
                         class="space-y-4 border-t border-gray-100 p-6"
                         x-data="{
-                            name: '',
-                            url: '',
+                            name: @js($shouldRestoreSubjectCreateInput ? old('name', '') : ''),
+                            url: @js($shouldRestoreSubjectCreateInput ? old('url', '') : ''),
+                            nameError: '',
                             urlError: '',
+                            validateName() {
+                                this.nameError = this.subjectNameExists(this.name)
+                                    ? this.duplicateSubjectMessage
+                                    : '';
+
+                                return this.nameError === '';
+                            },
                             validateUrl() {
                                 this.urlError = '';
 
@@ -47,34 +79,37 @@
 
                                     return true;
                                 } catch (error) {
-                                    this.urlError = 'The URL must be valid.';
+                                    this.urlError = this.invalidUrlMessage;
 
                                     return false;
                                 }
                             },
                             validateCreate() {
+                                const nameIsValid = this.validateName();
                                 const urlIsValid = this.validateUrl();
 
-                                return urlIsValid;
+                                return nameIsValid && urlIsValid;
                             },
                             hasClientErrors() {
-                                return this.urlError !== '';
+                                return this.nameError !== '' || this.urlError !== '';
                             },
                         }"
                         x-on:submit="if (! validateCreate()) $event.preventDefault()"
                     >
                         @csrf
+                        <input type="hidden" name="create_panel" value="create-subject">
 
                         <div class="grid gap-4 md:grid-cols-[1fr_2fr] md:items-end">
                             <div>
                                 <x-input-label for="name" :value="__('Name')" />
-                                <x-text-input id="name" name="name" x-model="name" class="mt-1 block w-full" required />
+                                <x-text-input id="name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
+                                <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
                             <div>
                                 <x-input-label for="description" :value="__('Description')" />
-                                <x-text-input id="description" name="description" class="mt-1 block w-full" />
+                                <x-text-input id="description" name="description" class="mt-1 block w-full" :value="$shouldRestoreSubjectCreateInput ? old('description') : ''" />
                                 <x-input-error :messages="$errors->get('description')" class="mt-2" />
                             </div>
                         </div>
@@ -90,7 +125,7 @@
                         </div>
 
                         @php
-                            $selectedLocalIds = collect(old('local_ids', []))->map(fn ($localId) => (int) $localId)->all();
+                            $selectedLocalIds = collect($shouldRestoreSubjectCreateInput ? old('local_ids', []) : [])->map(fn ($localId) => (int) $localId)->all();
                         @endphp
 
                         <div class="rounded-md border border-gray-100 bg-gray-50 p-4">
@@ -119,7 +154,7 @@
 
                         <div class="flex items-center justify-between gap-4">
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                <input type="checkbox" name="is_active" value="1" @checked(! $shouldRestoreSubjectCreateInput || old('is_active')) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                 {{ __('Active') }}
                             </label>
 
@@ -294,14 +329,60 @@
 
                                 <tr x-show="editingSubject === {{ $subject->id }}">
                                     <td colspan="4" class="bg-indigo-50/50 px-4 py-5 align-top">
-                                        <form method="POST" action="{{ route('admin.subjects.update', $subject) }}" class="space-y-4 rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                                        <form
+                                            method="POST"
+                                            action="{{ route('admin.subjects.update', $subject) }}"
+                                            class="space-y-4 rounded-lg border border-indigo-100 bg-white p-4 shadow-sm"
+                                            x-data="{
+                                                name: @js($subject->name),
+                                                url: @js($subject->url ?? ''),
+                                                nameError: '',
+                                                urlError: '',
+                                                validateName() {
+                                                    this.nameError = this.subjectNameExists(this.name, {{ $subject->id }})
+                                                        ? this.duplicateSubjectMessage
+                                                        : '';
+
+                                                    return this.nameError === '';
+                                                },
+                                                validateUrl() {
+                                                    this.urlError = '';
+
+                                                    if (this.url.trim() === '') {
+                                                        return true;
+                                                    }
+
+                                                    try {
+                                                        const candidate = this.url.replaceAll('[table]', '1').replaceAll('[section]', '1');
+                                                        new URL(candidate);
+
+                                                        return true;
+                                                    } catch (error) {
+                                                        this.urlError = this.invalidUrlMessage;
+
+                                                        return false;
+                                                    }
+                                                },
+                                                validateEdit() {
+                                                    const nameIsValid = this.validateName();
+                                                    const urlIsValid = this.validateUrl();
+
+                                                    return nameIsValid && urlIsValid;
+                                                },
+                                                hasClientErrors() {
+                                                    return this.nameError !== '' || this.urlError !== '';
+                                                },
+                                            }"
+                                            x-on:submit="if (! validateEdit()) $event.preventDefault()"
+                                        >
                                             @csrf
                                             @method('PATCH')
 
                                             <div class="grid gap-3 md:grid-cols-[1fr_2fr] md:items-end">
                                                 <div>
                                                     <x-input-label for="subject-{{ $subject->id }}-name" :value="__('Name')" />
-                                                    <x-text-input id="subject-{{ $subject->id }}-name" name="name" value="{{ $subject->name }}" class="mt-1 block w-full" required />
+                                                    <x-text-input id="subject-{{ $subject->id }}-name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
+                                                    <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
                                                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                                 </div>
 
@@ -314,10 +395,11 @@
 
                                             <div>
                                                 <x-input-label for="subject-{{ $subject->id }}-url" :value="__('URL')" />
-                                                <x-text-input id="subject-{{ $subject->id }}-url" name="url" type="text" value="{{ $subject->url }}" class="mt-1 block w-full" />
+                                                <x-text-input id="subject-{{ $subject->id }}-url" name="url" type="text" x-model="url" x-on:input="validateUrl()" class="mt-1 block w-full" />
                                                 <p class="mt-1 text-xs text-gray-500">
                                                     {{ __('You can use [table] to insert the table number and [section] to insert the Moodle tile number in the URL.') }}
                                                 </p>
+                                                <p x-show="urlError" x-text="urlError" class="mt-2 text-sm text-red-600"></p>
                                                 <x-input-error :messages="$errors->get('url')" class="mt-2" />
                                             </div>
 
@@ -367,7 +449,7 @@
                                                         {{ __('Cancel') }}
                                                     </x-secondary-button>
 
-                                                    <x-primary-button>
+                                                    <x-primary-button x-bind:disabled="hasClientErrors()" class="disabled:opacity-50">
                                                         {{ __('Save') }}
                                                     </x-primary-button>
                                                 </div>

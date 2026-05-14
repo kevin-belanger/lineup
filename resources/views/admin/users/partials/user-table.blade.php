@@ -65,7 +65,7 @@
                                 rolesError: '',
                                 validateEmail() {
                                     this.emailError = emailExists(this.email, {{ $user->id }})
-                                        ? 'This email address is already in use.'
+                                        ? duplicateEmailMessage
                                         : '';
 
                                     return this.emailError === '';
@@ -75,7 +75,7 @@
 
                                     this.rolesError = Array.from(form.querySelectorAll(roleSelector)).some((checkbox) => checkbox.checked)
                                         ? ''
-                                        : 'Please select at least one role.';
+                                        : missingRoleMessage;
 
                                     return this.rolesError === '';
                                 },
@@ -224,7 +224,7 @@
                                     },
                                     validate() {
                                         this.passwordError = this.password.trim().length < 8
-                                            ? 'The password must contain at least 8 characters.'
+                                            ? @js(__('The password must contain at least 8 characters.'))
                                             : '';
 
                                         return this.passwordError === '';

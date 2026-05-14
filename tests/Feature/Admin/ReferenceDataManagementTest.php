@@ -23,7 +23,10 @@ class ReferenceDataManagementTest extends TestCase
             'name' => 'Local 301',
             'description' => 'Local de test',
             'is_active' => '1',
-        ])->assertRedirect();
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('open_create_panel', 'classrooms')
+            ->assertSessionMissing('_old_input');
 
         $classroom = Classroom::query()->where('name', 'Local 301')->firstOrFail();
 
@@ -122,6 +125,51 @@ class ReferenceDataManagementTest extends TestCase
             ->assertSee('page=2', false);
     }
 
+    public function test_failed_classroom_creation_reopens_create_panel_with_old_input(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Classroom::factory()->create(['name' => 'Local 303']);
+
+        $response = $this
+            ->actingAs($admin)
+            ->from(route('admin.classrooms.index'))
+            ->followingRedirects()
+            ->post(route('admin.classrooms.store'), [
+                'create_panel' => 'create-classroom',
+                'name' => 'Local 303',
+                'description' => 'Create form description',
+                'is_active' => '1',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSee('A room with this name already exists.')
+            ->assertSee('x-data="{ open: true }"', false)
+            ->assertSee('Create form description');
+    }
+
+    public function test_classroom_edit_validation_errors_do_not_reopen_create_panel(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Classroom::factory()->create(['name' => 'Local 303']);
+        $classroom = Classroom::factory()->create(['name' => 'Local 304']);
+
+        $response = $this
+            ->actingAs($admin)
+            ->from(route('admin.classrooms.index'))
+            ->followingRedirects()
+            ->patch(route('admin.classrooms.update', $classroom), [
+                'name' => 'Local 303',
+                'description' => 'Edit form description',
+                'is_active' => '1',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSee('A room with this name already exists.')
+            ->assertDontSee('x-data="{ open: true }"', false);
+    }
+
     public function test_admin_can_create_update_and_deactivate_subject(): void
     {
         $admin = User::factory()->admin()->create();
@@ -134,7 +182,10 @@ class ReferenceDataManagementTest extends TestCase
             'description' => 'Cours de sciences',
             'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
             'is_active' => '1',
-        ])->assertRedirect();
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('open_create_panel', 'subjects')
+            ->assertSessionMissing('_old_input');
 
         $subject = Subject::query()->where('name', 'Sciences')->firstOrFail();
 
@@ -210,7 +261,73 @@ class ReferenceDataManagementTest extends TestCase
             'name' => 'Robotique',
             'url' => 'pas une url',
             'is_active' => '1',
-        ])->assertSessionHasErrors('url');
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'The URL must be valid.',
+            ])
+            ->assertSessionDoesntHaveErrors();
+    }
+
+    public function test_failed_subject_creation_reopens_create_panel_with_old_input(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create();
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Francais',
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->from(route('admin.subjects.index'))
+            ->followingRedirects()
+            ->post(route('admin.subjects.store'), [
+                'create_panel' => 'create-subject',
+                'local_ids' => [$classroom->id],
+                'name' => 'Francais',
+                'description' => 'Create subject description',
+                'url' => 'https://moodle.example.com/course/view.php?id=12',
+                'is_active' => '1',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSee('x-data="{ open: true }"', false)
+            ->assertSee('A subject with this name already exists.')
+            ->assertSee('Create subject description')
+            ->assertSee('moodle.example.com');
+    }
+
+    public function test_subject_edit_validation_errors_do_not_reopen_create_panel(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create();
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Francais',
+        ]);
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Mathematique',
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->from(route('admin.subjects.index'))
+            ->followingRedirects()
+            ->patch(route('admin.subjects.update', $subject), [
+                'local_ids' => [$classroom->id],
+                'name' => 'Francais',
+                'description' => 'Edit subject description',
+                'is_active' => '1',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSee('A subject with this name already exists.')
+            ->assertDontSee('x-data="{ open: true }"', false);
     }
 
     public function test_admin_subject_list_can_search_and_filter_subjects(): void
@@ -304,7 +421,7 @@ class ReferenceDataManagementTest extends TestCase
             ->assertSee('https://moodle.example.com/course/view.php?id=12&amp;section=3&amp;table=5', false);
     }
 
-    public function test_subject_name_is_unique_per_classroom(): void
+    public function test_subject_name_must_be_globally_unique(): void
     {
         $admin = User::factory()->admin()->create();
         $classroom = Classroom::factory()->create();
@@ -319,13 +436,80 @@ class ReferenceDataManagementTest extends TestCase
             'local_ids' => [$classroom->id],
             'name' => 'Francais',
             'is_active' => '1',
-        ])->assertSessionHasErrors('name');
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'A subject with this name already exists.',
+            ])
+            ->assertSessionDoesntHaveErrors();
 
         $this->actingAs($admin)->post(route('admin.subjects.store'), [
             'local_ids' => [$otherClassroom->id],
             'name' => 'Francais',
             'is_active' => '1',
-        ])->assertSessionHasNoErrors();
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'A subject with this name already exists.',
+            ])
+            ->assertSessionDoesntHaveErrors();
+    }
+
+    public function test_subject_can_keep_own_name_when_updated(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create();
+        $otherClassroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Francais',
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.subjects.update', $subject), [
+            'local_ids' => [$classroom->id, $otherClassroom->id],
+            'name' => 'Francais',
+            'description' => 'Updated description',
+            'is_active' => '1',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $subject->refresh();
+
+        $this->assertSame('Francais', $subject->name);
+        $this->assertSame('Updated description', $subject->description);
+        $this->assertEqualsCanonicalizing(
+            [$classroom->id, $otherClassroom->id],
+            $subject->locals()->pluck('classrooms.id')->all(),
+        );
+    }
+
+    public function test_subject_can_not_be_updated_to_another_subject_name(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create();
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Francais',
+        ]);
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Mathematique',
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.subjects.update', $subject), [
+            'local_ids' => [$classroom->id],
+            'name' => 'Francais',
+            'is_active' => '1',
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'A subject with this name already exists.',
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('Mathematique', $subject->refresh()->name);
     }
 
     public function test_admin_can_delete_subject_without_deleting_support_request_history(): void

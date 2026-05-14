@@ -3,14 +3,21 @@
         <x-admin-breadcrumb :current="__('Users')" />
     </x-slot>
 
+    @php
+        $shouldRestoreUserCreateInput = old('create_panel') === 'create-user' && ($errors->any() || session('user_create_validation_failed'));
+        $openCreatePanel = session('open_create_panel') === 'users' || $shouldRestoreUserCreateInput;
+    @endphp
+
     <div class="py-8">
         <div
             class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8"
             x-data="{
                 editingUser: null,
-                createEmail: '',
+                createEmail: @js($shouldRestoreUserCreateInput ? old('email', '') : ''),
                 createEmailError: '',
                 createRolesError: '',
+                duplicateEmailMessage: @js(__('This email address is already in use.')),
+                missingRoleMessage: @js(__('Please select at least one role.')),
                 emails: @js($emailValidationOptions),
                 normalize(value) {
                     return value.trim().toLowerCase();
@@ -26,7 +33,7 @@
                 },
                 validateCreateEmail() {
                     this.createEmailError = this.emailExists(this.createEmail)
-                        ? 'This email address is already in use.'
+                        ? this.duplicateEmailMessage
                         : '';
 
                     return this.createEmailError === '';
@@ -36,14 +43,14 @@
 
                     this[errorProperty] = Array.from(form.querySelectorAll(roleSelector)).some((checkbox) => checkbox.checked)
                         ? ''
-                        : 'Please select at least one role.';
+                        : this.missingRoleMessage;
 
                     return this[errorProperty] === '';
                 },
             }"
         >
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <details x-data="{ open: false }" x-on:toggle="open = $el.open">
+                <details @if ($openCreatePanel) open @endif x-data="{ open: @js($openCreatePanel) }" x-on:toggle="open = $el.open">
                     <summary
                         class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 transition hover:bg-gray-50"
                         x-bind:aria-expanded="open.toString()"
@@ -65,11 +72,12 @@
 
                     <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-5 border-t border-gray-100 p-6" x-on:submit="if (! (validateCreateEmail() && validateRoles($el, 'createRolesError'))) $event.preventDefault()">
                         @csrf
+                        <input type="hidden" name="create_panel" value="create-user">
 
                         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                             <div>
                                 <x-input-label for="name" :value="__('Name')" />
-                                <x-text-input id="name" name="name" class="mt-1 block w-full" required />
+                                <x-text-input id="name" name="name" class="mt-1 block w-full" :value="$shouldRestoreUserCreateInput ? old('name') : ''" required />
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
@@ -90,16 +98,16 @@
                                 <div class="text-sm font-medium text-gray-700">{{ __('Roles') }}</div>
                                 <div class="flex flex-wrap gap-4">
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_student" value="1" checked x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_student" value="1" @checked(! $shouldRestoreUserCreateInput || old('is_student')) x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Student') }}
                                     </label>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_teacher" value="1" x-bind:disabled="! $el.form.querySelector('[name=is_approved]').checked" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
+                                        <input type="checkbox" name="is_teacher" value="1" @checked($shouldRestoreUserCreateInput && old('is_teacher')) x-bind:disabled="! $el.form.querySelector('[name=is_approved]').checked" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
                                         {{ __('Teacher') }}
                                     </label>
                                     @if (Auth::user()->is_admin)
                                         <label class="flex items-center gap-2 text-sm text-gray-700">
-                                            <input type="checkbox" name="is_admin" value="1" x-bind:disabled="! $el.form.querySelector('[name=is_approved]').checked" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
+                                            <input type="checkbox" name="is_admin" value="1" @checked($shouldRestoreUserCreateInput && old('is_admin')) x-bind:disabled="! $el.form.querySelector('[name=is_approved]').checked" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
                                             {{ __('Admin') }}
                                         </label>
                                     @endif
@@ -112,11 +120,11 @@
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 text-sm text-gray-700">
-                                    <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    <input type="checkbox" name="is_active" value="1" @checked(! $shouldRestoreUserCreateInput || old('is_active')) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                     {{ __('Active') }}
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-700">
-                                    <input type="checkbox" name="is_approved" value="1" checked x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    <input type="checkbox" name="is_approved" value="1" @checked(! $shouldRestoreUserCreateInput || old('is_approved')) x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                     {{ __('Approved') }}
                                 </label>
                             </div>

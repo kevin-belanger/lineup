@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -86,22 +88,28 @@ class UserController extends Controller
         ];
         $isApproved = (bool) ($validated['is_approved'] ?? false);
 
-        $this->ensureRoleApprovalConsistency($roles, $isApproved);
+        $this->ensureRoleApprovalConsistency($request, $roles, $isApproved);
 
-        User::query()->create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'is_student' => $roles['is_student'],
-            'is_teacher' => $roles['is_teacher'],
-            'is_admin' => $roles['is_admin'],
-            'is_active' => (bool) ($validated['is_active'] ?? false),
-            'is_approved' => $isApproved,
-            'approved_at' => $isApproved ? now() : null,
-            'approved_by' => $isApproved ? $request->user()->id : null,
-        ]);
+        try {
+            User::query()->create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'is_student' => $roles['is_student'],
+                'is_teacher' => $roles['is_teacher'],
+                'is_admin' => $roles['is_admin'],
+                'is_active' => (bool) ($validated['is_active'] ?? false),
+                'is_approved' => $isApproved,
+                'approved_at' => $isApproved ? now() : null,
+                'approved_by' => $isApproved ? $request->user()->id : null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            $this->validationToastResponse($request, __('This email address is already in use.'));
+        }
 
-        return back()->with('status', __('User created.'));
+        return back()
+            ->with('status', __('User created.'))
+            ->with('open_create_panel', 'users');
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -126,28 +134,40 @@ class UserController extends Controller
 
         $wasApproved = $user->is_approved;
         $isApproved = (bool) ($validated['is_approved'] ?? false);
-        $this->ensureRoleApprovalConsistency($roles, $isApproved);
+        $this->ensureRoleApprovalConsistency($request, $roles, $isApproved);
 
-        $user->forceFill([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'is_student' => $roles['is_student'],
-            'is_teacher' => $roles['is_teacher'],
-            'is_admin' => $roles['is_admin'],
-            'is_active' => $isActive,
-            'is_approved' => $isApproved,
-            'approved_at' => $isApproved ? ($wasApproved ? $user->approved_at : now()) : null,
-            'approved_by' => $isApproved ? ($wasApproved ? $user->approved_by : $request->user()->id) : null,
-        ])->save();
+        try {
+            $user->forceFill([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'is_student' => $roles['is_student'],
+                'is_teacher' => $roles['is_teacher'],
+                'is_admin' => $roles['is_admin'],
+                'is_active' => $isActive,
+                'is_approved' => $isApproved,
+                'approved_at' => $isApproved ? ($wasApproved ? $user->approved_at : now()) : null,
+                'approved_by' => $isApproved ? ($wasApproved ? $user->approved_by : $request->user()->id) : null,
+            ])->save();
+        } catch (UniqueConstraintViolationException) {
+            $this->validationToastResponse($request, __('This email address is already in use.'));
+        }
 
         return back()->with('status', __('User updated.'));
     }
 
     public function updatePassword(Request $request, User $user): RedirectResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'password' => ['required', Password::defaults()],
+        ], [
+            'password.required' => __('The password field is required.'),
         ]);
+
+        if ($validator->fails()) {
+            $this->validationToastResponse($request, $validator->errors()->first());
+        }
+
+        $validated = $validator->validated();
 
         $user->forceFill([
             'password' => Hash::make($validated['password']),
@@ -169,11 +189,17 @@ class UserController extends Controller
 
     public function updateRoles(Request $request, User $user): RedirectResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'is_student' => ['nullable', 'boolean'],
             'is_teacher' => ['nullable', 'boolean'],
             'is_admin' => ['nullable', 'boolean'],
         ]);
+
+        if ($validator->fails()) {
+            $this->validationToastResponse($request, $validator->errors()->first());
+        }
+
+        $validated = $validator->validated();
         $this->ensureCanChangeAdminRole($request, $user);
 
         $roles = [
@@ -196,7 +222,7 @@ class UserController extends Controller
             ]);
         }
 
-        $this->ensureRoleApprovalConsistency($roles, $user->is_approved);
+        $this->ensureRoleApprovalConsistency($request, $roles, $user->is_approved);
 
         $user->forceFill([
             'is_student' => $roles['is_student'],
@@ -246,7 +272,16 @@ class UserController extends Controller
             $rules['password'] = ['required', Password::defaults()];
         }
 
-        $validated = $request->validate($rules);
+        $validator = Validator::make($request->all(), $rules, [
+            'email.unique' => __('This email address is already in use.'),
+            'password.required' => __('The password field is required.'),
+        ]);
+
+        if ($validator->fails()) {
+            $this->validationToastResponse($request, $validator->errors()->first());
+        }
+
+        $validated = $validator->validated();
 
         $roles = [
             'is_student' => (bool) ($validated['is_student'] ?? false),
@@ -255,10 +290,7 @@ class UserController extends Controller
         ];
 
         if (! in_array(true, $roles, true)) {
-            return back()->with('toast', [
-                'type' => 'error',
-                'message' => __('A user must have at least one role.'),
-            ])->throwResponse();
+            $this->validationToastResponse($request, __('A user must have at least one role.'));
         }
 
         return $validated;
@@ -307,15 +339,29 @@ class UserController extends Controller
     /**
      * @param  array{is_student: bool, is_teacher: bool, is_admin: bool}  $roles
      */
-    private function ensureRoleApprovalConsistency(array $roles, bool $isApproved): void
+    private function ensureRoleApprovalConsistency(Request $request, array $roles, bool $isApproved): void
     {
         if ($isApproved || (! $roles['is_teacher'] && ! $roles['is_admin'])) {
             return;
         }
 
-        back()->with('toast', [
+        $this->validationToastResponse($request, __('A user must be approved before receiving the teacher or administrator role.'));
+    }
+
+    private function validationToastResponse(Request $request, string $message): void
+    {
+        $redirect = back()->with('toast', [
             'type' => 'error',
-            'message' => __('A user must be approved before receiving the teacher or administrator role.'),
-        ])->throwResponse();
+            'message' => $message,
+        ]);
+
+        if ($request->input('create_panel') === 'create-user') {
+            $redirect
+                ->withInput()
+                ->with('open_create_panel', 'users')
+                ->with('user_create_validation_failed', true);
+        }
+
+        $redirect->throwResponse();
     }
 }

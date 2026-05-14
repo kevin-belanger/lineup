@@ -69,7 +69,10 @@ class UserManagementTest extends TestCase
             'is_approved' => '1',
         ]);
 
-        $response->assertRedirect();
+        $response
+            ->assertRedirect()
+            ->assertSessionHas('open_create_panel', 'users')
+            ->assertSessionMissing('_old_input');
 
         $user = User::query()->where('email', 'marie@example.com')->firstOrFail();
 
@@ -216,7 +219,64 @@ class UserManagementTest extends TestCase
             'is_student' => '1',
             'is_active' => '1',
             'is_approved' => '1',
-        ])->assertSessionHasErrors('email');
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'This email address is already in use.',
+            ])
+            ->assertSessionDoesntHaveErrors();
+    }
+
+    public function test_failed_user_creation_reopens_create_panel_with_old_input(): void
+    {
+        $admin = User::factory()->admin()->create();
+        User::factory()->create(['email' => 'pris@example.com']);
+
+        $response = $this
+            ->actingAs($admin)
+            ->from(route('admin.users.index'))
+            ->followingRedirects()
+            ->post(route('admin.users.store'), [
+                'create_panel' => 'create-user',
+                'name' => 'Doublon',
+                'email' => 'pris@example.com',
+                'password' => 'password',
+                'is_student' => '1',
+                'is_active' => '1',
+                'is_approved' => '1',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSee('This email address is already in use.')
+            ->assertSee('value="Doublon"', false)
+            ->assertSee('x-data="{ open: true }"', false)
+            ->assertSee('pris@example.com');
+    }
+
+    public function test_user_edit_validation_errors_do_not_reopen_create_panel(): void
+    {
+        $admin = User::factory()->admin()->create();
+        User::factory()->create(['email' => 'pris@example.com']);
+        $user = User::factory()->create(['email' => 'ancien@example.com']);
+
+        $response = $this
+            ->actingAs($admin)
+            ->from(route('admin.users.index'))
+            ->followingRedirects()
+            ->patch(route('admin.users.update', $user), [
+                'name' => 'Ancien',
+                'email' => 'pris@example.com',
+                'is_student' => '1',
+                'is_active' => '1',
+                'is_approved' => '1',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertSee('This email address is already in use.')
+            ->assertDontSee('x-data="{ open: true }"', false);
     }
 
     public function test_admin_can_update_user_password_without_changing_other_information(): void
@@ -248,7 +308,13 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($admin)->patch(route('admin.users.password', $user), [
             'password' => '',
-        ])->assertSessionHasErrors('password');
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'The password field is required.',
+            ])
+            ->assertSessionDoesntHaveErrors();
     }
 
     public function test_admin_can_update_roles(): void

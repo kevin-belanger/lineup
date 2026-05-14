@@ -3,10 +3,33 @@
         <x-admin-breadcrumb :current="__('Rooms')" />
     </x-slot>
 
+    @php
+        $shouldRestoreClassroomCreateInput = old('create_panel') === 'create-classroom' && ($errors->any() || session('classroom_create_validation_failed'));
+        $openCreatePanel = session('open_create_panel') === 'classrooms' || $shouldRestoreClassroomCreateInput;
+    @endphp
+
     <div class="py-8">
-        <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
+        <div
+            class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8"
+            x-data="{
+                classrooms: @js($classroomValidationOptions),
+                duplicateClassroomMessage: @js(__('A room with this name already exists.')),
+                normalize(value) {
+                    return value.trim().toLowerCase();
+                },
+                classroomNameExists(value, ignoredId = null) {
+                    const name = this.normalize(value);
+
+                    if (name === '') {
+                        return false;
+                    }
+
+                    return this.classrooms.some((classroom) => classroom.name === name && Number(classroom.id) !== Number(ignoredId));
+                },
+            }"
+        >
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <details x-data="{ open: false }" x-on:toggle="open = $el.open">
+                <details @if ($openCreatePanel) open @endif x-data="{ open: @js($openCreatePanel) }" x-on:toggle="open = $el.open">
                     <summary
                         class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 transition hover:bg-gray-50"
                         x-bind:aria-expanded="open.toString()"
@@ -31,31 +54,20 @@
                         action="{{ route('admin.classrooms.store') }}"
                         class="space-y-4 border-t border-gray-100 p-6"
                         x-data="{
-                            name: '',
+                            name: @js($shouldRestoreClassroomCreateInput ? old('name', '') : ''),
                             nameError: '',
-                            classrooms: @js($classroomValidationOptions),
-                            normalize(value) {
-                                return value.trim().toLowerCase();
-                            },
                             validateName() {
-                                this.nameError = '';
+                                this.nameError = this.classroomNameExists(this.name)
+                                    ? this.duplicateClassroomMessage
+                                    : '';
 
-                                if (this.name.trim() === '') {
-                                    return true;
-                                }
-
-                                if (this.classrooms.includes(this.normalize(this.name))) {
-                                    this.nameError = 'A room with this name already exists.';
-
-                                    return false;
-                                }
-
-                                return true;
+                                return this.nameError === '';
                             },
                         }"
                         x-on:submit="if (! validateName()) $event.preventDefault()"
                     >
                         @csrf
+                        <input type="hidden" name="create_panel" value="create-classroom">
 
                         <div class="grid gap-4 md:grid-cols-[1fr_2fr] md:items-end">
                             <div>
@@ -67,14 +79,14 @@
 
                             <div>
                                 <x-input-label for="description" :value="__('Description')" />
-                                <x-text-input id="description" name="description" class="mt-1 block w-full" />
+                                <x-text-input id="description" name="description" class="mt-1 block w-full" :value="$shouldRestoreClassroomCreateInput ? old('description') : ''" />
                                 <x-input-error :messages="$errors->get('description')" class="mt-2" />
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-4">
                             <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                <input type="checkbox" name="is_active" value="1" @checked(! $shouldRestoreClassroomCreateInput || old('is_active')) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                 {{ __('Active') }}
                             </label>
 
@@ -218,14 +230,31 @@
 
                                 <tr x-show="editingClassroom === {{ $classroom->id }}">
                                     <td colspan="3" class="bg-indigo-50/50 px-4 py-5 align-top">
-                                        <form method="POST" action="{{ route('admin.classrooms.update', $classroom) }}" class="space-y-4 rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                                        <form
+                                            method="POST"
+                                            action="{{ route('admin.classrooms.update', $classroom) }}"
+                                            class="space-y-4 rounded-lg border border-indigo-100 bg-white p-4 shadow-sm"
+                                            x-data="{
+                                                name: @js($classroom->name),
+                                                nameError: '',
+                                                validateName() {
+                                                    this.nameError = this.classroomNameExists(this.name, {{ $classroom->id }})
+                                                        ? this.duplicateClassroomMessage
+                                                        : '';
+
+                                                    return this.nameError === '';
+                                                },
+                                            }"
+                                            x-on:submit="if (! validateName()) $event.preventDefault()"
+                                        >
                                             @csrf
                                             @method('PATCH')
 
                                             <div class="grid gap-3 md:grid-cols-[1fr_2fr] md:items-end">
                                                 <div>
                                                     <x-input-label for="classroom-{{ $classroom->id }}-name" :value="__('Name')" />
-                                                    <x-text-input id="classroom-{{ $classroom->id }}-name" name="name" value="{{ $classroom->name }}" class="mt-1 block w-full" required />
+                                                    <x-text-input id="classroom-{{ $classroom->id }}-name" name="name" x-model="name" x-on:input="validateName()" class="mt-1 block w-full" required />
+                                                    <p x-show="nameError" x-text="nameError" class="mt-2 text-sm text-red-600"></p>
                                                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                                 </div>
 
@@ -254,7 +283,7 @@
                                                         {{ __('Cancel') }}
                                                     </x-secondary-button>
 
-                                                    <x-primary-button>
+                                                    <x-primary-button x-bind:disabled="nameError !== ''" class="disabled:opacity-50">
                                                         {{ __('Save') }}
                                                     </x-primary-button>
                                                 </div>

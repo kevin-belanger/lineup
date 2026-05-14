@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -45,22 +47,35 @@ class ClassroomController extends Controller
                 'inactive' => __('Inactive'),
             ],
             'classroomValidationOptions' => Classroom::query()
-                ->pluck('name')
-                ->map(fn (string $name): string => mb_strtolower(trim($name)))
+                ->get(['id', 'name'])
+                ->map(fn (Classroom $classroom): array => [
+                    'id' => $classroom->id,
+                    'name' => mb_strtolower(trim($classroom->name)),
+                ])
                 ->values(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        Classroom::query()->create($this->validatedData($request));
+        try {
+            Classroom::query()->create($this->validatedData($request));
+        } catch (UniqueConstraintViolationException) {
+            $this->validationToastResponse($request, __('A room with this name already exists.'));
+        }
 
-        return back()->with('status', __('Room created.'));
+        return back()
+            ->with('status', __('Room created.'))
+            ->with('open_create_panel', 'classrooms');
     }
 
     public function update(Request $request, Classroom $classroom): RedirectResponse
     {
-        $classroom->update($this->validatedData($request, $classroom));
+        try {
+            $classroom->update($this->validatedData($request, $classroom));
+        } catch (UniqueConstraintViolationException) {
+            $this->validationToastResponse($request, __('A room with this name already exists.'));
+        }
 
         return back()->with('status', __('Room updated.'));
     }
@@ -86,16 +101,41 @@ class ClassroomController extends Controller
      */
     private function validatedData(Request $request, ?Classroom $classroom = null): array
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255', Rule::unique('classrooms', 'name')->ignore($classroom)],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['nullable', 'boolean'],
+        ], [
+            'name.unique' => __('A room with this name already exists.'),
         ]);
+
+        if ($validator->fails()) {
+            $this->validationToastResponse($request, $validator->errors()->first());
+        }
+
+        $validated = $validator->validated();
 
         return [
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? false),
         ];
+    }
+
+    private function validationToastResponse(Request $request, string $message): void
+    {
+        $redirect = back()->with('toast', [
+            'type' => 'error',
+            'message' => $message,
+        ]);
+
+        if ($request->input('create_panel') === 'create-classroom') {
+            $redirect
+                ->withInput()
+                ->with('open_create_panel', 'classrooms')
+                ->with('classroom_create_validation_failed', true);
+        }
+
+        $redirect->throwResponse();
     }
 }

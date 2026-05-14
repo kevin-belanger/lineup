@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
 use App\Models\Subject;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class SubjectController extends Controller
@@ -58,6 +58,13 @@ class SubjectController extends Controller
                 'active' => __('Active'),
                 'inactive' => __('Inactive'),
             ],
+            'subjectValidationOptions' => Subject::query()
+                ->get(['id', 'name'])
+                ->map(fn (Subject $subject): array => [
+                    'id' => $subject->id,
+                    'name' => mb_strtolower(trim($subject->name)),
+                ])
+                ->values(),
         ]);
     }
 
@@ -65,18 +72,28 @@ class SubjectController extends Controller
     {
         [$data, $localIds] = $this->validatedData($request);
 
-        $subject = Subject::query()->create($data);
-        $subject->locals()->sync($localIds);
+        try {
+            $subject = Subject::query()->create($data);
+            $subject->locals()->sync($localIds);
+        } catch (UniqueConstraintViolationException) {
+            $this->duplicateNameResponse($request);
+        }
 
-        return back()->with('status', __('Subject created.'));
+        return back()
+            ->with('status', __('Subject created.'))
+            ->with('open_create_panel', 'subjects');
     }
 
     public function update(Request $request, Subject $subject): RedirectResponse
     {
         [$data, $localIds] = $this->validatedData($request, $subject);
 
-        $subject->update($data);
-        $subject->locals()->sync($localIds);
+        try {
+            $subject->update($data);
+            $subject->locals()->sync($localIds);
+        } catch (UniqueConstraintViolationException) {
+            $this->duplicateNameResponse($request);
+        }
 
         return back()->with('status', __('Subject updated.'));
     }
@@ -102,7 +119,7 @@ class SubjectController extends Controller
      */
     private function validatedData(Request $request, ?Subject $subject = null): array
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'local_ids' => ['nullable', 'array'],
             'local_ids.*' => ['integer', Rule::exists('classrooms', 'id')],
             'name' => [
@@ -121,8 +138,14 @@ class SubjectController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
+        if ($validator->fails()) {
+            $this->validationToastResponse($request, $validator->errors()->first());
+        }
+
+        $validated = $validator->validated();
+
         $localIds = $this->normalizedLocalIds($validated['local_ids'] ?? []);
-        $this->ensureNameIsAvailableForLocals($validated['name'], $localIds, $subject);
+        $this->ensureNameIsGloballyAvailable($request, $validated['name'], $subject);
 
         return [[
             'classroom_id' => $localIds[0] ?? null,
@@ -146,27 +169,37 @@ class SubjectController extends Controller
             ->all();
     }
 
-    /**
-     * @param  Collection<int, int>|array<int, int>  $localIds
-     */
-    private function ensureNameIsAvailableForLocals(string $name, Collection|array $localIds, ?Subject $subject): void
+    private function ensureNameIsGloballyAvailable(Request $request, string $name, ?Subject $subject): void
     {
-        $localIds = collect($localIds);
-
-        if ($localIds->isEmpty()) {
-            return;
-        }
-
         $exists = Subject::query()
             ->where('name', $name)
             ->when($subject !== null, fn ($query) => $query->whereKeyNot($subject->id))
-            ->whereHas('locals', fn ($query) => $query->whereIn('classrooms.id', $localIds))
             ->exists();
 
         if ($exists) {
-            throw ValidationException::withMessages([
-                'name' => __('A subject with this name already exists in one of the selected rooms.'),
-            ]);
+            $this->duplicateNameResponse($request);
         }
+    }
+
+    private function duplicateNameResponse(Request $request): void
+    {
+        $this->validationToastResponse($request, __('A subject with this name already exists.'), 'subject_duplicate_name');
+    }
+
+    private function validationToastResponse(Request $request, string $message, ?string $createFailureFlag = null): void
+    {
+        $redirect = back()->with('toast', [
+            'type' => 'error',
+            'message' => $message,
+        ]);
+
+        if ($request->input('create_panel') === 'create-subject') {
+            $redirect
+                ->withInput()
+                ->with('open_create_panel', 'subjects')
+                ->with($createFailureFlag ?? 'subject_create_validation_failed', true);
+        }
+
+        $redirect->throwResponse();
     }
 }
