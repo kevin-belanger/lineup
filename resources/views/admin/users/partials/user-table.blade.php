@@ -16,7 +16,7 @@
                     $canEditApprovalStatus = ! $user->is_teacher && ! $user->is_admin;
                     $canAssignElevatedRoles = $user->is_approved;
                 @endphp
-                <tr x-show="editingUser !== {{ $user->id }}">
+                <tr x-show="editingUser !== {{ $user->id }}" x-transition.opacity.duration.150ms>
                     <td class="px-4 py-4 align-top">
                         <div class="font-medium text-gray-900">{{ $user->name }}</div>
                         <div class="text-sm text-gray-500">{{ $user->email }}</div>
@@ -53,7 +53,7 @@
                     </td>
                 </tr>
 
-                <tr x-show="editingUser === {{ $user->id }}">
+                <tr x-show="editingUser === {{ $user->id }}" x-transition.opacity.duration.200ms x-cloak>
                     <td colspan="4" class="bg-indigo-50/50 px-4 py-5 align-top">
                         <form
                             method="POST"

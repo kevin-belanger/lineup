@@ -50,9 +50,10 @@
             }"
         >
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <details @if ($openCreatePanel) open @endif x-data="{ open: @js($openCreatePanel) }" x-on:toggle="open = $el.open">
+                <details open x-data="{ open: @js($openCreatePanel) }">
                     <summary
                         class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 transition hover:bg-gray-50"
+                        x-on:click.prevent="open = ! open"
                         x-bind:aria-expanded="open.toString()"
                     >
                         <div>
@@ -70,7 +71,20 @@
                         </span>
                     </summary>
 
-                    <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-5 border-t border-gray-100 p-6" x-on:submit="if (! (validateCreateEmail() && validateRoles($el, 'createRolesError'))) $event.preventDefault()">
+                    <form
+                        method="POST"
+                        action="{{ route('admin.users.store') }}"
+                        class="space-y-5 border-t border-gray-100 p-6"
+                        x-show="open"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 -translate-y-1"
+                        x-cloak
+                        x-on:submit="if (! (validateCreateEmail() && validateRoles($el, 'createRolesError'))) $event.preventDefault()"
+                    >
                         @csrf
                         <input type="hidden" name="create_panel" value="create-user">
 
@@ -205,6 +219,13 @@
                             action="{{ route('admin.users.index') }}"
                             class="grid gap-3 border-t border-gray-100 bg-gray-50/40 px-6 py-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
                             x-show="open"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 -translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-1"
+                            x-cloak
                         >
                             <div class="lg:col-span-2">
                                 <x-input-label for="user-search" :value="__('Search')" />

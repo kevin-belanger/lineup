@@ -30,9 +30,10 @@
             }"
         >
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <details @if ($openCreatePanel) open @endif x-data="{ open: @js($openCreatePanel) }" x-on:toggle="open = $el.open">
+                <details open x-data="{ open: @js($openCreatePanel) }">
                     <summary
                         class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 transition hover:bg-gray-50"
+                        x-on:click.prevent="open = ! open"
                         x-bind:aria-expanded="open.toString()"
                     >
                         <div>
@@ -54,6 +55,14 @@
                         method="POST"
                         action="{{ route('admin.subjects.store') }}"
                         class="space-y-4 border-t border-gray-100 p-6"
+                        x-show="open"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 -translate-y-1"
+                        x-cloak
                         x-data="{
                             name: @js($shouldRestoreSubjectCreateInput ? old('name', '') : ''),
                             url: @js($shouldRestoreSubjectCreateInput ? old('url', '') : ''),
@@ -234,6 +243,13 @@
                             action="{{ route('admin.subjects.index') }}"
                             class="grid gap-3 border-t border-gray-100 bg-gray-50/40 px-6 py-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
                             x-show="open"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 -translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-1"
+                            x-cloak
                         >
                             <div class="lg:col-span-2">
                                 <x-input-label for="subject-search" :value="__('Search')" />
@@ -287,7 +303,7 @@
                         </thead>
                         <tbody x-data="{ editingSubject: null }" class="divide-y divide-gray-200 bg-white">
                             @forelse ($subjects as $subject)
-                                <tr x-show="editingSubject !== {{ $subject->id }}">
+                                <tr x-show="editingSubject !== {{ $subject->id }}" x-transition.opacity.duration.150ms>
                                     <td class="px-4 py-4 align-top">
                                         <div class="space-y-2">
                                             <div class="font-semibold text-gray-900">{{ $subject->name }}</div>
@@ -327,7 +343,7 @@
                                     </td>
                                 </tr>
 
-                                <tr x-show="editingSubject === {{ $subject->id }}">
+                                <tr x-show="editingSubject === {{ $subject->id }}" x-transition.opacity.duration.200ms x-cloak>
                                     <td colspan="4" class="bg-indigo-50/50 px-4 py-5 align-top">
                                         <form
                                             method="POST"
