@@ -41,7 +41,7 @@
                     rel="noopener noreferrer"
                     class="hover:underline hover:text-gray-700"
                 >
-                    Powered by LineUp · {{ config('app.version') }}
+                    {{ __('Powered by LineUp') }} · {{ config('app.version') }}
                 </a>
             </footer>
 
