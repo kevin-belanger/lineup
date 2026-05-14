@@ -45,7 +45,7 @@
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <details x-data="{ open: false }" x-on:toggle="open = $el.open">
                     <summary
-                        class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4"
+                        class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 transition hover:bg-gray-50"
                         x-bind:aria-expanded="open.toString()"
                     >
                         <div>

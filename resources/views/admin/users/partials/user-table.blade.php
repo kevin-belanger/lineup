@@ -20,11 +20,6 @@
                     <td class="px-4 py-4 align-top">
                         <div class="font-medium text-gray-900">{{ $user->name }}</div>
                         <div class="text-sm text-gray-500">{{ $user->email }}</div>
-                        @if ($user->approver)
-                            <div class="mt-1 text-xs text-gray-400">
-                                {{ __('Approved by :name', ['name' => $user->approver->name]) }}
-                            </div>
-                        @endif
                     </td>
                     <td class="px-4 py-4 align-top text-sm">
                         <div>
