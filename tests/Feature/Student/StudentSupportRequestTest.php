@@ -19,6 +19,9 @@ class StudentSupportRequestTest extends TestCase
     {
         $student = User::factory()->create();
         $classroom = Classroom::factory()->create();
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
 
         $response = $this->actingAs($student)->put(route('student.classroom.update'), [
             'classroom_id' => $classroom->id,
@@ -50,6 +53,91 @@ class StudentSupportRequestTest extends TestCase
             ->assertSee('Student');
     }
 
+    public function test_student_classroom_choice_shows_only_active_classrooms_with_active_subjects(): void
+    {
+        $student = User::factory()->create();
+        $availableClassroom = Classroom::factory()->create([
+            'name' => 'Available room',
+            'is_active' => true,
+        ]);
+        $noSubjectClassroom = Classroom::factory()->create([
+            'name' => 'No subject room',
+            'is_active' => true,
+        ]);
+        $inactiveSubjectClassroom = Classroom::factory()->create([
+            'name' => 'Inactive subject room',
+            'is_active' => true,
+        ]);
+        $inactiveClassroom = Classroom::factory()->create([
+            'name' => 'Inactive room',
+            'is_active' => false,
+        ]);
+
+        Subject::factory()->create([
+            'classroom_id' => $availableClassroom->id,
+            'is_active' => true,
+        ]);
+        Subject::factory()->create([
+            'classroom_id' => $inactiveSubjectClassroom->id,
+            'is_active' => false,
+        ]);
+        Subject::factory()->create([
+            'classroom_id' => $inactiveClassroom->id,
+            'is_active' => true,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->get(route('student.classroom.edit'))
+            ->assertOk()
+            ->assertSeeText($availableClassroom->name)
+            ->assertDontSeeText($noSubjectClassroom->name)
+            ->assertDontSeeText($inactiveSubjectClassroom->name)
+            ->assertDontSeeText($inactiveClassroom->name);
+    }
+
+    public function test_student_classroom_choice_shows_empty_state_when_no_classroom_is_available(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create([
+            'name' => 'Unavailable room',
+            'is_active' => true,
+        ]);
+
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'is_active' => false,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->get(route('student.classroom.edit'))
+            ->assertOk()
+            ->assertSeeText('No room is currently available.')
+            ->assertDontSeeText($classroom->name)
+            ->assertDontSeeText('Use this room');
+    }
+
+    public function test_student_can_not_choose_classroom_without_active_subjects(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create([
+            'is_active' => true,
+        ]);
+
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($student)->put(route('student.classroom.update'), [
+            'classroom_id' => $classroom->id,
+        ]);
+
+        $response->assertSessionHasErrors('classroom_id');
+        $this->assertFalse(session()->has('current_classroom_id'));
+    }
+
     public function test_student_dashboard_shows_current_classroom_breadcrumb(): void
     {
         $student = User::factory()->create();
@@ -70,6 +158,9 @@ class StudentSupportRequestTest extends TestCase
         $student = User::factory()->create();
         $currentClassroom = Classroom::factory()->create();
         $newClassroom = Classroom::factory()->create();
+        Subject::factory()->create([
+            'classroom_id' => $newClassroom->id,
+        ]);
         $supportRequest = SupportRequest::factory()->create([
             'student_id' => $student->id,
             'classroom_id' => $currentClassroom->id,
@@ -92,6 +183,9 @@ class StudentSupportRequestTest extends TestCase
         $student = User::factory()->create();
         $currentClassroom = Classroom::factory()->create();
         $newClassroom = Classroom::factory()->create();
+        Subject::factory()->create([
+            'classroom_id' => $newClassroom->id,
+        ]);
         $supportRequest = SupportRequest::factory()->paused()->create([
             'student_id' => $student->id,
             'classroom_id' => $currentClassroom->id,

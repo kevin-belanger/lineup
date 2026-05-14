@@ -79,18 +79,26 @@ class UserController extends Controller
     {
         $validated = $this->validatedData($request);
         $this->ensureCanChangeAdminRole($request);
+        $roles = [
+            'is_student' => (bool) ($validated['is_student'] ?? false),
+            'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
+            'is_admin' => $this->adminRoleFromRequest($request),
+        ];
+        $isApproved = (bool) ($validated['is_approved'] ?? false);
+
+        $this->ensureRoleApprovalConsistency($roles, $isApproved);
 
         User::query()->create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'is_student' => (bool) ($validated['is_student'] ?? false),
-            'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
-            'is_admin' => $this->adminRoleFromRequest($request),
+            'is_student' => $roles['is_student'],
+            'is_teacher' => $roles['is_teacher'],
+            'is_admin' => $roles['is_admin'],
             'is_active' => (bool) ($validated['is_active'] ?? false),
-            'is_approved' => (bool) ($validated['is_approved'] ?? false),
-            'approved_at' => ($validated['is_approved'] ?? false) ? now() : null,
-            'approved_by' => ($validated['is_approved'] ?? false) ? $request->user()->id : null,
+            'is_approved' => $isApproved,
+            'approved_at' => $isApproved ? now() : null,
+            'approved_by' => $isApproved ? $request->user()->id : null,
         ]);
 
         return back()->with('status', __('User created.'));
@@ -100,32 +108,33 @@ class UserController extends Controller
     {
         $validated = $this->validatedData($request, $user);
         $this->ensureCanChangeAdminRole($request, $user);
-        $isAdmin = $this->adminRoleFromRequest($request, $user);
+        $roles = [
+            'is_student' => (bool) ($validated['is_student'] ?? false),
+            'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
+            'is_admin' => $this->adminRoleFromRequest($request, $user),
+        ];
+        $isActive = (bool) ($validated['is_active'] ?? false);
 
-        if ($request->user()->is($user) && ! $isAdmin) {
+        if ($request->user()->is($user) && ! $roles['is_admin']) {
             return back()->with('toast', [
                 'type' => 'error',
                 'message' => __('You cannot remove your own admin role.'),
             ]);
         }
 
-        if ($request->user()->is($user) && ! ($validated['is_active'] ?? false)) {
-            return back()->with('toast', [
-                'type' => 'error',
-                'message' => __('You cannot deactivate your own account.'),
-            ]);
-        }
+        $this->ensureCanDeactivateUser($request, $user, $isActive);
 
         $wasApproved = $user->is_approved;
         $isApproved = (bool) ($validated['is_approved'] ?? false);
+        $this->ensureRoleApprovalConsistency($roles, $isApproved);
 
         $user->forceFill([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'is_student' => (bool) ($validated['is_student'] ?? false),
-            'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
-            'is_admin' => $isAdmin,
-            'is_active' => (bool) ($validated['is_active'] ?? false),
+            'is_student' => $roles['is_student'],
+            'is_teacher' => $roles['is_teacher'],
+            'is_admin' => $roles['is_admin'],
+            'is_active' => $isActive,
             'is_approved' => $isApproved,
             'approved_at' => $isApproved ? ($wasApproved ? $user->approved_at : now()) : null,
             'approved_by' => $isApproved ? ($wasApproved ? $user->approved_by : $request->user()->id) : null,
@@ -187,6 +196,8 @@ class UserController extends Controller
             ]);
         }
 
+        $this->ensureRoleApprovalConsistency($roles, $user->is_approved);
+
         $user->forceFill([
             'is_student' => $roles['is_student'],
             'is_teacher' => $roles['is_teacher'],
@@ -203,6 +214,10 @@ class UserController extends Controller
                 'type' => 'error',
                 'message' => __('You cannot deactivate your own account.'),
             ]);
+        }
+
+        if (! $request->user()->is_admin && $user->is_admin && $user->is_active) {
+            abort(403, __('Only administrators can deactivate administrator accounts.'));
         }
 
         $user->forceFill([
@@ -269,5 +284,38 @@ class UserController extends Controller
         }
 
         return $request->boolean('is_admin');
+    }
+
+    private function ensureCanDeactivateUser(Request $request, User $user, bool $isActive): void
+    {
+        if ($isActive) {
+            return;
+        }
+
+        if ($request->user()->is($user)) {
+            back()->with('toast', [
+                'type' => 'error',
+                'message' => __('You cannot deactivate your own account.'),
+            ])->throwResponse();
+        }
+
+        if (! $request->user()->is_admin && $user->is_admin) {
+            abort(403, __('Only administrators can deactivate administrator accounts.'));
+        }
+    }
+
+    /**
+     * @param  array{is_student: bool, is_teacher: bool, is_admin: bool}  $roles
+     */
+    private function ensureRoleApprovalConsistency(array $roles, bool $isApproved): void
+    {
+        if ($isApproved || (! $roles['is_teacher'] && ! $roles['is_admin'])) {
+            return;
+        }
+
+        back()->with('toast', [
+            'type' => 'error',
+            'message' => __('A user must be approved before receiving the teacher or administrator role.'),
+        ])->throwResponse();
     }
 }

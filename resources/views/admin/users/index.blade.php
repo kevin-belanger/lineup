@@ -94,17 +94,18 @@
                                         {{ __('Student') }}
                                     </label>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_teacher" value="1" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_teacher" value="1" x-bind:disabled="! $el.form.querySelector('[name=is_approved]').checked" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
                                         {{ __('Teacher') }}
                                     </label>
                                     @if (Auth::user()->is_admin)
                                         <label class="flex items-center gap-2 text-sm text-gray-700">
-                                            <input type="checkbox" name="is_admin" value="1" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            <input type="checkbox" name="is_admin" value="1" x-bind:disabled="! $el.form.querySelector('[name=is_approved]').checked" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
                                             {{ __('Admin') }}
                                         </label>
                                     @endif
                                 </div>
                                 <p x-show="createRolesError" x-text="createRolesError" class="text-sm text-red-600"></p>
+                                <p class="text-xs text-gray-500">{{ __('A user must be approved before receiving the teacher or administrator role.') }}</p>
                             </div>
                         </div>
 
@@ -115,7 +116,7 @@
                                     {{ __('Active') }}
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-700">
-                                    <input type="checkbox" name="is_approved" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    <input type="checkbox" name="is_approved" value="1" checked x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                     {{ __('Approved') }}
                                 </label>
                             </div>

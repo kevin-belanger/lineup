@@ -10,6 +10,12 @@
         </thead>
         <tbody class="divide-y divide-gray-200 bg-white">
             @forelse ($users as $user)
+                @php
+                    $currentUser = Auth::user();
+                    $canEditActiveStatus = ! $currentUser->is($user) && ($currentUser->is_admin || ! $user->is_admin);
+                    $canEditApprovalStatus = ! $user->is_teacher && ! $user->is_admin;
+                    $canAssignElevatedRoles = $user->is_approved;
+                @endphp
                 <tr x-show="editingUser !== {{ $user->id }}">
                     <td class="px-4 py-4 align-top">
                         <div class="font-medium text-gray-900">{{ $user->name }}</div>
@@ -107,12 +113,12 @@
                                         {{ __('Student') }}
                                     </label>
                                     <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_teacher" value="1" @checked($user->is_teacher) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <input type="checkbox" name="is_teacher" value="1" @checked($user->is_teacher) @disabled(! $canAssignElevatedRoles && ! $user->is_teacher) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
                                         {{ __('Teacher') }}
                                     </label>
                                     @if (Auth::user()->is_admin)
                                         <label class="flex items-center gap-2 text-sm text-gray-700">
-                                            <input type="checkbox" name="is_admin" value="1" @checked($user->is_admin) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            <input type="checkbox" name="is_admin" value="1" @checked($user->is_admin) @disabled(! $canAssignElevatedRoles && ! $user->is_admin) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50">
                                             {{ __('Admin') }}
                                         </label>
                                     @elseif ($user->is_admin)
@@ -122,21 +128,41 @@
                                         </label>
                                     @endif
                                     <p x-show="rolesError" x-text="rolesError" class="text-sm text-red-600"></p>
+                                    @unless ($canAssignElevatedRoles)
+                                        <p class="text-xs text-gray-500">{{ __('A user must be approved before receiving the teacher or administrator role.') }}</p>
+                                    @endunless
                                 </div>
 
                                 <div class="space-y-2">
                                     <div class="text-sm font-medium text-gray-700">{{ __('Statuses') }}</div>
-                                    <input type="hidden" name="is_active" value="0">
-                                    <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_active" value="1" @checked($user->is_active) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                        {{ __('Active') }}
-                                    </label>
+                                    @if ($canEditActiveStatus)
+                                        <input type="hidden" name="is_active" value="0">
+                                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                                            <input type="checkbox" name="is_active" value="1" @checked($user->is_active) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            {{ __('Active') }}
+                                        </label>
+                                    @else
+                                        <input type="hidden" name="is_active" value="{{ $user->is_active ? '1' : '0' }}">
+                                        <label class="flex items-center gap-2 text-sm text-gray-500">
+                                            <input type="checkbox" @checked($user->is_active) disabled class="rounded border-gray-300 text-gray-400 shadow-sm">
+                                            {{ __('Active') }}
+                                        </label>
+                                    @endif
 
-                                    <input type="hidden" name="is_approved" value="0">
-                                    <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_approved" value="1" @checked($user->is_approved) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                        {{ __('Approved') }}
-                                    </label>
+                                    @if ($canEditApprovalStatus)
+                                        <input type="hidden" name="is_approved" value="0">
+                                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                                            <input type="checkbox" name="is_approved" value="1" @checked($user->is_approved) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            {{ __('Approved') }}
+                                        </label>
+                                    @else
+                                        <input type="hidden" name="is_approved" value="{{ $user->is_approved ? '1' : '0' }}">
+                                        <label class="flex items-center gap-2 text-sm text-gray-500">
+                                            <input type="checkbox" @checked($user->is_approved) disabled class="rounded border-gray-300 text-gray-400 shadow-sm">
+                                            {{ __('Approved') }}
+                                        </label>
+                                        <p class="text-xs text-gray-500">{{ __('Teacher and administrator accounts must remain approved.') }}</p>
+                                    @endif
                                 </div>
                             </div>
 

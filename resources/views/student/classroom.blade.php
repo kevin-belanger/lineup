@@ -10,18 +10,24 @@
                     @csrf
                     @method('PUT')
 
-                    <div>
-                        <x-input-label for="classroom_id" :value="__('Room')" />
-                        <select id="classroom_id" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                            <option value="">{{ __('Choose') }}</option>
-                            @foreach ($classrooms as $classroom)
-                                <option value="{{ $classroom->id }}" @selected((int) old('classroom_id', $currentClassroomId) === $classroom->id)>
-                                    {{ $classroom->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
-                    </div>
+                    @if ($classrooms->isEmpty())
+                        <p class="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                            {{ __('No room is currently available.') }}
+                        </p>
+                    @else
+                        <div>
+                            <x-input-label for="classroom_id" :value="__('Room')" />
+                            <select id="classroom_id" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                <option value="">{{ __('Choose') }}</option>
+                                @foreach ($classrooms as $classroom)
+                                    <option value="{{ $classroom->id }}" @selected((int) old('classroom_id', $currentClassroomId) === $classroom->id)>
+                                        {{ $classroom->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
+                        </div>
+                    @endif
 
                     @if ($activeRequests->isNotEmpty())
                         <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -49,9 +55,11 @@
                         </div>
                     @endif
 
-                    <x-primary-button>
-                        {{ __('Use this room') }}
-                    </x-primary-button>
+                    @if ($classrooms->isNotEmpty())
+                        <x-primary-button>
+                            {{ __('Use this room') }}
+                        </x-primary-button>
+                    @endif
                 </form>
             </section>
         </div>

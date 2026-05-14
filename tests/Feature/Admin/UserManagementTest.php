@@ -381,6 +381,216 @@ class UserManagementTest extends TestCase
         $this->assertFalse($user->is_admin);
     }
 
+    public function test_user_can_not_deactivate_themselves(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'is_teacher' => '1',
+            'is_active' => '0',
+            'is_approved' => '1',
+        ])->assertRedirect();
+
+        $this->assertTrue($teacher->refresh()->is_active);
+    }
+
+    public function test_admin_can_not_deactivate_themselves(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.active', $admin))
+            ->assertRedirect();
+
+        $this->assertTrue($admin->refresh()->is_active);
+    }
+
+    public function test_teacher_can_not_deactivate_admin(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $admin = User::factory()->admin()->create([
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.active', $admin))
+            ->assertForbidden();
+
+        $this->assertTrue($admin->refresh()->is_active);
+    }
+
+    public function test_teacher_can_deactivate_non_admin_user(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.active', $user))
+            ->assertRedirect();
+
+        $this->assertFalse($user->refresh()->is_active);
+    }
+
+    public function test_admin_can_deactivate_another_admin(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $otherAdmin = User::factory()->admin()->create([
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.active', $otherAdmin))
+            ->assertRedirect();
+
+        $this->assertFalse($otherAdmin->refresh()->is_active);
+    }
+
+    public function test_admin_can_deactivate_teacher_or_student(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $teacher = User::factory()->teacher()->create([
+            'is_active' => true,
+        ]);
+        $student = User::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.active', $teacher))
+            ->assertRedirect();
+        $this->actingAs($admin)->patch(route('admin.users.active', $student))
+            ->assertRedirect();
+
+        $this->assertFalse($teacher->refresh()->is_active);
+        $this->assertFalse($student->refresh()->is_active);
+    }
+
+    public function test_user_can_not_be_assigned_teacher_role_unless_approved(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->pendingApproval()->create([
+            'is_student' => true,
+            'is_teacher' => false,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.roles', $user), [
+            'is_teacher' => '1',
+        ])->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertFalse($user->is_approved);
+        $this->assertFalse($user->is_teacher);
+    }
+
+    public function test_user_can_not_be_assigned_admin_role_unless_approved(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->pendingApproval()->create([
+            'is_student' => true,
+            'is_teacher' => false,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.roles', $user), [
+            'is_admin' => '1',
+        ])->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertFalse($user->is_approved);
+        $this->assertFalse($user->is_admin);
+    }
+
+    public function test_teacher_or_admin_user_can_not_be_changed_to_unapproved(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $teacher = User::factory()->teacher()->create([
+            'is_approved' => true,
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.update', $teacher), [
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'is_teacher' => '1',
+            'is_active' => '1',
+            'is_approved' => '0',
+        ])->assertRedirect();
+
+        $teacher->refresh();
+
+        $this->assertTrue($teacher->is_teacher);
+        $this->assertTrue($teacher->is_approved);
+    }
+
+    public function test_admin_can_not_unapprove_themselves_while_admin(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'is_approved' => true,
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.update', $admin), [
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'is_admin' => '1',
+            'is_active' => '1',
+            'is_approved' => '0',
+        ])->assertRedirect();
+
+        $admin->refresh();
+
+        $this->assertTrue($admin->is_admin);
+        $this->assertTrue($admin->is_approved);
+    }
+
+    public function test_teacher_can_not_create_unapproved_teacher(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this->actingAs($teacher)->post(route('admin.users.store'), [
+            'name' => 'Unapproved Teacher',
+            'email' => 'unapproved-teacher@example.com',
+            'password' => 'password',
+            'is_teacher' => '1',
+            'is_active' => '1',
+            'is_approved' => '0',
+        ])->assertRedirect();
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'unapproved-teacher@example.com',
+        ]);
+    }
+
+    public function test_teacher_can_not_update_user_into_unapproved_teacher_state(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create([
+            'is_student' => true,
+            'is_teacher' => false,
+            'is_admin' => false,
+            'is_approved' => true,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'is_teacher' => '1',
+            'is_active' => '1',
+            'is_approved' => '0',
+        ])->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertFalse($user->is_teacher);
+        $this->assertTrue($user->is_approved);
+    }
+
     public function test_teacher_editing_admin_user_preserves_admin_role_when_admin_field_is_absent(): void
     {
         $teacher = User::factory()->teacher()->create();

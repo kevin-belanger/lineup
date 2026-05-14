@@ -56,6 +56,20 @@ class ReferenceDataManagementTest extends TestCase
             ->assertSee('Subjects');
     }
 
+    public function test_admin_classroom_management_includes_rooms_without_active_subjects(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create([
+            'name' => 'Admin-visible room without subjects',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.classrooms.index'))
+            ->assertOk()
+            ->assertSeeText($classroom->name);
+    }
+
     public function test_admin_classroom_list_can_search_and_filter_classrooms(): void
     {
         $admin = User::factory()->admin()->create();

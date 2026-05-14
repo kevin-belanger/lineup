@@ -16,9 +16,7 @@ class ClassroomController extends Controller
     public function edit(Request $request): View
     {
         return view('student.classroom', [
-            'classrooms' => Classroom::query()
-                ->where('is_active', true)
-                ->orderBy('name')
+            'classrooms' => $this->availableClassrooms()
                 ->get(['id', 'name', 'description']),
             'currentClassroomId' => $request->session()->get('current_classroom_id'),
             'activeRequests' => $this->activeRequests($request)->with(['classroom:id,name', 'subject:id,name,url'])->get(),
@@ -33,6 +31,13 @@ class ClassroomController extends Controller
         ]);
 
         $newClassroomId = (int) $validated['classroom_id'];
+
+        if (! $this->availableClassrooms()->whereKey($newClassroomId)->exists()) {
+            return back()->withErrors([
+                'classroom_id' => __('The selected room is not available.'),
+            ])->withInput();
+        }
+
         $activeRequests = $this->activeRequests($request)->get();
         $hasActiveRequestsInAnotherClassroom = $activeRequests
             ->contains(fn (SupportRequest $supportRequest) => $supportRequest->classroom_id !== $newClassroomId);
@@ -68,5 +73,13 @@ class ClassroomController extends Controller
         return SupportRequest::query()
             ->where('student_id', $request->user()->id)
             ->whereIn('status', SupportRequest::activeStatuses());
+    }
+
+    private function availableClassrooms()
+    {
+        return Classroom::query()
+            ->where('is_active', true)
+            ->whereHas('subjects', fn ($query) => $query->where('is_active', true))
+            ->orderBy('name');
     }
 }
