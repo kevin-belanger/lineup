@@ -8,6 +8,7 @@ use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
 use App\Models\SupportRequest;
 use App\Models\User;
+use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -32,16 +33,18 @@ class PriorityRequestsTest extends TestCase
         $teacher = User::factory()->teacher()->create();
         $classroom = Classroom::factory()->create();
 
+        app(ApplicationSettings::class)->updatePriorityRequestDefaultMessage('Assessment room assistance');
+
         Livewire::actingAs($teacher)
             ->test(PriorityRequests::class)
-            ->assertSet('message', PriorityRequests::DEFAULT_MESSAGE)
+            ->assertSet('message', 'Assessment room assistance')
             ->assertSet('formResetKey', 0)
             ->set('classroomId', $classroom->id)
             ->set('message', 'Besoin d un deuxieme avis.')
             ->call('create')
             ->assertHasNoErrors()
             ->assertSet('classroomId', null)
-            ->assertSet('message', PriorityRequests::DEFAULT_MESSAGE)
+            ->assertSet('message', 'Assessment room assistance')
             ->assertSet('formResetKey', 1)
             ->assertDispatched('toast');
 
@@ -58,6 +61,42 @@ class PriorityRequestsTest extends TestCase
         $this->assertNull($supportRequest->table_number);
         $this->assertNull($supportRequest->type);
         $this->assertSame(1, app(SupportRequestChangeMarker::class)->current($classroom->id));
+    }
+
+    public function test_priority_request_form_uses_configured_default_message(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        app(ApplicationSettings::class)->updatePriorityRequestDefaultMessage('Configured priority message');
+
+        Livewire::actingAs($teacher)
+            ->test(PriorityRequests::class)
+            ->assertSet('message', 'Configured priority message');
+    }
+
+    public function test_priority_request_form_uses_empty_message_when_setting_is_empty(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        app(ApplicationSettings::class)->updatePriorityRequestDefaultMessage('');
+
+        Livewire::actingAs($teacher)
+            ->test(PriorityRequests::class)
+            ->assertSet('message', '');
+    }
+
+    public function test_priority_request_validation_preserves_submitted_message(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        app(ApplicationSettings::class)->updatePriorityRequestDefaultMessage('Configured priority message');
+
+        Livewire::actingAs($teacher)
+            ->test(PriorityRequests::class)
+            ->set('message', 'Teacher edited message')
+            ->call('create')
+            ->assertHasErrors(['classroomId' => 'required'])
+            ->assertSet('message', 'Teacher edited message');
     }
 
     public function test_sent_priority_requests_refresh_when_target_classroom_marker_changes(): void

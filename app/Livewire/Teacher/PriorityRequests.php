@@ -4,6 +4,7 @@ namespace App\Livewire\Teacher;
 
 use App\Models\Classroom;
 use App\Models\SupportRequest;
+use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
@@ -13,8 +14,6 @@ use Livewire\Component;
 
 class PriorityRequests extends Component
 {
-    public const DEFAULT_MESSAGE = 'Assessment room assistance';
-
     #[Validate('required|exists:classrooms,id')]
     public ?int $classroomId = null;
 
@@ -26,9 +25,9 @@ class PriorityRequests extends Component
 
     public int $formResetKey = 0;
 
-    public function mount(SupportRequestChangeMarker $changeMarker): void
+    public function mount(ApplicationSettings $settings, SupportRequestChangeMarker $changeMarker): void
     {
-        $this->message = $this->defaultMessage();
+        $this->message = $this->defaultMessage($settings);
         $this->trackedVersions = $this->priorityRequestVersions($changeMarker);
     }
 
@@ -64,7 +63,7 @@ class PriorityRequests extends Component
         ]);
 
         $this->reset('classroomId');
-        $this->message = $this->defaultMessage();
+        $this->message = $this->defaultMessage(app(ApplicationSettings::class));
         $this->formResetKey++;
         $this->toast('success', __('Priority request sent.'));
         app(SupportRequestChangeMarker::class)->touch($classroom->id);
@@ -167,9 +166,9 @@ class PriorityRequests extends Component
         $this->dispatch('toast', type: $type, message: $message);
     }
 
-    private function defaultMessage(): string
+    private function defaultMessage(ApplicationSettings $settings): string
     {
-        return __(self::DEFAULT_MESSAGE);
+        return $settings->priorityRequestDefaultMessage();
     }
 
     /**

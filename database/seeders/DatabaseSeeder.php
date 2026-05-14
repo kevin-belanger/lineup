@@ -29,6 +29,10 @@ class DatabaseSeeder extends Seeder
             ['value' => ApplicationSettings::DEFAULT_AUTO_CANCEL_REQUESTS_TIME],
         );
         Setting::query()->firstOrCreate(
+            ['key' => ApplicationSettings::PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY],
+            ['value' => ApplicationSettings::DEFAULT_PRIORITY_REQUEST_MESSAGE],
+        );
+        Setting::query()->firstOrCreate(
             ['key' => ApplicationSettings::TIMEZONE_KEY],
             ['value' => ApplicationSettings::DEFAULT_TIMEZONE],
         );

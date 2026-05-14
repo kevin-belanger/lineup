@@ -31,6 +31,7 @@ class SettingsTest extends TestCase
             'timezone' => 'America/Vancouver',
             'auto_cancel_requests_enabled' => '1',
             'auto_cancel_requests_time' => '16:45',
+            'priority_request_default_message' => 'Please support the assessment room.',
         ]);
 
         $response
@@ -44,6 +45,7 @@ class SettingsTest extends TestCase
         $this->assertSame('America/Vancouver', $settings->timezone());
         $this->assertTrue($settings->autoCancelRequestsEnabled());
         $this->assertSame('16:45', $settings->autoCancelRequestsTime());
+        $this->assertSame('Please support the assessment room.', $settings->priorityRequestDefaultMessage());
 
         $this->actingAs($admin)
             ->get(route('admin.settings.edit'))
@@ -52,7 +54,31 @@ class SettingsTest extends TestCase
             ->assertSee('Default language')
             ->assertSee('Application version')
             ->assertSee('America/Vancouver')
-            ->assertSee('16:45');
+            ->assertSee('16:45')
+            ->assertSee('Please support the assessment room.');
+    }
+
+    public function test_default_priority_request_message_is_empty_by_default(): void
+    {
+        $this->assertSame('', app(ApplicationSettings::class)->priorityRequestDefaultMessage());
+    }
+
+    public function test_admin_can_clear_default_priority_request_message(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        app(ApplicationSettings::class)->updatePriorityRequestDefaultMessage('Temporary default message');
+
+        $this->actingAs($admin)->patch(route('admin.settings.update'), [
+            'display_name' => 'LineUp',
+            'default_locale' => 'en',
+            'timezone' => 'America/Toronto',
+            'auto_cancel_requests_enabled' => '0',
+            'auto_cancel_requests_time' => '16:30',
+            'priority_request_default_message' => '',
+        ])->assertRedirect(route('admin.settings.edit'));
+
+        $this->assertSame('', app(ApplicationSettings::class)->priorityRequestDefaultMessage());
     }
 
     public function test_admin_settings_show_available_application_update(): void

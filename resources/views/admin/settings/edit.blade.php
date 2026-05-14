@@ -88,6 +88,24 @@
 
                     <section class="border-t border-gray-200 p-6">
                         <div>
+                            <x-input-label for="priority_request_default_message" :value="__('Default priority request message')" />
+                            <p class="mt-1 text-sm text-gray-600">
+                                {{ __('This message is automatically inserted when a teacher opens the priority request page.') }}
+                            </p>
+                        </div>
+
+                        <textarea
+                            id="priority_request_default_message"
+                            name="priority_request_default_message"
+                            rows="4"
+                            maxlength="500"
+                            class="mt-3 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >{{ old('priority_request_default_message', $priorityRequestDefaultMessage) }}</textarea>
+                        <x-input-error :messages="$errors->get('priority_request_default_message')" class="mt-2" />
+                    </section>
+
+                    <section class="border-t border-gray-200 p-6">
+                        <div>
                             <h3 class="text-base font-semibold text-gray-900">{{ __('Automatic request cancellation') }}</h3>
                             <p class="mt-1 text-sm text-gray-600">
                                 {{ __('At the selected time, all requests that are still waiting or taken will be cancelled automatically. Completed or already cancelled requests will not be changed.') }}

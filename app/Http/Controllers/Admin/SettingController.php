@@ -27,6 +27,7 @@ class SettingController extends Controller
             'timezones' => ApplicationSettings::AVAILABLE_TIMEZONES,
             'autoCancelRequestsEnabled' => $settings->autoCancelRequestsEnabled(),
             'autoCancelRequestsTime' => $settings->autoCancelRequestsTime(),
+            'priorityRequestDefaultMessage' => $settings->priorityRequestDefaultMessage(),
         ]);
     }
 
@@ -42,6 +43,7 @@ class SettingController extends Controller
                 'nullable',
                 'date_format:H:i',
             ],
+            'priority_request_default_message' => ['nullable', 'string', 'max:500'],
         ]);
 
         $settings->updateDisplayName($validated['display_name']);
@@ -51,6 +53,7 @@ class SettingController extends Controller
             $request->boolean('auto_cancel_requests_enabled'),
             $validated['auto_cancel_requests_time'] ?? $settings->autoCancelRequestsTime(),
         );
+        $settings->updatePriorityRequestDefaultMessage($validated['priority_request_default_message'] ?? '');
 
         return redirect()
             ->route('admin.settings.edit')

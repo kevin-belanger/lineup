@@ -16,11 +16,15 @@ class ApplicationSettings
 
     public const AUTO_CANCEL_REQUESTS_TIME_KEY = 'requests.auto_cancel_time';
 
+    public const PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY = 'requests.priority_default_message';
+
     public const TIMEZONE_KEY = 'app.timezone';
 
     public const DEFAULT_APP_NAME = 'LineUp';
 
     public const DEFAULT_AUTO_CANCEL_REQUESTS_TIME = '16:30';
+
+    public const DEFAULT_PRIORITY_REQUEST_MESSAGE = '';
 
     public const DEFAULT_TIMEZONE = 'America/Toronto';
 
@@ -113,6 +117,25 @@ class ApplicationSettings
         Cache::forget(self::AUTO_CANCEL_REQUESTS_TIME_KEY);
     }
 
+    public function priorityRequestDefaultMessage(): string
+    {
+        return Cache::rememberForever(self::PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY, function (): string {
+            $value = Setting::query()->where('key', self::PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY)->value('value');
+
+            return $this->normalizePriorityRequestDefaultMessage($value);
+        });
+    }
+
+    public function updatePriorityRequestDefaultMessage(?string $message): void
+    {
+        Setting::query()->updateOrCreate(
+            ['key' => self::PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY],
+            ['value' => $this->normalizePriorityRequestDefaultMessage($message)],
+        );
+
+        Cache::forget(self::PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY);
+    }
+
     public function timezone(): string
     {
         return Cache::rememberForever(self::TIMEZONE_KEY, function (): string {
@@ -156,6 +179,11 @@ class ApplicationSettings
         return preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $time) === 1
             ? $time
             : self::DEFAULT_AUTO_CANCEL_REQUESTS_TIME;
+    }
+
+    private function normalizePriorityRequestDefaultMessage(?string $message): string
+    {
+        return mb_substr(trim((string) $message), 0, 500);
     }
 
     private function normalizeTimezone(?string $timezone): string
