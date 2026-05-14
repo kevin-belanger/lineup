@@ -20,13 +20,24 @@ class UserManagementTest extends TestCase
         $response->assertRedirect(route('approval.pending'));
     }
 
-    public function test_non_admin_can_not_access_user_management(): void
+    public function test_student_can_not_access_user_management(): void
     {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get(route('admin.users.index'));
 
         $response->assertForbidden();
+    }
+
+    public function test_teacher_can_access_user_management(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this->actingAs($teacher)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('Users')
+            ->assertDontSee('name="is_admin"', false);
     }
 
     public function test_admin_can_approve_user(): void
@@ -257,6 +268,145 @@ class UserManagementTest extends TestCase
         $this->assertFalse($user->is_student);
         $this->assertTrue($user->is_teacher);
         $this->assertTrue($user->is_admin);
+    }
+
+    public function test_admin_can_remove_admin_role_from_user(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->admin()->create();
+
+        $response = $this->actingAs($admin)->patch(route('admin.users.roles', $user), [
+            'is_teacher' => '1',
+        ]);
+
+        $response->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertFalse($user->is_student);
+        $this->assertTrue($user->is_teacher);
+        $this->assertFalse($user->is_admin);
+    }
+
+    public function test_teacher_can_not_assign_admin_role_to_themselves(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.roles', $teacher), [
+            'is_teacher' => '1',
+            'is_admin' => '1',
+        ])->assertForbidden();
+
+        $this->assertFalse($teacher->refresh()->is_admin);
+    }
+
+    public function test_teacher_can_not_assign_admin_role_to_another_user(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create([
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'is_student' => '1',
+            'is_admin' => '1',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ])->assertForbidden();
+
+        $this->assertFalse($user->refresh()->is_admin);
+    }
+
+    public function test_teacher_can_not_create_admin_user(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this->actingAs($teacher)->post(route('admin.users.store'), [
+            'name' => 'Created Admin',
+            'email' => 'created-admin@example.com',
+            'password' => 'password',
+            'is_teacher' => '1',
+            'is_admin' => '1',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'created-admin@example.com',
+        ]);
+    }
+
+    public function test_teacher_can_not_remove_admin_role_from_existing_admin(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => true,
+        ]);
+
+        $this->actingAs($teacher)->patch(route('admin.users.roles', $admin), [
+            'is_teacher' => '1',
+            'is_admin' => '0',
+        ])->assertForbidden();
+
+        $admin->refresh();
+
+        $this->assertTrue($admin->is_teacher);
+        $this->assertTrue($admin->is_admin);
+    }
+
+    public function test_teacher_can_update_allowed_non_admin_roles(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create([
+            'is_student' => true,
+            'is_teacher' => false,
+            'is_admin' => false,
+        ]);
+
+        $response = $this->actingAs($teacher)->patch(route('admin.users.roles', $user), [
+            'is_teacher' => '1',
+        ]);
+
+        $response->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertFalse($user->is_student);
+        $this->assertTrue($user->is_teacher);
+        $this->assertFalse($user->is_admin);
+    }
+
+    public function test_teacher_editing_admin_user_preserves_admin_role_when_admin_field_is_absent(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $admin = User::factory()->admin()->create([
+            'name' => 'Original Admin',
+            'email' => 'original-admin@example.com',
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $response = $this->actingAs($teacher)->patch(route('admin.users.update', $admin), [
+            'name' => 'Updated Admin',
+            'email' => 'updated-admin@example.com',
+            'is_active' => '1',
+            'is_approved' => '1',
+        ]);
+
+        $response->assertRedirect();
+
+        $admin->refresh();
+
+        $this->assertSame('Updated Admin', $admin->name);
+        $this->assertSame('updated-admin@example.com', $admin->email);
+        $this->assertFalse($admin->is_student);
+        $this->assertFalse($admin->is_teacher);
+        $this->assertTrue($admin->is_admin);
     }
 
     public function test_admin_can_deactivate_user(): void

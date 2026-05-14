@@ -80,6 +80,16 @@ class User extends Authenticatable
         };
     }
 
+    public function canManageAdministration(): bool
+    {
+        return $this->is_admin || $this->is_teacher;
+    }
+
+    public function canManageSettings(): bool
+    {
+        return $this->is_admin;
+    }
+
     public function homeRouteName(): string
     {
         if ($this->is_teacher) {

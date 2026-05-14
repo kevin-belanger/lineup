@@ -110,10 +110,17 @@
                                         <input type="checkbox" name="is_teacher" value="1" @checked($user->is_teacher) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Teacher') }}
                                     </label>
-                                    <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_admin" value="1" @checked($user->is_admin) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                        {{ __('Admin') }}
-                                    </label>
+                                    @if (Auth::user()->is_admin)
+                                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                                            <input type="checkbox" name="is_admin" value="1" @checked($user->is_admin) x-on:change="validateRoles($el.form)" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            {{ __('Admin') }}
+                                        </label>
+                                    @elseif ($user->is_admin)
+                                        <label class="flex items-center gap-2 text-sm text-gray-500">
+                                            <input type="checkbox" checked disabled class="rounded border-gray-300 text-gray-400 shadow-sm">
+                                            {{ __('Admin') }}
+                                        </label>
+                                    @endif
                                     <p x-show="rolesError" x-text="rolesError" class="text-sm text-red-600"></p>
                                 </div>
 

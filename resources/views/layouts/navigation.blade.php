@@ -36,7 +36,7 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6 sm:gap-3">
-                @if (Auth::user()->is_admin)
+                @if (Auth::user()->canManageAdministration())
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
                             <button class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-transparent text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" aria-label="{{ __('Administration') }}">
@@ -57,9 +57,11 @@
                             <x-dropdown-link :href="route('admin.subjects.index')">
                                 {{ __('Subjects') }}
                             </x-dropdown-link>
-                            <x-dropdown-link :href="route('admin.settings.edit')">
-                                {{ __('Settings') }}
-                            </x-dropdown-link>
+                            @if (Auth::user()->canManageSettings())
+                                <x-dropdown-link :href="route('admin.settings.edit')">
+                                    {{ __('Settings') }}
+                                </x-dropdown-link>
+                            @endif
                         </x-slot>
                     </x-dropdown>
                 @endif
@@ -127,7 +129,7 @@
                     {{ __('Priority requests') }}
                 </x-responsive-nav-link>
             @endif
-            @if (Auth::user()->is_admin)
+            @if (Auth::user()->canManageAdministration())
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
                     {{ __('Administration') }}
                 </div>
@@ -140,9 +142,11 @@
                 <x-responsive-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">
                     {{ __('Subjects') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.settings.edit')" :active="request()->routeIs('admin.settings.*')">
-                    {{ __('Settings') }}
-                </x-responsive-nav-link>
+                @if (Auth::user()->canManageSettings())
+                    <x-responsive-nav-link :href="route('admin.settings.edit')" :active="request()->routeIs('admin.settings.*')">
+                        {{ __('Settings') }}
+                    </x-responsive-nav-link>
+                @endif
             @endif
         </div>
 

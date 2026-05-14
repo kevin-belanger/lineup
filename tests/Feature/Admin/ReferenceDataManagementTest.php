@@ -41,6 +41,21 @@ class ReferenceDataManagementTest extends TestCase
         $this->assertFalse($classroom->is_active);
     }
 
+    public function test_teacher_can_access_classroom_and_subject_management(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this->actingAs($teacher)
+            ->get(route('admin.classrooms.index'))
+            ->assertOk()
+            ->assertSee('Rooms');
+
+        $this->actingAs($teacher)
+            ->get(route('admin.subjects.index'))
+            ->assertOk()
+            ->assertSee('Subjects');
+    }
+
     public function test_admin_classroom_list_can_search_and_filter_classrooms(): void
     {
         $admin = User::factory()->admin()->create();

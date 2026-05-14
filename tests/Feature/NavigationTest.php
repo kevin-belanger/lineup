@@ -79,6 +79,25 @@ class NavigationTest extends TestCase
             ->assertSee('Settings');
     }
 
+    public function test_teacher_navigation_shows_administration_links_without_settings(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => false,
+            'is_admin' => false,
+        ]);
+
+        $response = $this->actingAs($teacher)->get(route('admin.users.index'));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Administration')
+            ->assertSeeText('Users')
+            ->assertSeeText('Rooms')
+            ->assertSeeText('Subjects')
+            ->assertDontSeeText('Settings')
+            ->assertDontSee(route('admin.settings.edit'), false);
+    }
+
     public function test_user_menu_keeps_language_choice_out_of_navigation(): void
     {
         $user = User::factory()->create();
@@ -109,6 +128,23 @@ class NavigationTest extends TestCase
             ->assertOk()
             ->assertSee('Settings')
             ->assertSee(route('admin.settings.edit'), false);
+    }
+
+    public function test_teacher_admin_dashboard_hides_settings_card(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => false,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSeeText('Users')
+            ->assertSeeText('Rooms')
+            ->assertSeeText('Subjects')
+            ->assertDontSeeText('Settings')
+            ->assertDontSee(route('admin.settings.edit'), false);
     }
 
     public function test_admin_subpages_show_breadcrumb_to_admin_dashboard(): void

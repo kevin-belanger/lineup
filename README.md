@@ -169,3 +169,20 @@ docker compose -f compose.sail.yaml exec app npm run dev
 ```
 
 The Sail setup is intended for local development only.
+
+### Testing database isolation
+
+Development and test data must stay separated:
+
+- development database: `lineup`
+- testing database: `lineup_testing`
+
+The test environment is defined in `.env.testing`, and `phpunit.xml` also forces `DB_DATABASE=lineup_testing`. Tests that run migrations, `RefreshDatabase`, or `migrate:fresh` must only affect `lineup_testing`.
+
+If Laravel configuration has been cached before running tests, clear it first. At minimum, clear the config cache so PHPUnit can apply the testing environment:
+
+```bash
+docker compose -f compose.sail.yaml exec app php artisan config:clear
+```
+
+When the development containers are running normally, `php artisan optimize:clear` is also fine.

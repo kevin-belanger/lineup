@@ -200,7 +200,24 @@ class SettingsTest extends TestCase
         $response->assertSessionHasErrors('timezone');
     }
 
-    public function test_non_admin_can_not_update_application_settings(): void
+    public function test_teacher_can_not_access_application_settings(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this
+            ->actingAs($teacher)
+            ->get(route('admin.settings.edit'))
+            ->assertForbidden();
+
+        $this
+            ->actingAs($teacher)
+            ->patch(route('admin.settings.update'), [
+                'display_name' => 'Nope',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_student_can_not_update_application_settings(): void
     {
         $user = User::factory()->create();
 

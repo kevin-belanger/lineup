@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin'])
+Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin,teacher'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function (): void {
@@ -31,6 +31,8 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin'])
         Route::patch('/subjects/{subject}/active', [SubjectController::class, 'toggleActive'])->name('subjects.active');
         Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
 
-        Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
-        Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::middleware('role:admin')->group(function (): void {
+            Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
+            Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+        });
     });

@@ -97,10 +97,12 @@
                                         <input type="checkbox" name="is_teacher" value="1" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                         {{ __('Teacher') }}
                                     </label>
-                                    <label class="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" name="is_admin" value="1" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                        {{ __('Admin') }}
-                                    </label>
+                                    @if (Auth::user()->is_admin)
+                                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                                            <input type="checkbox" name="is_admin" value="1" x-on:change="validateRoles($el.form, 'createRolesError')" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            {{ __('Admin') }}
+                                        </label>
+                                    @endif
                                 </div>
                                 <p x-show="createRolesError" x-text="createRolesError" class="text-sm text-red-600"></p>
                             </div>

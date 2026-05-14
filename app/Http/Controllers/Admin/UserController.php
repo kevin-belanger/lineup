@@ -78,6 +78,7 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validatedData($request);
+        $this->ensureCanChangeAdminRole($request);
 
         User::query()->create([
             'name' => $validated['name'],
@@ -85,7 +86,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'is_student' => (bool) ($validated['is_student'] ?? false),
             'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
-            'is_admin' => (bool) ($validated['is_admin'] ?? false),
+            'is_admin' => $this->adminRoleFromRequest($request),
             'is_active' => (bool) ($validated['is_active'] ?? false),
             'is_approved' => (bool) ($validated['is_approved'] ?? false),
             'approved_at' => ($validated['is_approved'] ?? false) ? now() : null,
@@ -98,8 +99,10 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $this->validatedData($request, $user);
+        $this->ensureCanChangeAdminRole($request, $user);
+        $isAdmin = $this->adminRoleFromRequest($request, $user);
 
-        if ($request->user()->is($user) && ! ($validated['is_admin'] ?? false)) {
+        if ($request->user()->is($user) && ! $isAdmin) {
             return back()->with('toast', [
                 'type' => 'error',
                 'message' => __('You cannot remove your own admin role.'),
@@ -121,7 +124,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'is_student' => (bool) ($validated['is_student'] ?? false),
             'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
-            'is_admin' => (bool) ($validated['is_admin'] ?? false),
+            'is_admin' => $isAdmin,
             'is_active' => (bool) ($validated['is_active'] ?? false),
             'is_approved' => $isApproved,
             'approved_at' => $isApproved ? ($wasApproved ? $user->approved_at : now()) : null,
@@ -162,11 +165,12 @@ class UserController extends Controller
             'is_teacher' => ['nullable', 'boolean'],
             'is_admin' => ['nullable', 'boolean'],
         ]);
+        $this->ensureCanChangeAdminRole($request, $user);
 
         $roles = [
             'is_student' => (bool) ($validated['is_student'] ?? false),
             'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
-            'is_admin' => (bool) ($validated['is_admin'] ?? false),
+            'is_admin' => $this->adminRoleFromRequest($request, $user),
         ];
 
         if (! in_array(true, $roles, true)) {
@@ -232,7 +236,7 @@ class UserController extends Controller
         $roles = [
             'is_student' => (bool) ($validated['is_student'] ?? false),
             'is_teacher' => (bool) ($validated['is_teacher'] ?? false),
-            'is_admin' => (bool) ($validated['is_admin'] ?? false),
+            'is_admin' => $this->adminRoleFromRequest($request, $user),
         ];
 
         if (! in_array(true, $roles, true)) {
@@ -243,5 +247,27 @@ class UserController extends Controller
         }
 
         return $validated;
+    }
+
+    private function ensureCanChangeAdminRole(Request $request, ?User $user = null): void
+    {
+        if ($request->user()->is_admin) {
+            return;
+        }
+
+        $currentAdminRole = (bool) ($user?->is_admin ?? false);
+
+        if ($request->has('is_admin') && $request->boolean('is_admin') !== $currentAdminRole) {
+            abort(403, __('Only administrators can change the admin role.'));
+        }
+    }
+
+    private function adminRoleFromRequest(Request $request, ?User $user = null): bool
+    {
+        if (! $request->user()->is_admin && $user !== null) {
+            return (bool) $user->is_admin;
+        }
+
+        return $request->boolean('is_admin');
     }
 }
