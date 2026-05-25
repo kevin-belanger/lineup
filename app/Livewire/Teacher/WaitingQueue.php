@@ -4,6 +4,7 @@ namespace App\Livewire\Teacher;
 
 use App\Models\SupportRequest;
 use App\Services\SupportRequestChangeMarker;
+use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
@@ -37,6 +38,7 @@ class WaitingQueue extends Component
             return;
         }
 
+        app(TeacherActiveRequestOrdering::class)->moveToTop(auth()->id(), $supportRequestId);
         $this->toast('success', __('Request taken.'));
         app(SupportRequestChangeMarker::class)->touch($classroomId);
         $this->dispatchRefresh();

@@ -46,14 +46,21 @@ class DashboardView extends Component
 
         $activeStudentName = SupportRequest::query()
             ->with('student:id,first_name,last_name')
+            ->leftJoin('teacher_active_request_orders as active_request_orders', function ($join): void {
+                $join
+                    ->on('support_requests.id', '=', 'active_request_orders.support_request_id')
+                    ->where('active_request_orders.teacher_id', '=', auth()->id());
+            })
+            ->select('support_requests.*')
             ->where('classroom_id', $classroomId)
             ->where('assigned_teacher_id', auth()->id())
             ->whereIn('status', SupportRequest::teacherActiveStatuses())
             ->whereNotNull('student_id')
-            ->orderByDesc('is_priority')
-            ->orderByDesc('assigned_at')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
+            ->orderByRaw('COALESCE(active_request_orders.sort_order, 0) DESC')
+            ->orderByDesc('support_requests.is_priority')
+            ->orderByDesc('support_requests.assigned_at')
+            ->orderByDesc('support_requests.created_at')
+            ->orderByDesc('support_requests.id')
             ->first()
             ?->student
             ?->fullName();

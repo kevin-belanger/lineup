@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
+use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -47,6 +48,8 @@ class AutoCancelSupportRequests extends Command
             'cancel_reason' => SupportRequest::CANCEL_REASON_END_OF_DAY,
             'updated_at' => now(),
         ]);
+
+        app(TeacherActiveRequestOrdering::class)->removeInactive();
 
         $classroomIds->each(fn (int $classroomId) => $changeMarker->touch($classroomId));
 

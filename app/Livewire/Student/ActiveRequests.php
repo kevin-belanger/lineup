@@ -4,6 +4,7 @@ namespace App\Livewire\Student;
 
 use App\Models\SupportRequest;
 use App\Services\SupportRequestChangeMarker;
+use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -51,7 +52,7 @@ class ActiveRequests extends Component
         $supportRequest = SupportRequest::query()
             ->whereKey($this->confirmingAssignedCancellationId)
             ->where('student_id', auth()->id())
-            ->first(['id', 'classroom_id']);
+            ->first(['id', 'classroom_id', 'assigned_teacher_id']);
 
         $updated = SupportRequest::query()
             ->whereKey($this->confirmingAssignedCancellationId)
@@ -69,6 +70,10 @@ class ActiveRequests extends Component
         $this->toast($updated === 1 ? 'success' : 'info', $updated === 1 ? __('Request cancelled.') : __('The request has been updated.'));
 
         if ($updated === 1) {
+            if ($supportRequest?->assigned_teacher_id !== null) {
+                app(TeacherActiveRequestOrdering::class)->remove($supportRequest->assigned_teacher_id, $supportRequest->id);
+            }
+
             app(SupportRequestChangeMarker::class)->touch($supportRequest?->classroom_id);
         }
     }

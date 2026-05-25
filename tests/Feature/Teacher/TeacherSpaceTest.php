@@ -11,6 +11,7 @@ use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
 use App\Models\Subject;
 use App\Models\SupportRequest;
+use App\Models\TeacherActiveRequestOrder;
 use App\Models\User;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -526,6 +527,244 @@ class TeacherSpaceTest extends TestCase
             ->assertDontSee('>Pause<', false);
     }
 
+    public function test_teacher_can_manually_reorder_active_requests(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $first = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(30),
+        ]);
+        $second = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(20),
+        ]);
+        $third = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(10),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->call('reorderRequests', [$second->id, $first->id, $third->id])
+            ->assertDispatched('teacher-requests-updated')
+            ->assertSeeInOrder([
+                $second->student->fullName(),
+                $first->student->fullName(),
+                $third->student->fullName(),
+            ]);
+
+        $this->assertSame(1, app(SupportRequestChangeMarker::class)->current($classroom->id));
+
+        $this->assertSame(3, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $second->id)
+            ->value('sort_order'));
+        $this->assertSame(2, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $first->id)
+            ->value('sort_order'));
+        $this->assertSame(1, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $third->id)
+            ->value('sort_order'));
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSeeInOrder([
+                $second->student->fullName(),
+                $first->student->fullName(),
+                $third->student->fullName(),
+            ])
+            ->assertSee('wire:sort="moveRequestToPosition"', false)
+            ->assertSee('wire:sort:item="'.$second->id.'"', false)
+            ->assertSee('wire:sort:handle', false)
+            ->assertSee('Reorder request');
+    }
+
+    public function test_teacher_can_move_active_request_to_position_with_livewire_sort(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $first = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(30),
+        ]);
+        $second = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(20),
+        ]);
+        $third = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(10),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->call('moveRequestToPosition', $first->id, 1)
+            ->assertDispatched('teacher-requests-updated')
+            ->assertSeeInOrder([
+                $third->student->fullName(),
+                $first->student->fullName(),
+                $second->student->fullName(),
+            ]);
+
+        $this->assertSame(3, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $third->id)
+            ->value('sort_order'));
+        $this->assertSame(2, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $first->id)
+            ->value('sort_order'));
+        $this->assertSame(1, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $second->id)
+            ->value('sort_order'));
+    }
+
+    public function test_manual_active_request_order_is_scoped_to_connected_teacher(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $ownRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+        $otherRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->call('reorderRequests', [$otherRequest->id, $ownRequest->id]);
+
+        $this->assertDatabaseHas('teacher_active_request_orders', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $ownRequest->id,
+        ]);
+        $this->assertDatabaseMissing('teacher_active_request_orders', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $otherRequest->id,
+        ]);
+    }
+
+    public function test_newly_assigned_request_is_added_to_top_of_manual_order(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $existing = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(5),
+        ]);
+        $waiting = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+        ]);
+        TeacherActiveRequestOrder::query()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $existing->id,
+            'sort_order' => 1,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->call('assign', $waiting->id);
+
+        $this->assertSame(2, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $waiting->id)
+            ->value('sort_order'));
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSeeInOrder([
+                $waiting->student->fullName(),
+                $existing->student->fullName(),
+            ]);
+    }
+
+    public function test_active_request_order_is_removed_when_request_leaves_my_requests(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $toComplete = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+        ]);
+        $toUnassign = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+        ]);
+        $managedByOtherTeacher = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+        ]);
+
+        foreach ([$toComplete, $toUnassign, $managedByOtherTeacher] as $index => $supportRequest) {
+            TeacherActiveRequestOrder::query()->create([
+                'teacher_id' => $supportRequest->assigned_teacher_id,
+                'support_request_id' => $supportRequest->id,
+                'sort_order' => $index + 1,
+            ]);
+        }
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->call('complete', $toComplete->id)
+            ->call('unassign', $toUnassign->id);
+
+        Livewire::actingAs($teacher)
+            ->test(OtherTeacherRequests::class)
+            ->set('managingRequestId', $managedByOtherTeacher->id)
+            ->call('requeue');
+
+        $this->assertDatabaseMissing('teacher_active_request_orders', [
+            'support_request_id' => $toComplete->id,
+        ]);
+        $this->assertDatabaseMissing('teacher_active_request_orders', [
+            'support_request_id' => $toUnassign->id,
+        ]);
+        $this->assertDatabaseMissing('teacher_active_request_orders', [
+            'support_request_id' => $managedByOtherTeacher->id,
+        ]);
+    }
+
     public function test_teacher_request_change_watcher_dispatches_refresh_only_when_classroom_marker_changes(): void
     {
         $teacher = User::factory()->teacher()->create();
@@ -639,6 +878,51 @@ class TeacherSpaceTest extends TestCase
             ->assertDispatched('teacher-page-title-updated', function (string $event, array $params): bool {
                 return $params['title'] === '(2) - Alice Roy - LineUp';
             });
+    }
+
+    public function test_teacher_dashboard_page_title_uses_manual_active_request_order(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $firstStudent = User::factory()->create([
+            'first_name' => 'First',
+            'last_name' => 'Student',
+        ]);
+        $secondStudent = User::factory()->create([
+            'first_name' => 'Second',
+            'last_name' => 'Student',
+        ]);
+        $firstRequest = SupportRequest::factory()->create([
+            'student_id' => $firstStudent->id,
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(10),
+        ]);
+        $secondRequest = SupportRequest::factory()->create([
+            'student_id' => $secondStudent->id,
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(20),
+        ]);
+
+        TeacherActiveRequestOrder::query()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $firstRequest->id,
+            'sort_order' => 1,
+        ]);
+        TeacherActiveRequestOrder::query()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $secondRequest->id,
+            'sort_order' => 2,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(DashboardView::class)
+            ->assertSet('pageTitle', '(0) - Second Student - LineUp');
     }
 
     public function test_teacher_lists_no_longer_poll_independently(): void

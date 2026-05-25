@@ -4,6 +4,7 @@ namespace App\Livewire\Teacher;
 
 use App\Models\SupportRequest;
 use App\Services\SupportRequestChangeMarker;
+use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
@@ -93,6 +94,8 @@ class OtherTeacherRequests extends Component
         }
 
         $classroomId = $this->currentClassroomId();
+        $managedRequest = $this->manageableRequestQuery($supportRequestId)
+            ->first(['id', 'assigned_teacher_id']);
 
         $updated = $this->manageableRequestQuery($supportRequestId)->update($values);
 
@@ -103,6 +106,10 @@ class OtherTeacherRequests extends Component
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
+        }
+
+        if ($managedRequest?->assigned_teacher_id !== null && $this->requestLeavesActiveSection($values)) {
+            app(TeacherActiveRequestOrdering::class)->remove($managedRequest->assigned_teacher_id, $supportRequestId);
         }
 
         $this->toast('success', $successMessage);
@@ -135,6 +142,16 @@ class OtherTeacherRequests extends Component
     private function currentClassroomId(): ?int
     {
         return session('current_classroom_id');
+    }
+
+    private function requestLeavesActiveSection(array $values): bool
+    {
+        if (array_key_exists('assigned_teacher_id', $values)) {
+            return true;
+        }
+
+        return array_key_exists('status', $values)
+            && ! in_array($values['status'], SupportRequest::teacherActiveStatuses(), true);
     }
 
     private function toast(string $type, string $message): void

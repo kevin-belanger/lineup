@@ -1,11 +1,5 @@
 import './bootstrap';
 
-import Alpine from 'alpinejs';
-
-window.Alpine = Alpine;
-
-Alpine.start();
-
 const liveDurationSelector = '[data-live-duration][data-started-at]';
 
 function formatLiveDuration(startedAt) {

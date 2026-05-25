@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Classroom;
 use App\Models\SupportRequest;
 use App\Services\SupportRequestChangeMarker;
+use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -50,6 +51,7 @@ class ClassroomController extends Controller
 
         if ($hasActiveRequestsInAnotherClassroom) {
             $changedClassroomIds = $activeRequests->pluck('classroom_id')->filter()->unique();
+            $changedRequestIds = $activeRequests->pluck('id');
 
             $this->activeRequests($request)->update([
                 'status' => SupportRequest::STATUS_CANCELLED,
@@ -58,6 +60,8 @@ class ClassroomController extends Controller
                 'cancelled_by' => SupportRequest::CANCELLED_BY_STUDENT,
                 'cancel_reason' => SupportRequest::CANCEL_REASON_CHANGED_CLASSROOM,
             ]);
+
+            app(TeacherActiveRequestOrdering::class)->removeForRequests($changedRequestIds);
 
             $changeMarker = app(SupportRequestChangeMarker::class);
             $changedClassroomIds->each(fn (int $classroomId) => $changeMarker->touch($classroomId));

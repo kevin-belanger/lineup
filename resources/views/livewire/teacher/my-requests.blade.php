@@ -13,7 +13,12 @@
         <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-800">{{ $requests->count() }}</span>
     </div>
 
-    <div wire:key="my-requests-list-{{ $refreshKey }}" class="space-y-3">
+    <div
+        wire:key="my-requests-list-{{ $refreshKey }}"
+        wire:sort="moveRequestToPosition"
+        wire:sort:config="{ animation: 150 }"
+        class="space-y-3"
+    >
         @forelse ($requests as $supportRequest)
             @php
                 $cardClass = match ($supportRequest->status) {
@@ -41,15 +46,36 @@
             @endphp
 
             @if ($supportRequest->is_priority)
-                <article wire:key="my-request-priority-{{ $supportRequest->id }}" wire:transition="teacher-my-priority-request-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
+                <article
+                    wire:key="my-request-priority-{{ $supportRequest->id }}"
+                    wire:transition="teacher-my-priority-request-{{ $supportRequest->id }}"
+                    wire:sort:item="{{ $supportRequest->id }}"
+                    data-active-request-card
+                    data-request-id="{{ $supportRequest->id }}"
+                    class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}"
+                >
                     <div class="space-y-3">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $priorityBadgeClass }}">{{ __('Priority') }}</span>
-                                    <span class="font-semibold text-gray-950">{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->fullName() ?? 'N/A' }}</span>
+                            <div class="flex min-w-0 flex-1 gap-2">
+                                <button
+                                    type="button"
+                                    wire:sort:handle
+                                    class="mt-0.5 inline-flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-md text-gray-400 transition hover:bg-white hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:cursor-grabbing"
+                                    aria-label="{{ __('Reorder request') }}"
+                                    title="{{ __('Reorder request') }}"
+                                >
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h.008v.008H8.25V6.75Zm0 5.25h.008v.008H8.25V12Zm0 5.25h.008v.008H8.25v-.008Zm7.5-10.5h.008v.008h-.008V6.75Zm0 5.25h.008v.008h-.008V12Zm0 5.25h.008v.008h-.008v-.008Z" />
+                                    </svg>
+                                </button>
+
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $priorityBadgeClass }}">{{ __('Priority') }}</span>
+                                        <span class="font-semibold text-gray-950">{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->fullName() ?? 'N/A' }}</span>
+                                    </div>
+                                    <div class="mt-2 text-sm text-gray-700">{{ $supportRequest->comment }}</div>
                                 </div>
-                                <div class="mt-2 text-sm text-gray-700">{{ $supportRequest->comment }}</div>
                             </div>
 
                             <button type="button" wire:click="complete({{ $supportRequest->id }})" wire:loading.attr="disabled" wire:target="complete({{ $supportRequest->id }})" class="inline-flex min-h-12 w-32 shrink-0 items-center justify-center self-end rounded-md border border-transparent px-3 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-widest transition focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 {{ $completeButtonClass }}">
@@ -100,35 +126,56 @@
                 $subjectUrl = $supportRequest->subjectUrl();
             @endphp
 
-            <article wire:key="my-request-regular-{{ $supportRequest->id }}" wire:transition="teacher-my-regular-request-{{ $supportRequest->id }}" class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}">
+            <article
+                wire:key="my-request-regular-{{ $supportRequest->id }}"
+                wire:transition="teacher-my-regular-request-{{ $supportRequest->id }}"
+                wire:sort:item="{{ $supportRequest->id }}"
+                data-active-request-card
+                data-request-id="{{ $supportRequest->id }}"
+                class="rounded-lg border {{ $cardClass }} p-4 {{ $pausedCardClass }}"
+            >
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="min-w-0 flex-1 space-y-2">
-                        <div class="px-2">
-                            <div class="min-w-0 text-base font-semibold text-gray-950">
-                                {{ $supportRequest->student?->fullName() ?? 'N/A' }}
-                            </div>
-                        </div>
+                    <div class="flex min-w-0 flex-1 gap-2">
+                        <button
+                            type="button"
+                            wire:sort:handle
+                            class="mt-1 inline-flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-md text-gray-400 transition hover:bg-indigo-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:cursor-grabbing"
+                            aria-label="{{ __('Reorder request') }}"
+                            title="{{ __('Reorder request') }}"
+                        >
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h.008v.008H8.25V6.75Zm0 5.25h.008v.008H8.25V12Zm0 5.25h.008v.008H8.25v-.008Zm7.5-10.5h.008v.008h-.008V6.75Zm0 5.25h.008v.008h-.008V12Zm0 5.25h.008v.008h-.008v-.008Z" />
+                            </svg>
+                        </button>
 
-                        @if ($subjectUrl)
-                            <a
-                                href="{{ $subjectUrl }}"
-                                target="{{ $courseUrlTarget }}"
-                                @if ($courseUrlRel) rel="{{ $courseUrlRel }}" @endif
-                                class="block rounded-md px-2 py-1.5 text-sm font-medium leading-snug text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                aria-label="{{ __('Open the subject link') }}"
-                            >
-                                <span class="whitespace-normal break-words">
-                                    {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
-                                    <svg class="ml-1 inline-block h-3.5 w-3.5 shrink-0 align-[-2px] text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <div class="whitespace-normal break-words px-2 py-1.5 text-sm font-medium leading-snug text-gray-700">
-                                {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
+                        <div class="min-w-0 flex-1 space-y-2">
+                            <div class="px-2">
+                                <div class="min-w-0 text-base font-semibold text-gray-950">
+                                    {{ $supportRequest->student?->fullName() ?? 'N/A' }}
+                                </div>
                             </div>
-                        @endif
+
+                            @if ($subjectUrl)
+                                <a
+                                    href="{{ $subjectUrl }}"
+                                    target="{{ $courseUrlTarget }}"
+                                    @if ($courseUrlRel) rel="{{ $courseUrlRel }}" @endif
+                                    class="block rounded-md px-2 py-1.5 text-sm font-medium leading-snug text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    aria-label="{{ __('Open the subject link') }}"
+                                >
+                                    <span class="whitespace-normal break-words">
+                                        {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
+                                        <svg class="ml-1 inline-block h-3.5 w-3.5 shrink-0 align-[-2px] text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
+                                        </svg>
+                                    </span>
+                                </a>
+                            @else
+                                <div class="whitespace-normal break-words px-2 py-1.5 text-sm font-medium leading-snug text-gray-700">
+                                    {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="flex shrink-0 flex-col items-end gap-2">

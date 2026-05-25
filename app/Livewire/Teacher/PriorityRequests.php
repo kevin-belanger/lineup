@@ -6,6 +6,7 @@ use App\Models\Classroom;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
+use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
@@ -132,7 +133,7 @@ class PriorityRequests extends Component
             ->where('is_priority', true)
             ->where('priority_requested_by_teacher_id', auth()->id())
             ->whereIn('status', SupportRequest::activeStatuses())
-            ->first(['id', 'classroom_id']);
+            ->first(['id', 'classroom_id', 'assigned_teacher_id']);
 
         if ($supportRequest === null) {
             $this->toast('info', __('This priority request can no longer be changed.'));
@@ -153,6 +154,14 @@ class PriorityRequests extends Component
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
+        }
+
+        if (
+            $supportRequest->assigned_teacher_id !== null
+            && array_key_exists('status', $values)
+            && ! in_array($values['status'], SupportRequest::teacherActiveStatuses(), true)
+        ) {
+            app(TeacherActiveRequestOrdering::class)->remove($supportRequest->assigned_teacher_id, $supportRequest->id);
         }
 
         $this->toast('success', $successMessage);
