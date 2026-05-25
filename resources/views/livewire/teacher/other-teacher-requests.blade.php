@@ -1,4 +1,10 @@
 <section class="rounded-lg border border-gray-200 bg-white/70 shadow-sm">
+    @php
+        $courseUrlSettings = app(\App\Services\ApplicationSettings::class);
+        $courseUrlTarget = $courseUrlSettings->courseUrlTarget();
+        $courseUrlRel = $courseUrlSettings->courseUrlRel();
+    @endphp
+
     <details class="group">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
             <div>
@@ -22,11 +28,13 @@
                             \App\Models\SupportRequest::STATUS_PAUSED => 'bg-sky-100 text-sky-800',
                             default => 'bg-gray-100 text-gray-700',
                         };
+
+                        $subjectUrl = $supportRequest->subjectUrl();
                     @endphp
 
                     <article wire:key="other-teacher-request-{{ $supportRequest->id }}" wire:transition="teacher-other-request-{{ $supportRequest->id }}" class="relative rounded-md border border-gray-100 bg-gray-50 p-3 pb-9">
                         <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <div class="truncate text-sm font-semibold text-gray-800">
                                     {{ $supportRequest->is_priority ? __('Priority') : ($supportRequest->student?->fullName() ?? 'N/A') }}
                                 </div>
@@ -34,14 +42,33 @@
                                     @if ($supportRequest->is_priority)
                                         {{ __('Sent by') }} {{ $supportRequest->priorityRequester?->fullName() ?? 'N/A' }}
                                     @else
-                                        <span class="inline-flex items-center gap-1">
-                                            <span>{{ $supportRequest->subject?->name ?? 'N/A' }}</span>
-                                            <x-subject-request-link :support-request="$supportRequest" />
-                                        </span>
-                                        -
-                                        {{ __('Table') }} {{ $supportRequest->table_number }}
+                                        @if ($subjectUrl)
+                                            <a
+                                                href="{{ $subjectUrl }}"
+                                                target="{{ $courseUrlTarget }}"
+                                                @if ($courseUrlRel) rel="{{ $courseUrlRel }}" @endif
+                                                class="block rounded-md px-2 py-1.5 text-sm font-medium leading-snug text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                                aria-label="{{ __('Open the subject link') }}"
+                                            >
+                                                <span class="whitespace-normal break-words">
+                                                    {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
+                                                    <svg class="ml-1 inline-block h-3.5 w-3.5 shrink-0 align-[-2px] text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
+                                                    </svg>
+                                                </span>
+                                            </a>
+                                        @else
+                                            <div class="whitespace-normal break-words px-2 py-1.5 text-sm font-medium leading-snug text-gray-700">
+                                                {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
+                                            </div>
+                                        @endif
                                     @endif
                                 </div>
+                                @if (! $supportRequest->is_priority)
+                                    <div class="mt-1 px-2 text-sm text-gray-600">
+                                        {{ __('Table') }} {{ $supportRequest->table_number }}
+                                    </div>
+                                @endif
                                 <div class="mt-1 text-xs text-gray-500">
                                     {{ __('With') }} {{ $supportRequest->assignedTeacher?->fullName() ?? 'N/A' }}
                                 </div>
@@ -83,6 +110,10 @@
             <button type="button" class="absolute inset-0 bg-gray-500 opacity-75" wire:click="closeManagementModal" aria-label="{{ __('Close') }}"></button>
 
             <div class="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+                @php
+                    $managedSubjectUrl = $managedRequest->subjectUrl();
+                @endphp
+
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">{{ __('Manage request') }}</h3>
                     <p class="mt-1 text-sm text-gray-600">{{ __('One-time action on a request assigned to another teacher.') }}</p>
@@ -99,10 +130,26 @@
                     </div>
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Subject') }}</div>
-                        <div class="mt-1 inline-flex items-center gap-1 text-gray-800">
-                            <span>{{ $managedRequest->subject?->name ?? 'N/A' }}</span>
-                            <x-subject-request-link :support-request="$managedRequest" />
-                        </div>
+                        @if ($managedSubjectUrl)
+                            <a
+                                href="{{ $managedSubjectUrl }}"
+                                target="{{ $courseUrlTarget }}"
+                                @if ($courseUrlRel) rel="{{ $courseUrlRel }}" @endif
+                                class="mt-1 block rounded-md py-1.5 text-sm font-medium leading-snug text-gray-800 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                aria-label="{{ __('Open the subject link') }}"
+                            >
+                                <span class="whitespace-normal break-words">
+                                    {{ $managedRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $managedRequest->moodle_tile_number }}
+                                    <svg class="ml-1 inline-block h-3.5 w-3.5 shrink-0 align-[-2px] text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
+                                    </svg>
+                                </span>
+                            </a>
+                        @else
+                            <div class="mt-1 whitespace-normal break-words py-1.5 text-sm font-medium leading-snug text-gray-800">
+                                {{ $managedRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $managedRequest->moodle_tile_number }}
+                            </div>
+                        @endif
                     </div>
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Status') }}</div>
@@ -111,10 +158,6 @@
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Table') }}</div>
                         <div class="mt-1 text-gray-800">{{ $managedRequest->table_number }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Moodle tile') }}</div>
-                        <div class="mt-1 text-gray-800">{{ $managedRequest->moodle_tile_number }}</div>
                     </div>
                     @if ($managedRequest->typeLabel() !== '')
                         <div class="sm:col-span-2">

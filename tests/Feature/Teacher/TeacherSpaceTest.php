@@ -13,6 +13,7 @@ use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\TeacherActiveRequestOrder;
 use App\Models\User;
+use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -486,6 +487,43 @@ class TeacherSpaceTest extends TestCase
             ->test(OtherTeacherRequests::class)
             ->assertSee('Avec')
             ->assertDontSee('With');
+    }
+
+    public function test_other_teacher_requests_use_harmonized_course_links(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Matiere avec un tres long nom qui doit revenir naturellement a la ligne',
+            'url' => 'https://moodle.example.test/course?table=[table]&section=[section]',
+        ]);
+
+        app(ApplicationSettings::class)->updateReuseCourseUrlTab(true);
+
+        $supportRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+            'moodle_tile_number' => 12,
+            'table_number' => '7',
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(OtherTeacherRequests::class)
+            ->assertSee('Matiere avec un tres long nom qui doit revenir naturellement a la ligne - Tile 12')
+            ->assertSee('https://moodle.example.test/course?table=7&amp;section=12', false)
+            ->assertSee('target="lineup_course_url"', false)
+            ->assertSee('aria-label="Open the subject link"', false)
+            ->assertSee('whitespace-normal break-words', false)
+            ->call('openManagementModal', $supportRequest->id)
+            ->assertSee('Matiere avec un tres long nom qui doit revenir naturellement a la ligne - Tile 12')
+            ->assertSee('target="lineup_course_url"', false);
     }
 
     public function test_teacher_can_not_manage_requests_outside_other_teacher_visible_section(): void
