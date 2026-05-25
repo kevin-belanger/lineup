@@ -116,10 +116,12 @@
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Moodle tile') }}</div>
                         <div class="mt-1 text-gray-800">{{ $managedRequest->moodle_tile_number }}</div>
                     </div>
-                    <div class="sm:col-span-2">
-                        <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Type') }}</div>
-                        <div class="mt-1 text-gray-800">{{ $typeLabels[$managedRequest->type] ?? $managedRequest->type }}</div>
-                    </div>
+                    @if ($managedRequest->typeLabel() !== '')
+                        <div class="sm:col-span-2">
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Type') }}</div>
+                            <div class="mt-1 text-gray-800">{{ $managedRequest->typeLabel() }}</div>
+                        </div>
+                    @endif
                     <div class="sm:col-span-2">
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Comment') }}</div>
                         <div class="mt-1 text-gray-800">{{ $managedRequest->comment ?: __('No comment.') }}</div>

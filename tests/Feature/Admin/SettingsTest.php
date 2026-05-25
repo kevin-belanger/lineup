@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\RequestType;
+use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\ApplicationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,6 +91,56 @@ class SettingsTest extends TestCase
 
         $this->assertFalse($settings->reuseCourseUrlTab());
         $this->assertSame('_blank', $settings->courseUrlTarget());
+    }
+
+    public function test_admin_can_manage_request_types_without_changing_existing_requests(): void
+    {
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([]),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('Request types')
+            ->assertSee('No request types configured.');
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.settings.request-types.store'), [
+                'name' => ' Correction ',
+            ])
+            ->assertRedirect(route('admin.settings.edit'))
+            ->assertSessionHas('toast');
+
+        $requestType = RequestType::query()->firstOrFail();
+
+        $this->assertSame('Correction', $requestType->name);
+        $this->assertSame(1, $requestType->sort_order);
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.settings.request-types.store'), [
+                'name' => 'Correction',
+            ])
+            ->assertSessionHasErrors('name');
+
+        $supportRequest = SupportRequest::factory()->create([
+            'request_type' => 'Correction',
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->delete(route('admin.settings.request-types.destroy', $requestType))
+            ->assertRedirect(route('admin.settings.edit'));
+
+        $this->assertDatabaseMissing('request_types', [
+            'id' => $requestType->id,
+        ]);
+        $this->assertSame('Correction', $supportRequest->refresh()->request_type);
     }
 
     public function test_default_priority_request_message_is_empty_by_default(): void

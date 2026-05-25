@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\RequestType;
 use App\Services\ApplicationSettings;
 use App\Services\ApplicationUpdateChecker;
 use App\Services\LocaleManager;
@@ -29,6 +30,10 @@ class SettingController extends Controller
             'autoCancelRequestsTime' => $settings->autoCancelRequestsTime(),
             'priorityRequestDefaultMessage' => $settings->priorityRequestDefaultMessage(),
             'reuseCourseUrlTab' => $settings->reuseCourseUrlTab(),
+            'requestTypes' => RequestType::query()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 
@@ -63,6 +68,41 @@ class SettingController extends Controller
             ->with('toast', [
                 'type' => 'success',
                 'message' => __('Settings saved.'),
+            ]);
+    }
+
+    public function storeRequestType(Request $request): RedirectResponse
+    {
+        $request->merge([
+            'name' => trim((string) $request->input('name', '')),
+        ]);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100', Rule::unique('request_types', 'name')],
+        ]);
+
+        RequestType::query()->create([
+            'name' => $validated['name'],
+            'sort_order' => ((int) RequestType::query()->max('sort_order')) + 1,
+        ]);
+
+        return redirect()
+            ->route('admin.settings.edit')
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Request type created.'),
+            ]);
+    }
+
+    public function destroyRequestType(RequestType $requestType): RedirectResponse
+    {
+        $requestType->delete();
+
+        return redirect()
+            ->route('admin.settings.edit')
+            ->with('toast', [
+                'type' => 'success',
+                'message' => __('Request type deleted.'),
             ]);
     }
 }

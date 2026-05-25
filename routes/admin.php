@@ -34,5 +34,7 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin,teacher
         Route::middleware('role:admin')->group(function (): void {
             Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
             Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+            Route::post('/settings/request-types', [SettingController::class, 'storeRequestType'])->name('settings.request-types.store');
+            Route::delete('/settings/request-types/{requestType}', [SettingController::class, 'destroyRequestType'])->name('settings.request-types.destroy');
         });
     });

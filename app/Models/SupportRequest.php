@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'moodle_tile_number',
     'table_number',
     'type',
+    'request_type',
     'status',
     'comment',
     'assigned_at',
@@ -27,12 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class SupportRequest extends Model
 {
-    public const TYPE_EXPLANATION = 'explanation';
-
-    public const TYPE_VALIDATION = 'validation';
-
-    public const TYPE_CORRECTION = 'correction';
-
     public const STATUS_WAITING = 'waiting';
 
     public const STATUS_ASSIGNED = 'assigned';
@@ -61,15 +56,6 @@ class SupportRequest extends Model
 
     /** @use HasFactory<SupportRequestFactory> */
     use HasFactory;
-
-    public static function typeLabels(): array
-    {
-        return [
-            self::TYPE_EXPLANATION => __('Explanation'),
-            self::TYPE_VALIDATION => __('Validation'),
-            self::TYPE_CORRECTION => __('Correction'),
-        ];
-    }
 
     public static function statusLabels(): array
     {
@@ -146,7 +132,11 @@ class SupportRequest extends Model
 
     public function typeLabel(): string
     {
-        return self::typeLabels()[$this->type] ?? $this->type;
+        if (is_string($this->request_type) && trim($this->request_type) !== '') {
+            return $this->request_type;
+        }
+
+        return '';
     }
 
     public function statusLabel(): string

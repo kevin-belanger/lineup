@@ -100,7 +100,9 @@
                                     <x-subject-request-link :support-request="$supportRequest" />
                                 </span>
                                 <span>{{ __('Table') }} {{ $supportRequest->table_number }}</span>
-                                <span>{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
+                                @if ($supportRequest->typeLabel() !== '')
+                                    <span>{{ $supportRequest->typeLabel() }}</span>
+                                @endif
                             @endif
                         </div>
 

@@ -92,7 +92,6 @@ class MyRequests extends Component
                 ->orderByDesc('support_requests.id')
                 ->get(),
             'statusLabels' => SupportRequest::statusLabels(),
-            'typeLabels' => SupportRequest::typeLabels(),
         ]);
     }
 

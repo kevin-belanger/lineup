@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
+use App\Models\RequestType;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Services\SupportRequestChangeMarker;
@@ -35,12 +36,11 @@ class SupportRequestController extends Controller
 
         return view('student.requests.form', [
             'supportRequest' => new SupportRequest([
-                'type' => SupportRequest::TYPE_EXPLANATION,
                 'status' => SupportRequest::STATUS_WAITING,
             ]),
             'classroom' => $classroom,
             'subjects' => $this->activeSubjects($classroom),
-            'typeLabels' => SupportRequest::typeLabels(),
+            'requestTypes' => $this->requestTypes(),
             'action' => route('student.requests.store'),
             'method' => 'POST',
         ]);
@@ -92,7 +92,7 @@ class SupportRequestController extends Controller
             'supportRequest' => $supportRequest,
             'classroom' => $supportRequest->classroom,
             'subjects' => $this->activeSubjects($supportRequest->classroom),
-            'typeLabels' => SupportRequest::typeLabels(),
+            'requestTypes' => $this->requestTypes(),
             'action' => route('student.requests.update', $supportRequest),
             'method' => 'PATCH',
         ]);
@@ -103,7 +103,7 @@ class SupportRequestController extends Controller
         $this->authorizeStudentRequest($request, $supportRequest);
         abort_unless($supportRequest->status === SupportRequest::STATUS_WAITING, 403);
 
-        $supportRequest->update($this->validatedData($request, $supportRequest->classroom));
+        $supportRequest->update($this->validatedData($request, $supportRequest->classroom, $supportRequest));
         app(SupportRequestChangeMarker::class)->touch($supportRequest->classroom_id);
 
         return redirect()->route('student.dashboard')->with('status', __('Request updated.'));
@@ -159,15 +159,16 @@ class SupportRequestController extends Controller
                 ->latest()
                 ->paginate(20),
             'statusLabels' => SupportRequest::statusLabels(),
-            'typeLabels' => SupportRequest::typeLabels(),
         ]);
     }
 
     /**
-     * @return array{subject_id: int, moodle_tile_number: int, table_number: string, type: string, comment: ?string}
+     * @return array{subject_id: int, moodle_tile_number: int, table_number: string, type: string, request_type: ?string, comment: ?string}
      */
-    private function validatedData(Request $request, Classroom $classroom): array
+    private function validatedData(Request $request, Classroom $classroom, ?SupportRequest $supportRequest = null): array
     {
+        $requestTypes = $this->requestTypes();
+
         $validated = $request->validate([
             'subject_id' => [
                 'required',
@@ -176,7 +177,11 @@ class SupportRequestController extends Controller
             ],
             'moodle_tile_number' => ['required', 'integer', 'min:1', 'max:9999'],
             'table_number' => ['required', 'string', 'max:50'],
-            'type' => ['required', 'string', Rule::in(array_keys(SupportRequest::typeLabels()))],
+            'request_type_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('request_types', 'id'),
+            ],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -192,11 +197,22 @@ class SupportRequestController extends Controller
             ]);
         }
 
+        $requestType = null;
+
+        if ($requestTypes->isNotEmpty() && isset($validated['request_type_id'])) {
+            $requestType = $requestTypes
+                ->firstWhere('id', (int) $validated['request_type_id'])
+                ?->name;
+        } elseif ($supportRequest !== null) {
+            $requestType = $supportRequest->request_type;
+        }
+
         return [
             'subject_id' => (int) $validated['subject_id'],
             'moodle_tile_number' => (int) $validated['moodle_tile_number'],
             'table_number' => $validated['table_number'],
-            'type' => $validated['type'],
+            'type' => $requestType ?? '',
+            'request_type' => $requestType,
             'comment' => $validated['comment'] ?? null,
         ];
     }
@@ -221,6 +237,14 @@ class SupportRequestController extends Controller
             ->where('subjects.is_active', true)
             ->orderBy('subjects.name')
             ->get(['subjects.id', 'subjects.name']);
+    }
+
+    private function requestTypes()
+    {
+        return RequestType::query()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     private function authorizeStudentRequest(Request $request, SupportRequest $supportRequest): void

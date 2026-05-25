@@ -56,7 +56,6 @@ class RequestHistory extends Component
             'requests' => $query->paginate(12),
             'teacherOptions' => $this->teacherOptions(),
             'statusLabels' => SupportRequest::statusLabels(),
-            'typeLabels' => SupportRequest::typeLabels(),
             'timezone' => $settings->timezone(),
         ]);
     }
@@ -133,13 +132,11 @@ class RequestHistory extends Component
         }
 
         $matchingStatuses = $this->matchingLabelKeys(SupportRequest::statusLabels(), $search);
-        $matchingTypes = $this->matchingLabelKeys(SupportRequest::typeLabels(), $search);
-
-        $query->where(function (Builder $query) use ($search, $matchingStatuses, $matchingTypes): void {
+        $query->where(function (Builder $query) use ($search, $matchingStatuses): void {
             $query
                 ->where('comment', 'like', "%{$search}%")
                 ->orWhere('status', 'like', "%{$search}%")
-                ->orWhere('type', 'like', "%{$search}%")
+                ->orWhere('request_type', 'like', "%{$search}%")
                 ->orWhereHas('student', fn (Builder $query) => $this->applyUserNameSearch($query, $search))
                 ->orWhereHas('subject', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
                 ->orWhereHas('assignedTeacher', fn (Builder $query) => $this->applyUserNameSearch($query, $search))
@@ -147,10 +144,6 @@ class RequestHistory extends Component
 
             if ($matchingStatuses !== []) {
                 $query->orWhereIn('status', $matchingStatuses);
-            }
-
-            if ($matchingTypes !== []) {
-                $query->orWhereIn('type', $matchingTypes);
             }
         });
     }

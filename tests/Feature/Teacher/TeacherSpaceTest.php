@@ -136,6 +136,39 @@ class TeacherSpaceTest extends TestCase
         $this->assertSame(1, app(SupportRequestChangeMarker::class)->current($classroom->id));
     }
 
+    public function test_teacher_request_cards_show_copied_request_type_when_present(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+            'type' => '',
+            'request_type' => 'Validation rapide',
+        ]);
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_teacher_id' => $teacher->id,
+            'assigned_at' => now(),
+            'type' => '',
+            'request_type' => 'Correction détaillée',
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->assertSee('Validation rapide');
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSee('Correction détaillée');
+    }
+
     public function test_my_requests_refresh_keeps_priority_and_regular_requests_after_assignment(): void
     {
         $teacher = User::factory()->teacher()->create();

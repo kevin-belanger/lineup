@@ -7,7 +7,12 @@
                         <div>
                             <div class="font-medium text-gray-900">
                                 <span class="inline-flex items-center gap-1">
-                                    <span>{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
+                                    <span>
+                                        {{ $supportRequest->subject?->name ?? 'N/A' }}
+                                        @if ($supportRequest->typeLabel() !== '')
+                                            - {{ $supportRequest->typeLabel() }}
+                                        @endif
+                                    </span>
                                     <x-subject-request-link :support-request="$supportRequest" />
                                 </span>
                             </div>

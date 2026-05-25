@@ -78,7 +78,6 @@ class OtherTeacherRequests extends Component
                 ->oldest('created_at')
                 ->get(),
             'statusLabels' => SupportRequest::statusLabels(),
-            'typeLabels' => SupportRequest::typeLabels(),
             'managedRequest' => $this->managedRequest(),
         ]);
     }

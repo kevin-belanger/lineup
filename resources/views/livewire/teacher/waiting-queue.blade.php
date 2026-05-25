@@ -152,7 +152,9 @@
 
                     <div class="mt-3 border-t border-gray-100 px-2 pt-2 text-sm leading-snug text-gray-700">
                         <div class="float-right mb-1 ml-3 flex flex-wrap justify-end gap-1.5 text-xs">
-                            <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
+                            @if ($supportRequest->typeLabel() !== '')
+                                <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700">{{ $supportRequest->typeLabel() }}</span>
+                            @endif
                             <span
                                 class="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700"
                                 data-live-duration

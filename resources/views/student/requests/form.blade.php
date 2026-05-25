@@ -45,17 +45,28 @@
                         </div>
                     </div>
 
-                    <div>
-                        <x-input-label for="type" :value="__('Request type')" />
-                        <select id="type" name="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                            @foreach ($typeLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(old('type', $supportRequest->type) === $value)>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('type')" class="mt-2" />
-                    </div>
+                    @if ($requestTypes->isNotEmpty())
+                        @php
+                            $selectedRequestTypeId = old('request_type_id');
+
+                            if ($selectedRequestTypeId === null && $supportRequest->request_type) {
+                                $selectedRequestTypeId = $requestTypes->firstWhere('name', $supportRequest->request_type)?->id;
+                            }
+                        @endphp
+
+                        <div>
+                            <x-input-label for="request_type_id" :value="__('Request type')" />
+                            <select id="request_type_id" name="request_type_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">{{ __('Choose') }}</option>
+                                @foreach ($requestTypes as $requestType)
+                                    <option value="{{ $requestType->id }}" @selected((string) $selectedRequestTypeId === (string) $requestType->id)>
+                                        {{ $requestType->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('request_type_id')" class="mt-2" />
+                        </div>
+                    @endif
 
                     <div>
                         <x-input-label for="comment" :value="__('Comment')" />

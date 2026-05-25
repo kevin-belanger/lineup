@@ -245,7 +245,9 @@
                                 {{ $supportRequest->status === \App\Models\SupportRequest::STATUS_READY ? __('Ready to review') : ($statusLabels[$supportRequest->status] ?? $supportRequest->status) }}
                             </span>
                         @endif
-                        <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-indigo-700 ring-1 ring-indigo-100">{{ $typeLabels[$supportRequest->type] ?? $supportRequest->type }}</span>
+                        @if ($supportRequest->typeLabel() !== '')
+                            <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-indigo-700 ring-1 ring-indigo-100">{{ $supportRequest->typeLabel() }}</span>
+                        @endif
                         <span
                             class="rounded-full bg-white px-2.5 py-0.5 font-medium text-gray-700 ring-1 ring-gray-200"
                             data-live-duration

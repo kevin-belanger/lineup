@@ -133,7 +133,6 @@ class WaitingQueue extends Component
                 ->orderByDesc('is_priority')
                 ->oldest('created_at')
                 ->get(),
-            'typeLabels' => SupportRequest::typeLabels(),
         ]);
     }
 

@@ -22,6 +22,8 @@ class SupportRequestFactory extends Factory
     {
         $classroom = Classroom::factory()->create();
 
+        $requestType = fake()->randomElement(['Explanation', 'Validation', 'Correction']);
+
         return [
             'student_id' => User::factory(),
             'classroom_id' => $classroom->id,
@@ -31,7 +33,8 @@ class SupportRequestFactory extends Factory
             'priority_requested_by_teacher_id' => null,
             'moodle_tile_number' => fake()->numberBetween(1, 200),
             'table_number' => (string) fake()->numberBetween(1, 40),
-            'type' => fake()->randomElement(array_keys(SupportRequest::typeLabels())),
+            'type' => strtolower($requestType),
+            'request_type' => $requestType,
             'status' => SupportRequest::STATUS_WAITING,
             'comment' => fake()->optional()->sentence(),
             'assigned_at' => null,

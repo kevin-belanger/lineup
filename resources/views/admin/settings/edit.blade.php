@@ -167,6 +167,66 @@
                     </section>
                 </form>
             </section>
+
+            <section class="mt-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-base font-semibold text-gray-900">{{ __('Request types') }}</h3>
+                    <p class="mt-1 text-sm text-gray-600">
+                        {{ __('These choices appear in the student request form.') }}
+                    </p>
+
+                    <form method="POST" action="{{ route('admin.settings.request-types.store') }}" class="mt-5 flex flex-col gap-3 sm:flex-row">
+                        @csrf
+
+                        <div class="min-w-0 flex-1">
+                            <x-input-label for="request_type_name" :value="__('New request type')" class="sr-only" />
+                            <x-text-input
+                                id="request_type_name"
+                                name="name"
+                                type="text"
+                                class="block w-full"
+                                :value="old('name')"
+                                maxlength="100"
+                                placeholder="{{ __('New request type') }}"
+                                required
+                            />
+                            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                        </div>
+
+                        <x-primary-button class="justify-center">
+                            {{ __('Add') }}
+                        </x-primary-button>
+                    </form>
+
+                    <div class="mt-5 divide-y divide-gray-100 rounded-md border border-gray-200">
+                        @forelse ($requestTypes as $requestType)
+                            <div class="flex items-center justify-between gap-3 px-4 py-3">
+                                <span class="min-w-0 truncate text-sm font-medium text-gray-900">{{ $requestType->name }}</span>
+
+                                <form method="POST" action="{{ route('admin.settings.request-types.destroy', $requestType) }}">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                        aria-label="{{ __('Delete request type') }}"
+                                        title="{{ __('Delete request type') }}"
+                                    >
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21H8.084a2.25 2.25 0 0 1-2.244-1.327L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        @empty
+                            <div class="px-4 py-5 text-sm text-gray-500">
+                                {{ __('No request types configured.') }}
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 </x-app-layout>

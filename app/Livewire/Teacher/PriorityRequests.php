@@ -57,6 +57,7 @@ class PriorityRequests extends Component
             'moodle_tile_number' => null,
             'table_number' => null,
             'type' => null,
+            'request_type' => null,
             'status' => SupportRequest::STATUS_WAITING,
             'comment' => trim($validated['message']),
             'assigned_at' => null,

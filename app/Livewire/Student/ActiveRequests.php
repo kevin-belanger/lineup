@@ -88,7 +88,6 @@ class ActiveRequests extends Component
                 ->latest()
                 ->get(),
             'statusLabels' => SupportRequest::statusLabels(),
-            'typeLabels' => SupportRequest::typeLabels(),
         ]);
     }
 

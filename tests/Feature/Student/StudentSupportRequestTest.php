@@ -4,6 +4,7 @@ namespace Tests\Feature\Student;
 
 use App\Livewire\Student\ActiveRequests;
 use App\Models\Classroom;
+use App\Models\RequestType;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\User;
@@ -217,6 +218,10 @@ class StudentSupportRequestTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
         ]);
+        $requestType = RequestType::factory()->create([
+            'name' => 'Validation',
+            'sort_order' => 1,
+        ]);
 
         $response = $this
             ->actingAs($student)
@@ -225,7 +230,7 @@ class StudentSupportRequestTest extends TestCase
                 'subject_id' => $subject->id,
                 'moodle_tile_number' => 42,
                 'table_number' => '8',
-                'type' => SupportRequest::TYPE_VALIDATION,
+                'request_type_id' => $requestType->id,
                 'comment' => 'Je veux valider mon exercice.',
             ]);
 
@@ -237,7 +242,7 @@ class StudentSupportRequestTest extends TestCase
             'subject_id' => $subject->id,
             'moodle_tile_number' => 42,
             'table_number' => '8',
-            'type' => SupportRequest::TYPE_VALIDATION,
+            'request_type' => 'Validation',
             'status' => SupportRequest::STATUS_WAITING,
         ]);
     }
@@ -272,6 +277,50 @@ class StudentSupportRequestTest extends TestCase
             ->assertDontSee($otherClassroomSubject->name);
     }
 
+    public function test_student_request_form_hides_request_type_when_none_are_configured(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.requests.create'))
+            ->assertOk()
+            ->assertDontSee('name="request_type_id"', false);
+    }
+
+    public function test_student_request_form_shows_configured_request_types(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+        RequestType::factory()->create([
+            'name' => 'Correction',
+            'sort_order' => 2,
+        ]);
+        RequestType::factory()->create([
+            'name' => 'Explication',
+            'sort_order' => 1,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.requests.create'))
+            ->assertOk()
+            ->assertSee('name="request_type_id"', false)
+            ->assertSee('Explication')
+            ->assertSee('Correction');
+    }
+
     public function test_student_can_have_only_one_active_request(): void
     {
         $student = User::factory()->create();
@@ -293,7 +342,6 @@ class StudentSupportRequestTest extends TestCase
                 'subject_id' => $subject->id,
                 'moodle_tile_number' => 42,
                 'table_number' => '8',
-                'type' => SupportRequest::TYPE_VALIDATION,
             ]);
 
         $response
@@ -315,7 +363,6 @@ class StudentSupportRequestTest extends TestCase
             'subject_id' => $subject->id,
             'moodle_tile_number' => 12,
             'table_number' => '3',
-            'type' => SupportRequest::TYPE_EXPLANATION,
         ]);
 
         $response
@@ -338,12 +385,16 @@ class StudentSupportRequestTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
         ]);
+        $requestType = RequestType::factory()->create([
+            'name' => 'Correction',
+            'sort_order' => 1,
+        ]);
 
         $response = $this->actingAs($student)->patch(route('student.requests.update', $supportRequest), [
             'subject_id' => $subject->id,
             'moodle_tile_number' => 7,
             'table_number' => '12',
-            'type' => SupportRequest::TYPE_CORRECTION,
+            'request_type_id' => $requestType->id,
             'comment' => 'Correction svp.',
         ]);
 
@@ -354,7 +405,37 @@ class StudentSupportRequestTest extends TestCase
         $this->assertSame($subject->id, $supportRequest->subject_id);
         $this->assertSame(7, $supportRequest->moodle_tile_number);
         $this->assertSame('12', $supportRequest->table_number);
-        $this->assertSame(SupportRequest::TYPE_CORRECTION, $supportRequest->type);
+        $this->assertSame('Correction', $supportRequest->request_type);
+    }
+
+    public function test_student_edit_preserves_copied_request_type_when_original_type_was_deleted(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'type' => '',
+            'request_type' => 'Ancien type',
+        ]);
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        RequestType::factory()->create([
+            'name' => 'Nouveau type',
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($student)->patch(route('student.requests.update', $supportRequest), [
+            'subject_id' => $subject->id,
+            'moodle_tile_number' => 7,
+            'table_number' => '12',
+            'comment' => 'Je modifie seulement le commentaire.',
+        ])->assertRedirect(route('student.dashboard'));
+
+        $this->assertSame('Ancien type', $supportRequest->refresh()->request_type);
     }
 
     public function test_student_can_cancel_waiting_request(): void
@@ -555,7 +636,6 @@ class StudentSupportRequestTest extends TestCase
             'subject_id' => $subject->id,
             'moodle_tile_number' => 9,
             'table_number' => '1',
-            'type' => SupportRequest::TYPE_EXPLANATION,
         ]);
 
         $response->assertForbidden();
@@ -577,7 +657,6 @@ class StudentSupportRequestTest extends TestCase
                 'subject_id' => $subject->id,
                 'moodle_tile_number' => 42,
                 'table_number' => '8',
-                'type' => SupportRequest::TYPE_VALIDATION,
             ]);
 
         $response->assertSessionHasErrors('subject_id');
