@@ -30,12 +30,23 @@ class UserController extends Controller
         ];
 
         $users = User::query()
-            ->with('approver:id,name')
+            ->with('approver:id,first_name,last_name')
             ->when($filters['search'] !== '', function ($query) use ($filters): void {
-                $query->where(function ($query) use ($filters): void {
+                $terms = preg_split('/\s+/', $filters['search'], -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+                $query->where(function ($query) use ($filters, $terms): void {
                     $query
-                        ->where('name', 'like', "%{$filters['search']}%")
+                        ->where('first_name', 'like', "%{$filters['search']}%")
+                        ->orWhere('last_name', 'like', "%{$filters['search']}%")
                         ->orWhere('email', 'like', "%{$filters['search']}%");
+
+                    foreach ($terms as $term) {
+                        $query->orWhere(function ($query) use ($term): void {
+                            $query
+                                ->where('first_name', 'like', "%{$term}%")
+                                ->orWhere('last_name', 'like', "%{$term}%");
+                        });
+                    }
                 });
             })
             ->when($filters['status'] === 'active', fn ($query) => $query->where('is_active', true))
@@ -47,7 +58,8 @@ class UserController extends Controller
             ->when($filters['role'] === 'admin', fn ($query) => $query->where('is_admin', true))
             ->orderByDesc('is_active')
             ->orderBy('is_approved')
-            ->orderBy('name')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
             ->paginate(100)
             ->withQueryString();
 
@@ -92,7 +104,8 @@ class UserController extends Controller
 
         try {
             User::query()->create([
-                'name' => $validated['name'],
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'] ?? null,
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'is_student' => $roles['is_student'],
@@ -133,7 +146,8 @@ class UserController extends Controller
 
         try {
             $user->forceFill([
-                'name' => $validated['name'],
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'] ?? null,
                 'email' => $validated['email'],
                 'is_student' => $roles['is_student'],
                 'is_teacher' => $roles['is_teacher'],
@@ -244,12 +258,13 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{name: string, email: string, password?: string, is_student?: bool, is_teacher?: bool, is_admin?: bool, is_active?: bool, is_approved?: bool}
+     * @return array{first_name: string, last_name?: ?string, email: string, password?: string, is_student?: bool, is_teacher?: bool, is_admin?: bool, is_active?: bool, is_approved?: bool}
      */
     private function validatedData(Request $request, ?User $user = null): array
     {
         $rules = [
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user)],
             'is_student' => ['nullable', 'boolean'],
             'is_teacher' => ['nullable', 'boolean'],

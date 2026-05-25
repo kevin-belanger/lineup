@@ -8,7 +8,8 @@ VERSION_TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+.*$'
 
 APP_SERVICE="app"
 DEFAULT_APP_NAME="LineUp"
-DEFAULT_ADMIN_NAME="Administrator"
+DEFAULT_ADMIN_FIRST_NAME="Administrator"
+DEFAULT_ADMIN_LAST_NAME=""
 DEFAULT_ADMIN_EMAIL="admin@example.com"
 
 DOCKER_CMD="sudo docker"
@@ -345,7 +346,8 @@ configure_initial_admin() {
     echo "Initial administrator account"
     echo
 
-    ADMIN_NAME_VALUE="$(ask_value "Initial admin name" "$DEFAULT_ADMIN_NAME")"
+    ADMIN_FIRST_NAME_VALUE="$(ask_value "Initial admin first name" "$DEFAULT_ADMIN_FIRST_NAME")"
+    ADMIN_LAST_NAME_VALUE="$(ask_value "Initial admin last name" "$DEFAULT_ADMIN_LAST_NAME")"
     ADMIN_EMAIL_VALUE="$(ask_value "Initial admin email" "$DEFAULT_ADMIN_EMAIL")"
 
     if confirm "Generate a secure initial admin password automatically?" "yes"; then
@@ -356,7 +358,8 @@ configure_initial_admin() {
         ADMIN_PASSWORD_WAS_GENERATED="no"
     fi
 
-    set_env_value "ADMIN_NAME" "$ADMIN_NAME_VALUE"
+    set_env_value "ADMIN_FIRST_NAME" "$ADMIN_FIRST_NAME_VALUE"
+    set_env_value "ADMIN_LAST_NAME" "$ADMIN_LAST_NAME_VALUE"
     set_env_value "ADMIN_EMAIL" "$ADMIN_EMAIL_VALUE"
     set_env_value "ADMIN_PASSWORD" "$ADMIN_PASSWORD_VALUE"
 }

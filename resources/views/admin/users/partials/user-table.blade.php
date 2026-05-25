@@ -18,7 +18,7 @@
                 @endphp
                 <tr x-show="editingUser !== {{ $user->id }}" x-transition.opacity.duration.150ms>
                     <td class="px-4 py-4 align-top">
-                        <div class="font-medium text-gray-900">{{ $user->name }}</div>
+                        <div class="font-medium text-gray-900">{{ $user->fullName() }}</div>
                         <div class="text-sm text-gray-500">{{ $user->email }}</div>
                     </td>
                     <td class="px-4 py-4 align-top text-sm">
@@ -85,11 +85,17 @@
                             @csrf
                             @method('PATCH')
 
-                            <div class="grid gap-4 md:grid-cols-2">
+                            <div class="grid gap-4 md:grid-cols-3">
                                 <div>
-                                    <x-input-label for="user-{{ $user->id }}-name" :value="__('Name')" />
-                                    <x-text-input id="user-{{ $user->id }}-name" name="name" value="{{ $user->name }}" class="mt-1 block w-full" required />
-                                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                                    <x-input-label for="user-{{ $user->id }}-first-name" :value="__('First name')" />
+                                    <x-text-input id="user-{{ $user->id }}-first-name" name="first_name" value="{{ $user->first_name }}" class="mt-1 block w-full" required autocomplete="given-name" />
+                                    <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <x-input-label for="user-{{ $user->id }}-last-name" :value="__('Last name')" />
+                                    <x-text-input id="user-{{ $user->id }}-last-name" name="last_name" value="{{ $user->last_name }}" class="mt-1 block w-full" autocomplete="family-name" />
+                                    <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                                 </div>
 
                                 <div>

@@ -13,7 +13,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
-    'name',
+    'first_name',
+    'last_name',
     'email',
     'password',
     'is_student',
@@ -78,6 +79,14 @@ class User extends Authenticatable
             'admin' => $this->is_admin,
             default => false,
         };
+    }
+
+    public function fullName(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->first_name,
+            $this->last_name,
+        ], fn ($value): bool => $value !== null && $value !== '')));
     }
 
     public function canManageAdministration(): bool

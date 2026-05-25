@@ -169,10 +169,10 @@ class TeacherSpaceTest extends TestCase
             ->test(MyRequests::class)
             ->assertSee($priorityRequest->comment)
             ->assertSee('Since 20 min')
-            ->assertSee($existingRequest->student->name)
+            ->assertSee($existingRequest->student->fullName())
             ->assertSee('Since 10 min')
             ->assertDontSee('minutes')
-            ->assertDontSee($waitingRequest->student->name);
+            ->assertDontSee($waitingRequest->student->fullName());
 
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
@@ -183,8 +183,8 @@ class TeacherSpaceTest extends TestCase
             ->call('refreshRequests')
             ->assertSet('refreshKey', 1)
             ->assertSee($priorityRequest->comment)
-            ->assertSee($existingRequest->student->name)
-            ->assertSee($waitingRequest->student->name);
+            ->assertSee($existingRequest->student->fullName())
+            ->assertSee($waitingRequest->student->fullName());
     }
 
     public function test_completing_priority_request_keeps_regular_my_requests_visible(): void
@@ -214,13 +214,13 @@ class TeacherSpaceTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(MyRequests::class)
             ->assertSee($priorityRequest->comment)
-            ->assertSee($regularRequest->student->name)
+            ->assertSee($regularRequest->student->fullName())
             ->call('complete', $priorityRequest->id)
             ->assertSet('refreshKey', 1)
             ->assertDispatched('toast')
             ->assertDispatched('teacher-requests-updated')
             ->assertDontSee($priorityRequest->comment)
-            ->assertSee($regularRequest->student->name);
+            ->assertSee($regularRequest->student->fullName());
 
         $this->assertSame(SupportRequest::STATUS_COMPLETED, $priorityRequest->refresh()->status);
         $this->assertSame(SupportRequest::STATUS_ASSIGNED, $regularRequest->refresh()->status);
@@ -509,8 +509,8 @@ class TeacherSpaceTest extends TestCase
             ->test(MyRequests::class)
             ->assertSeeInOrder([
                 $priorityRequest->comment,
-                $olderPaused->student->name,
-                $olderAssigned->student->name,
+                $olderPaused->student->fullName(),
+                $olderAssigned->student->fullName(),
             ])
             ->assertDontSee('Assigned')
             ->assertSee('Paused')
@@ -636,15 +636,15 @@ class TeacherSpaceTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(RequestHistory::class)
             ->assertSee('History')
-            ->assertSee($todayRequest->student->name)
-            ->assertDontSee($oldRequest->student->name)
-            ->assertDontSee($otherClassroomRequest->student->name);
+            ->assertSee($todayRequest->student->fullName())
+            ->assertDontSee($oldRequest->student->fullName())
+            ->assertDontSee($otherClassroomRequest->student->fullName());
     }
 
     public function test_teacher_history_filters_by_period_teacher_and_search(): void
     {
-        $teacher = User::factory()->teacher()->create(['name' => 'Pierre']);
-        $otherTeacher = User::factory()->teacher()->create(['name' => 'Jean']);
+        $teacher = User::factory()->teacher()->create(['first_name' => 'Pierre']);
+        $otherTeacher = User::factory()->teacher()->create(['first_name' => 'Jean']);
         $classroom = Classroom::factory()->create();
         $networkSubject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
@@ -675,21 +675,21 @@ class TeacherSpaceTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(RequestHistory::class)
-            ->assertSee($todayMathRequest->student->name)
-            ->assertDontSee($oldNetworkRequest->student->name)
+            ->assertSee($todayMathRequest->student->fullName())
+            ->assertDontSee($oldNetworkRequest->student->fullName())
             ->set('period', 'custom')
             ->set('startDate', now()->subDays(4)->toDateString())
             ->set('endDate', now()->subDays(2)->toDateString())
-            ->assertSee($oldNetworkRequest->student->name)
-            ->assertDontSee($todayMathRequest->student->name)
+            ->assertSee($oldNetworkRequest->student->fullName())
+            ->assertDontSee($todayMathRequest->student->fullName())
             ->set('period', 'all')
-            ->assertSee($oldNetworkRequest->student->name)
+            ->assertSee($oldNetworkRequest->student->fullName())
             ->set('teacherFilter', (string) $otherTeacher->id)
-            ->assertSee($oldNetworkRequest->student->name)
-            ->assertDontSee($todayMathRequest->student->name)
+            ->assertSee($oldNetworkRequest->student->fullName())
+            ->assertDontSee($todayMathRequest->student->fullName())
             ->set('search', 'reseau')
-            ->assertSee($oldNetworkRequest->student->name)
+            ->assertSee($oldNetworkRequest->student->fullName())
             ->set('search', 'math')
-            ->assertDontSee($oldNetworkRequest->student->name);
+            ->assertDontSee($oldNetworkRequest->student->fullName());
     }
 }

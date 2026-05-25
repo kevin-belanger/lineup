@@ -102,7 +102,7 @@ class PriorityRequestsTest extends TestCase
     public function test_sent_priority_requests_refresh_when_target_classroom_marker_changes(): void
     {
         $requester = User::factory()->teacher()->create();
-        $targetTeacher = User::factory()->teacher()->create(['name' => 'Jean']);
+        $targetTeacher = User::factory()->teacher()->create(['first_name' => 'Jean']);
         $classroom = Classroom::factory()->create();
         $priorityRequest = SupportRequest::factory()->create([
             'student_id' => null,
@@ -151,7 +151,7 @@ class PriorityRequestsTest extends TestCase
 
     public function test_priority_requests_are_shown_before_student_requests_and_can_be_assigned_once(): void
     {
-        $requester = User::factory()->teacher()->create(['name' => 'Pierre']);
+        $requester = User::factory()->teacher()->create(['first_name' => 'Pierre']);
         $teacher = User::factory()->teacher()->create();
         $otherTeacher = User::factory()->teacher()->create();
         $classroom = Classroom::factory()->create();
@@ -179,7 +179,7 @@ class PriorityRequestsTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
-            ->assertSeeInOrder(['Priority', $studentRequest->student->name])
+            ->assertSeeInOrder(['Priority', $studentRequest->student->fullName()])
             ->call('assign', $priorityRequest->id)
             ->assertDispatched('toast');
 
@@ -198,7 +198,7 @@ class PriorityRequestsTest extends TestCase
 
     public function test_assigned_priority_request_appears_in_my_requests_with_only_complete_action(): void
     {
-        $requester = User::factory()->teacher()->create(['name' => 'Jacques']);
+        $requester = User::factory()->teacher()->create(['first_name' => 'Jacques']);
         $teacher = User::factory()->teacher()->create();
         $classroom = Classroom::factory()->create();
         $priorityRequest = SupportRequest::factory()->create([

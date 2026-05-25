@@ -65,10 +65,10 @@ class RequestHistory extends Component
     {
         $query = SupportRequest::query()
             ->with([
-                'student:id,name',
+                'student:id,first_name,last_name',
                 'subject:id,name,url',
-                'assignedTeacher:id,name',
-                'priorityRequester:id,name',
+                'assignedTeacher:id,first_name,last_name',
+                'priorityRequester:id,first_name,last_name',
             ])
             ->where('classroom_id', $this->currentClassroomId());
 
@@ -140,10 +140,10 @@ class RequestHistory extends Component
                 ->where('comment', 'like', "%{$search}%")
                 ->orWhere('status', 'like', "%{$search}%")
                 ->orWhere('type', 'like', "%{$search}%")
-                ->orWhereHas('student', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
+                ->orWhereHas('student', fn (Builder $query) => $this->applyUserNameSearch($query, $search))
                 ->orWhereHas('subject', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
-                ->orWhereHas('assignedTeacher', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
-                ->orWhereHas('priorityRequester', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
+                ->orWhereHas('assignedTeacher', fn (Builder $query) => $this->applyUserNameSearch($query, $search))
+                ->orWhereHas('priorityRequester', fn (Builder $query) => $this->applyUserNameSearch($query, $search));
 
             if ($matchingStatuses !== []) {
                 $query->orWhereIn('status', $matchingStatuses);
@@ -194,10 +194,25 @@ class RequestHistory extends Component
 
         return User::query()
             ->whereIn('id', $teacherIds)
-            ->orderBy('name')
-            ->get(['id', 'name'])
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name'])
             ->sortBy(fn (User $user): int => $user->id === auth()->id() ? 0 : 1)
             ->values();
+    }
+
+    private function applyUserNameSearch(Builder $query, string $search): void
+    {
+        $query->where(function (Builder $query) use ($search): void {
+            $query
+                ->where('first_name', 'like', "%{$search}%")
+                ->orWhere('last_name', 'like', "%{$search}%");
+
+            foreach (preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $term) {
+                $query->orWhere('first_name', 'like', "%{$term}%")
+                    ->orWhere('last_name', 'like', "%{$term}%");
+            }
+        });
     }
 
     private function currentClassroomId(): ?int

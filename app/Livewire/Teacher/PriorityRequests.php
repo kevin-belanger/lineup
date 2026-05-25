@@ -115,7 +115,7 @@ class PriorityRequests extends Component
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'requests' => SupportRequest::query()
-                ->with(['classroom:id,name', 'assignedTeacher:id,name'])
+                ->with(['classroom:id,name', 'assignedTeacher:id,first_name,last_name'])
                 ->where('is_priority', true)
                 ->where('priority_requested_by_teacher_id', auth()->id())
                 ->whereIn('status', SupportRequest::activeStatuses())

@@ -61,7 +61,7 @@ class UserManagementTest extends TestCase
         $admin = User::factory()->admin()->create();
 
         $response = $this->actingAs($admin)->post(route('admin.users.store'), [
-            'name' => 'Marie',
+            'first_name' => 'Marie',
             'email' => 'marie@example.com',
             'password' => 'password',
             'is_teacher' => '1',
@@ -76,7 +76,7 @@ class UserManagementTest extends TestCase
 
         $user = User::query()->where('email', 'marie@example.com')->firstOrFail();
 
-        $this->assertSame('Marie', $user->name);
+        $this->assertSame('Marie', $user->fullName());
         $this->assertTrue(Hash::check('password', $user->password));
         $this->assertFalse($user->is_student);
         $this->assertTrue($user->is_teacher);
@@ -93,7 +93,7 @@ class UserManagementTest extends TestCase
             'is_active' => true,
         ]);
         $inactive = User::factory()->create([
-            'name' => 'Inactive Person',
+            'first_name' => 'Inactive Person',
             'is_active' => false,
         ]);
 
@@ -108,24 +108,24 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.users.index', ['page' => 2]))
             ->assertOk()
-            ->assertSeeText($inactive->name);
+            ->assertSeeText($inactive->fullName());
     }
 
     public function test_admin_user_list_can_search_by_name_and_email(): void
     {
         $admin = User::factory()->admin()->create();
         $byName = User::factory()->create([
-            'name' => 'Alice Recherche',
+            'first_name' => 'Alice Recherche',
             'email' => 'alice@example.com',
             'is_active' => true,
         ]);
         $byEmail = User::factory()->create([
-            'name' => 'Bob',
+            'first_name' => 'Bob',
             'email' => 'bob.recherche@example.com',
             'is_active' => true,
         ]);
         $hidden = User::factory()->create([
-            'name' => 'Charlie',
+            'first_name' => 'Charlie',
             'email' => 'charlie@example.com',
             'is_active' => true,
         ]);
@@ -138,24 +138,24 @@ class UserManagementTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText($byName->name)
+            ->assertSeeText($byName->fullName())
             ->assertSeeText($byEmail->email)
-            ->assertDontSeeText($hidden->name);
+            ->assertDontSeeText($hidden->fullName());
     }
 
     public function test_admin_user_list_can_filter_by_status_and_role(): void
     {
         $admin = User::factory()->admin()->create();
         $inactiveTeacher = User::factory()->teacher()->create([
-            'name' => 'Teacher Inactive',
+            'first_name' => 'Teacher Inactive',
             'is_active' => false,
         ]);
         $activeTeacher = User::factory()->teacher()->create([
-            'name' => 'Teacher Active',
+            'first_name' => 'Teacher Active',
             'is_active' => true,
         ]);
         $inactiveStudent = User::factory()->create([
-            'name' => 'Student Inactive',
+            'first_name' => 'Student Inactive',
             'is_student' => true,
             'is_teacher' => false,
             'is_admin' => false,
@@ -169,23 +169,23 @@ class UserManagementTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText($inactiveTeacher->name)
-            ->assertDontSeeText($activeTeacher->name)
-            ->assertDontSeeText($inactiveStudent->name);
+            ->assertSeeText($inactiveTeacher->fullName())
+            ->assertDontSeeText($activeTeacher->fullName())
+            ->assertDontSeeText($inactiveStudent->fullName());
     }
 
     public function test_admin_can_update_user_information_roles_and_statuses(): void
     {
         $admin = User::factory()->admin()->create();
         $user = User::factory()->teacher()->create([
-            'name' => 'Ancien',
+            'first_name' => 'Ancien',
             'email' => 'ancien@example.com',
             'is_active' => false,
             'is_approved' => false,
         ]);
 
         $response = $this->actingAs($admin)->patch(route('admin.users.update', $user), [
-            'name' => 'Nouveau',
+            'first_name' => 'Nouveau',
             'email' => 'nouveau@example.com',
             'is_student' => '1',
             'is_teacher' => '1',
@@ -197,7 +197,7 @@ class UserManagementTest extends TestCase
 
         $user->refresh();
 
-        $this->assertSame('Nouveau', $user->name);
+        $this->assertSame('Nouveau', $user->fullName());
         $this->assertSame('nouveau@example.com', $user->email);
         $this->assertTrue($user->is_student);
         $this->assertTrue($user->is_teacher);
@@ -213,7 +213,7 @@ class UserManagementTest extends TestCase
         User::factory()->create(['email' => 'pris@example.com']);
 
         $this->actingAs($admin)->post(route('admin.users.store'), [
-            'name' => 'Doublon',
+            'first_name' => 'Doublon',
             'email' => 'pris@example.com',
             'password' => 'password',
             'is_student' => '1',
@@ -239,7 +239,7 @@ class UserManagementTest extends TestCase
             ->followingRedirects()
             ->post(route('admin.users.store'), [
                 'create_panel' => 'create-user',
-                'name' => 'Doublon',
+                'first_name' => 'Doublon',
                 'email' => 'pris@example.com',
                 'password' => 'password',
                 'is_student' => '1',
@@ -266,7 +266,7 @@ class UserManagementTest extends TestCase
             ->from(route('admin.users.index'))
             ->followingRedirects()
             ->patch(route('admin.users.update', $user), [
-                'name' => 'Ancien',
+                'first_name' => 'Ancien',
                 'email' => 'pris@example.com',
                 'is_student' => '1',
                 'is_active' => '1',
@@ -283,7 +283,8 @@ class UserManagementTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $user = User::factory()->teacher()->create([
-            'name' => 'Jean',
+            'first_name' => 'Jean',
+            'last_name' => null,
             'email' => 'jean@example.com',
         ]);
 
@@ -295,7 +296,7 @@ class UserManagementTest extends TestCase
 
         $user->refresh();
 
-        $this->assertSame('Jean', $user->name);
+        $this->assertSame('Jean', $user->fullName());
         $this->assertSame('jean@example.com', $user->email);
         $this->assertTrue($user->is_teacher);
         $this->assertTrue(Hash::check('Nouveau-Mot2Passe!', $user->password));
@@ -376,7 +377,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
-            'name' => $teacher->name,
+            'first_name' => $teacher->fullName(),
             'email' => $teacher->email,
             'is_student' => '1',
             'is_teacher' => '1',
@@ -401,7 +402,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
-            'name' => $teacher->name,
+            'first_name' => $teacher->fullName(),
             'email' => $teacher->email,
             'is_teacher' => '1',
             'is_active' => '1',
@@ -425,7 +426,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
-            'name' => $teacher->name,
+            'first_name' => $teacher->fullName(),
             'email' => $teacher->email,
             'is_student' => '1',
             'is_active' => '1',
@@ -452,7 +453,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($teacher)->patch(route('admin.users.update', $user), [
-            'name' => $user->name,
+            'first_name' => $user->fullName(),
             'email' => $user->email,
             'is_student' => '1',
             'is_admin' => '1',
@@ -468,7 +469,7 @@ class UserManagementTest extends TestCase
         $teacher = User::factory()->teacher()->create();
 
         $this->actingAs($teacher)->post(route('admin.users.store'), [
-            'name' => 'Created Admin',
+            'first_name' => 'Created Admin',
             'email' => 'created-admin@example.com',
             'password' => 'password',
             'is_teacher' => '1',
@@ -590,7 +591,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($teacher)->patch(route('admin.users.update', $teacher), [
-            'name' => $teacher->name,
+            'first_name' => $teacher->fullName(),
             'email' => $teacher->email,
             'is_teacher' => '1',
             'is_active' => '0',
@@ -717,7 +718,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($admin)->patch(route('admin.users.update', $teacher), [
-            'name' => $teacher->name,
+            'first_name' => $teacher->fullName(),
             'email' => $teacher->email,
             'is_teacher' => '1',
             'is_active' => '1',
@@ -738,7 +739,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($admin)->patch(route('admin.users.update', $admin), [
-            'name' => $admin->name,
+            'first_name' => $admin->fullName(),
             'email' => $admin->email,
             'is_admin' => '1',
             'is_active' => '1',
@@ -756,7 +757,7 @@ class UserManagementTest extends TestCase
         $teacher = User::factory()->teacher()->create();
 
         $this->actingAs($teacher)->post(route('admin.users.store'), [
-            'name' => 'Unapproved Teacher',
+            'first_name' => 'Unapproved Teacher',
             'email' => 'unapproved-teacher@example.com',
             'password' => 'password',
             'is_teacher' => '1',
@@ -780,7 +781,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($teacher)->patch(route('admin.users.update', $user), [
-            'name' => $user->name,
+            'first_name' => $user->fullName(),
             'email' => $user->email,
             'is_teacher' => '1',
             'is_active' => '1',
@@ -797,14 +798,14 @@ class UserManagementTest extends TestCase
     {
         $teacher = User::factory()->teacher()->create();
         $admin = User::factory()->admin()->create([
-            'name' => 'Original Admin',
+            'first_name' => 'Original Admin',
             'email' => 'original-admin@example.com',
             'is_student' => false,
             'is_teacher' => false,
         ]);
 
         $response = $this->actingAs($teacher)->patch(route('admin.users.update', $admin), [
-            'name' => 'Updated Admin',
+            'first_name' => 'Updated Admin',
             'email' => 'updated-admin@example.com',
             'is_active' => '1',
             'is_approved' => '1',
@@ -814,7 +815,7 @@ class UserManagementTest extends TestCase
 
         $admin->refresh();
 
-        $this->assertSame('Updated Admin', $admin->name);
+        $this->assertSame('Updated Admin', $admin->fullName());
         $this->assertSame('updated-admin@example.com', $admin->email);
         $this->assertFalse($admin->is_student);
         $this->assertFalse($admin->is_teacher);
@@ -841,7 +842,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $this->actingAs($admin)->patch(route('admin.users.update', $admin), [
-            'name' => $admin->name,
+            'first_name' => $admin->fullName(),
             'email' => $admin->email,
             'is_student' => '1',
             'is_teacher' => '1',
@@ -857,7 +858,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue($admin->is_admin);
 
         $this->actingAs($admin)->patch(route('admin.users.update', $admin), [
-            'name' => $admin->name,
+            'first_name' => $admin->fullName(),
             'email' => $admin->email,
             'is_admin' => '1',
             'is_active' => '1',

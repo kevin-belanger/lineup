@@ -14,7 +14,7 @@
     @if ($supportRequest->assigned_teacher_id)
         <span class="{{ $badgeBase }} bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200">
             @if ($supportRequest->assignedTeacher)
-                {{ __('Taken by :name', ['name' => $supportRequest->assignedTeacher->name]) }}
+                {{ __('Taken by :name', ['name' => $supportRequest->assignedTeacher->fullName()]) }}
             @else
                 {{ __('Taken') }}
             @endif

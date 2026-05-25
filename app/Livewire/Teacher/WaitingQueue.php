@@ -125,7 +125,7 @@ class WaitingQueue extends Component
     {
         return view('livewire.teacher.waiting-queue', [
             'requests' => SupportRequest::query()
-                ->with(['student:id,name', 'subject:id,name,url', 'priorityRequester:id,name'])
+                ->with(['student:id,first_name,last_name', 'subject:id,name,url', 'priorityRequester:id,first_name,last_name'])
                 ->where('classroom_id', $this->currentClassroomId())
                 ->where('status', SupportRequest::STATUS_WAITING)
                 ->orderByDesc('is_priority')

@@ -88,11 +88,17 @@
                         @csrf
                         <input type="hidden" name="create_panel" value="create-user">
 
-                        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                             <div>
-                                <x-input-label for="name" :value="__('Name')" />
-                                <x-text-input id="name" name="name" class="mt-1 block w-full" :value="$shouldRestoreUserCreateInput ? old('name') : ''" required />
-                                <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                                <x-input-label for="first_name" :value="__('First name')" />
+                                <x-text-input id="first_name" name="first_name" class="mt-1 block w-full" :value="$shouldRestoreUserCreateInput ? old('first_name') : ''" required autocomplete="given-name" />
+                                <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="last_name" :value="__('Last name')" />
+                                <x-text-input id="last_name" name="last_name" class="mt-1 block w-full" :value="$shouldRestoreUserCreateInput ? old('last_name') : ''" autocomplete="family-name" />
+                                <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                             </div>
 
                             <div>
@@ -229,7 +235,7 @@
                         >
                             <div class="lg:col-span-2">
                                 <x-input-label for="user-search" :value="__('Search')" />
-                                <x-text-input id="user-search" name="search" type="search" class="mt-1 block w-full text-sm" :value="$filters['search']" placeholder="{{ __('Name or email') }}" />
+                                <x-text-input id="user-search" name="search" type="search" class="mt-1 block w-full text-sm" :value="$filters['search']" placeholder="{{ __('First name, last name or email') }}" />
                             </div>
 
                             <div>

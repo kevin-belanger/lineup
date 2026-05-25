@@ -13,11 +13,13 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $configuredName = trim((string) env('ADMIN_NAME', ''));
+        $configuredFirstName = trim((string) env('ADMIN_FIRST_NAME', ''));
+        $configuredLastName = trim((string) env('ADMIN_LAST_NAME', ''));
         $configuredEmail = trim((string) env('ADMIN_EMAIL', ''));
         $configuredPassword = (string) env('ADMIN_PASSWORD', '');
 
-        $name = $configuredName !== '' ? $configuredName : 'Administrator';
+        $firstName = $configuredFirstName !== '' ? $configuredFirstName : 'Administrator';
+        $lastName = $configuredLastName !== '' ? $configuredLastName : 'Admin';
         $email = $configuredEmail !== '' ? $configuredEmail : 'admin@example.com';
         $password = $configuredPassword !== '' ? $configuredPassword : 'password';
 
@@ -30,7 +32,8 @@ class AdminUserSeeder extends Seeder
         $admin ??= new User(['email' => $email]);
 
         $admin->fill([
-            'name' => $name !== '' ? $name : 'Administrator',
+            'first_name' => $firstName !== '' ? $firstName : 'Administrator',
+            'last_name' => $lastName,
             'is_student' => false,
             'is_teacher' => false,
             'is_admin' => true,

@@ -19,7 +19,7 @@
                         <div class="min-w-0 space-y-3">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-800">{{ __('Priority') }}</span>
-                                <span class="text-base font-semibold text-gray-900">{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}</span>
+                                <span class="text-base font-semibold text-gray-900">{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->fullName() ?? 'N/A' }}</span>
                             </div>
 
                             <p class="text-sm text-gray-800">{{ $supportRequest->comment }}</p>
@@ -57,7 +57,7 @@
                         <div class="min-w-0 flex-1 space-y-2">
                             <div class="px-2">
                                 <div class="min-w-0 text-base font-semibold text-gray-900">
-                                    {{ $supportRequest->student?->name ?? 'N/A' }}
+                                    {{ $supportRequest->student?->fullName() ?? 'N/A' }}
                                 </div>
                             </div>
 

@@ -162,7 +162,8 @@ Password: password
 For production, define a custom administrator before running the seeders:
 
 ```env
-ADMIN_NAME="Admin LineUp"
+ADMIN_FIRST_NAME="Admin"
+ADMIN_LAST_NAME="LineUp"
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change-this-password
 ```

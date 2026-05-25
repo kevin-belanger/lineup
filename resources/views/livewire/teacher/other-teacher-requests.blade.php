@@ -28,11 +28,11 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <div class="truncate text-sm font-semibold text-gray-800">
-                                    {{ $supportRequest->is_priority ? __('Priority') : ($supportRequest->student?->name ?? 'N/A') }}
+                                    {{ $supportRequest->is_priority ? __('Priority') : ($supportRequest->student?->fullName() ?? 'N/A') }}
                                 </div>
                                 <div class="mt-1 text-sm text-gray-600">
                                     @if ($supportRequest->is_priority)
-                                        {{ __('Sent by') }} {{ $supportRequest->priorityRequester?->name ?? 'N/A' }}
+                                        {{ __('Sent by') }} {{ $supportRequest->priorityRequester?->fullName() ?? 'N/A' }}
                                     @else
                                         <span class="inline-flex items-center gap-1">
                                             <span>{{ $supportRequest->subject?->name ?? 'N/A' }}</span>
@@ -43,7 +43,7 @@
                                     @endif
                                 </div>
                                 <div class="mt-1 text-xs text-gray-500">
-                                    {{ __('With') }} {{ $supportRequest->assignedTeacher?->name ?? 'N/A' }}
+                                    {{ __('With') }} {{ $supportRequest->assignedTeacher?->fullName() ?? 'N/A' }}
                                 </div>
                             </div>
 
@@ -91,11 +91,11 @@
                 <div class="mt-5 grid gap-3 rounded-md border border-gray-100 bg-gray-50 p-4 text-sm sm:grid-cols-2">
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Student') }}</div>
-                        <div class="mt-1 font-semibold text-gray-900">{{ $managedRequest->student?->name ?? 'N/A' }}</div>
+                        <div class="mt-1 font-semibold text-gray-900">{{ $managedRequest->student?->fullName() ?? 'N/A' }}</div>
                     </div>
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Teacher') }}</div>
-                        <div class="mt-1 font-semibold text-gray-900">{{ $managedRequest->assignedTeacher?->name ?? 'N/A' }}</div>
+                        <div class="mt-1 font-semibold text-gray-900">{{ $managedRequest->assignedTeacher?->fullName() ?? 'N/A' }}</div>
                     </div>
                     <div>
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Subject') }}</div>

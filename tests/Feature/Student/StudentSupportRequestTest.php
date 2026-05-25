@@ -493,7 +493,7 @@ class StudentSupportRequestTest extends TestCase
     public function test_student_active_request_badges_distinguish_assignment_and_progress_status(): void
     {
         $student = User::factory()->create();
-        $teacher = User::factory()->teacher()->create(['name' => 'Pierre']);
+        $teacher = User::factory()->teacher()->create(['first_name' => 'Pierre']);
 
         SupportRequest::factory()->create([
             'student_id' => $student->id,
