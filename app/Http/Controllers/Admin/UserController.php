@@ -187,6 +187,10 @@ class UserController extends Controller
 
     public function approve(Request $request, User $user): RedirectResponse
     {
+        if ($user->is_approved) {
+            return back();
+        }
+
         $user->forceFill([
             'is_approved' => true,
             'approved_at' => now(),

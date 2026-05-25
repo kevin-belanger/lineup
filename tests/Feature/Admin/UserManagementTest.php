@@ -56,6 +56,79 @@ class UserManagementTest extends TestCase
         $this->assertTrue($user->approved_by === $admin->id);
     }
 
+    public function test_pending_users_show_quick_approve_action_in_user_list(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $pending = User::factory()->pendingApproval()->create([
+            'first_name' => 'Pending',
+            'last_name' => 'Person',
+        ]);
+        $approved = User::factory()->create([
+            'first_name' => 'Approved',
+            'last_name' => 'Person',
+            'is_approved' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.users.index'));
+
+        $response
+            ->assertOk()
+            ->assertSeeInOrder([
+                $pending->fullName(),
+                'Approve',
+                'Edit',
+                $approved->fullName(),
+            ])
+            ->assertSee(route('admin.users.approve', $pending), false)
+            ->assertDontSee(route('admin.users.approve', $approved), false);
+    }
+
+    public function test_quick_approve_only_updates_approval_fields(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->pendingApproval()->create([
+            'first_name' => 'Marie',
+            'last_name' => 'Dubois',
+            'email' => 'marie.dubois@example.com',
+            'is_student' => true,
+            'is_teacher' => false,
+            'is_admin' => false,
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.users.approve', $user))
+            ->assertRedirect();
+
+        $user->refresh();
+
+        $this->assertSame('Marie', $user->first_name);
+        $this->assertSame('Dubois', $user->last_name);
+        $this->assertSame('marie.dubois@example.com', $user->email);
+        $this->assertTrue($user->is_student);
+        $this->assertFalse($user->is_teacher);
+        $this->assertFalse($user->is_admin);
+        $this->assertFalse($user->is_active);
+        $this->assertTrue($user->is_approved);
+        $this->assertNotNull($user->approved_at);
+        $this->assertSame($admin->id, $user->approved_by);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertDontSee(route('admin.users.approve', $user), false);
+    }
+
+    public function test_student_can_not_quick_approve_user(): void
+    {
+        $student = User::factory()->create();
+        $user = User::factory()->pendingApproval()->create();
+
+        $this->actingAs($student)->patch(route('admin.users.approve', $user))
+            ->assertForbidden();
+
+        $this->assertFalse($user->refresh()->is_approved);
+    }
+
     public function test_admin_can_create_user(): void
     {
         $admin = User::factory()->admin()->create();

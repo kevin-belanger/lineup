@@ -47,9 +47,22 @@
                         </div>
                     </td>
                     <td class="px-4 py-4 align-top text-right">
-                        <x-secondary-button type="button" x-on:click="editingUser = {{ $user->id }}">
-                            {{ __('Edit') }}
-                        </x-secondary-button>
+                        <div class="inline-flex items-center justify-end gap-2">
+                            @unless ($user->is_approved)
+                                <form method="POST" action="{{ route('admin.users.approve', $user) }}">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <x-primary-button>
+                                        {{ __('Approve') }}
+                                    </x-primary-button>
+                                </form>
+                            @endunless
+
+                            <x-secondary-button type="button" x-on:click="editingUser = {{ $user->id }}">
+                                {{ __('Edit') }}
+                            </x-secondary-button>
+                        </div>
                     </td>
                 </tr>
 
