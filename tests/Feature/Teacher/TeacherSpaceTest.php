@@ -432,6 +432,29 @@ class TeacherSpaceTest extends TestCase
         $this->assertSame(3, app(SupportRequestChangeMarker::class)->current($classroom->id));
     }
 
+    public function test_other_teacher_requests_translate_with_label_in_french(): void
+    {
+        app()->setLocale('fr');
+
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(OtherTeacherRequests::class)
+            ->assertSee('Avec')
+            ->assertDontSee('With');
+    }
+
     public function test_teacher_can_not_manage_requests_outside_other_teacher_visible_section(): void
     {
         $teacher = User::factory()->teacher()->create();
