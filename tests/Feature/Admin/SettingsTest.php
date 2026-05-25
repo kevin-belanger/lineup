@@ -3,9 +3,11 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\RequestType;
+use App\Models\Setting;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\ApplicationSettings;
+use DateTimeZone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -62,6 +64,57 @@ class SettingsTest extends TestCase
             ->assertSee('Please support the assessment room.')
             ->assertSee('Reuse the same tab when opening a course URL')
             ->assertSee('reuse_course_url_tab', false);
+    }
+
+    public function test_settings_use_complete_php_timezone_list_with_utc_default(): void
+    {
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([]),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+        $settings = app(ApplicationSettings::class);
+
+        $this->assertSame('UTC', $settings->timezone());
+        $this->assertSame(DateTimeZone::listIdentifiers(DateTimeZone::ALL), $settings->availableTimezones());
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('UTC')
+            ->assertSee('x-model="search"', false)
+            ->assertSee('filteredTimezones', false)
+            ->assertSee('@click.outside="open = false"', false)
+            ->assertSee('Search time zones')
+            ->assertSee('Start typing to search time zones.');
+    }
+
+    public function test_existing_configured_timezone_is_preserved(): void
+    {
+        Setting::query()->create([
+            'key' => ApplicationSettings::TIMEZONE_KEY,
+            'value' => 'America/Toronto',
+        ]);
+
+        $this->assertSame('America/Toronto', app(ApplicationSettings::class)->timezone());
+    }
+
+    public function test_admin_can_save_timezone_from_complete_php_timezone_list(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->patch(route('admin.settings.update'), [
+            'display_name' => 'LineUp',
+            'default_locale' => 'en',
+            'timezone' => 'Europe/Paris',
+            'auto_cancel_requests_enabled' => '0',
+            'auto_cancel_requests_time' => '16:30',
+            'priority_request_default_message' => '',
+            'reuse_course_url_tab' => '0',
+        ])->assertRedirect(route('admin.settings.edit'));
+
+        $this->assertSame('Europe/Paris', app(ApplicationSettings::class)->timezone());
     }
 
     public function test_course_url_tab_reuse_is_disabled_by_default(): void

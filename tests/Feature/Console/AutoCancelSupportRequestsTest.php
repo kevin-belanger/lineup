@@ -69,14 +69,14 @@ class AutoCancelSupportRequestsTest extends TestCase
         }
     }
 
-    public function test_invalid_saved_timezone_falls_back_to_toronto(): void
+    public function test_invalid_saved_timezone_falls_back_to_utc(): void
     {
         Setting::query()->create([
             'key' => ApplicationSettings::TIMEZONE_KEY,
             'value' => 'Not/AZone',
         ]);
 
-        $this->assertSame('America/Toronto', app(ApplicationSettings::class)->timezone());
+        $this->assertSame('UTC', app(ApplicationSettings::class)->timezone());
     }
 
     public function test_it_cancels_active_requests_and_leaves_history_untouched(): void

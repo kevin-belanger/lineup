@@ -30,16 +30,7 @@ class ApplicationSettings
 
     public const COURSE_URL_WINDOW_TARGET = 'lineup_course_url';
 
-    public const DEFAULT_TIMEZONE = 'America/Toronto';
-
-    public const AVAILABLE_TIMEZONES = [
-        'America/Toronto',
-        'America/New_York',
-        'America/Chicago',
-        'America/Denver',
-        'America/Vancouver',
-        'UTC',
-    ];
+    public const DEFAULT_TIMEZONE = 'UTC';
 
     public function displayName(): string
     {
@@ -188,6 +179,14 @@ class ApplicationSettings
         Cache::forget(self::TIMEZONE_KEY);
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public function availableTimezones(): array
+    {
+        return DateTimeZone::listIdentifiers(DateTimeZone::ALL);
+    }
+
     public function logoPath(): string
     {
         return 'logo.png';
@@ -223,7 +222,7 @@ class ApplicationSettings
     {
         $timezone = trim((string) $timezone);
 
-        return in_array($timezone, DateTimeZone::listIdentifiers(), true)
+        return in_array($timezone, $this->availableTimezones(), true)
             ? $timezone
             : self::DEFAULT_TIMEZONE;
     }

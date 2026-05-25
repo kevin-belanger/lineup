@@ -25,7 +25,7 @@ class SettingController extends Controller
             'availableLocales' => $localeManager->availableLocales(),
             'updateStatus' => $updateChecker->check(),
             'timezone' => $settings->timezone(),
-            'timezones' => ApplicationSettings::AVAILABLE_TIMEZONES,
+            'timezones' => $settings->availableTimezones(),
             'autoCancelRequestsEnabled' => $settings->autoCancelRequestsEnabled(),
             'autoCancelRequestsTime' => $settings->autoCancelRequestsTime(),
             'priorityRequestDefaultMessage' => $settings->priorityRequestDefaultMessage(),
@@ -42,7 +42,7 @@ class SettingController extends Controller
         $validated = $request->validate([
             'display_name' => ['required', 'string', 'max:100'],
             'default_locale' => ['required', 'string', Rule::in($localeManager->availableLocales())],
-            'timezone' => ['required', 'timezone'],
+            'timezone' => ['required', 'string', Rule::in($settings->availableTimezones())],
             'auto_cancel_requests_enabled' => ['nullable', 'boolean'],
             'auto_cancel_requests_time' => [
                 Rule::requiredIf($request->boolean('auto_cancel_requests_enabled')),

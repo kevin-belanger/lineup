@@ -76,13 +76,89 @@
                             </p>
                         </div>
 
-                        <select id="timezone" name="timezone" required class="mt-3 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @foreach ($timezones as $availableTimezone)
-                                <option value="{{ $availableTimezone }}" @selected(old('timezone', $timezone) === $availableTimezone)>
-                                    {{ $availableTimezone }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div
+                            class="relative mt-3"
+                            x-data="{
+                                open: false,
+                                search: '',
+                                selected: @js(old('timezone', $timezone)),
+                                timezones: @js($timezones),
+                                get filteredTimezones() {
+                                    const query = this.search.trim().toLowerCase();
+
+                                    if (query.length === 0) {
+                                        return [];
+                                    }
+
+                                    return this.timezones.filter((timezone) => timezone.toLowerCase().includes(query));
+                                },
+                                choose(timezone) {
+                                    this.selected = timezone;
+                                    this.search = '';
+                                    this.open = false;
+                                },
+                            }"
+                            @click.outside="open = false"
+                        >
+                            <input type="hidden" id="timezone" name="timezone" required value="{{ old('timezone', $timezone) }}" :value="selected">
+
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-between gap-3 rounded-md border border-gray-300 bg-white px-3 py-2 text-left shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                @click="open = ! open; if (open) { $nextTick(() => $refs.timezoneSearch.focus()) }"
+                                aria-haspopup="listbox"
+                                :aria-expanded="open.toString()"
+                            >
+                                <span class="truncate text-sm text-gray-900" x-text="selected">{{ old('timezone', $timezone) }}</span>
+                                <svg class="h-4 w-4 shrink-0 text-gray-500 transition" :class="{ 'rotate-180': open }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
+
+                            <div
+                                x-cloak
+                                x-show="open"
+                                x-transition:enter="transition ease-out duration-150"
+                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-100"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-1"
+                                class="absolute z-20 mt-2 w-full overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
+                            >
+                                <div class="border-b border-gray-100 p-2">
+                                    <x-text-input
+                                        x-ref="timezoneSearch"
+                                        x-model="search"
+                                        type="search"
+                                        class="block w-full text-sm"
+                                        placeholder="{{ __('Search time zones') }}"
+                                        autocomplete="off"
+                                    />
+                                </div>
+
+                                <div class="max-h-60 overflow-y-auto py-1" role="listbox">
+                                    <template x-if="search.trim().length === 0">
+                                        <div class="px-3 py-3 text-sm text-gray-500">{{ __('Start typing to search time zones.') }}</div>
+                                    </template>
+
+                                    <template x-if="search.trim().length > 0 && filteredTimezones.length === 0">
+                                        <div class="px-3 py-3 text-sm text-gray-500">{{ __('No time zones match your search.') }}</div>
+                                    </template>
+
+                                    <template x-for="timezone in filteredTimezones" :key="timezone">
+                                        <button
+                                            type="button"
+                                            class="block w-full px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:bg-indigo-50 focus:text-indigo-800 focus:outline-none"
+                                            role="option"
+                                            :aria-selected="(timezone === selected).toString()"
+                                            @click="choose(timezone)"
+                                            x-text="timezone"
+                                        ></button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
                         <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
                     </section>
 
