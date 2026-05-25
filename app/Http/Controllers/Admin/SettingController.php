@@ -28,6 +28,7 @@ class SettingController extends Controller
             'autoCancelRequestsEnabled' => $settings->autoCancelRequestsEnabled(),
             'autoCancelRequestsTime' => $settings->autoCancelRequestsTime(),
             'priorityRequestDefaultMessage' => $settings->priorityRequestDefaultMessage(),
+            'reuseCourseUrlTab' => $settings->reuseCourseUrlTab(),
         ]);
     }
 
@@ -44,6 +45,7 @@ class SettingController extends Controller
                 'date_format:H:i',
             ],
             'priority_request_default_message' => ['nullable', 'string', 'max:500'],
+            'reuse_course_url_tab' => ['nullable', 'boolean'],
         ]);
 
         $settings->updateDisplayName($validated['display_name']);
@@ -54,6 +56,7 @@ class SettingController extends Controller
             $validated['auto_cancel_requests_time'] ?? $settings->autoCancelRequestsTime(),
         );
         $settings->updatePriorityRequestDefaultMessage($validated['priority_request_default_message'] ?? '');
+        $settings->updateReuseCourseUrlTab($request->boolean('reuse_course_url_tab'));
 
         return redirect()
             ->route('admin.settings.edit')

@@ -1,4 +1,10 @@
 <section class="space-y-4 rounded-lg border border-gray-200 bg-white/60 p-4 shadow-sm">
+    @php
+        $courseUrlSettings = app(\App\Services\ApplicationSettings::class);
+        $courseUrlTarget = $courseUrlSettings->courseUrlTarget();
+        $courseUrlRel = $courseUrlSettings->courseUrlRel();
+    @endphp
+
     <div class="flex items-center justify-between">
         <div>
             <h3 class="text-lg font-semibold text-gray-900">{{ __('Waiting') }}</h3>
@@ -64,8 +70,8 @@
                             @if ($subjectUrl)
                                 <a
                                     href="{{ $subjectUrl }}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    target="{{ $courseUrlTarget }}"
+                                    @if ($courseUrlRel) rel="{{ $courseUrlRel }}" @endif
                                     class="block rounded-md px-2 py-1.5 text-sm font-medium leading-snug text-gray-700 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                     aria-label="{{ __('Open the subject link') }}"
                                 >

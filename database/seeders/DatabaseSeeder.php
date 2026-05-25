@@ -33,6 +33,10 @@ class DatabaseSeeder extends Seeder
             ['value' => ApplicationSettings::DEFAULT_PRIORITY_REQUEST_MESSAGE],
         );
         Setting::query()->firstOrCreate(
+            ['key' => ApplicationSettings::REUSE_COURSE_URL_TAB_KEY],
+            ['value' => '0'],
+        );
+        Setting::query()->firstOrCreate(
             ['key' => ApplicationSettings::TIMEZONE_KEY],
             ['value' => ApplicationSettings::DEFAULT_TIMEZONE],
         );

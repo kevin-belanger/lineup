@@ -105,6 +105,25 @@
                     </section>
 
                     <section class="border-t border-gray-200 p-6">
+                        <label for="reuse_course_url_tab" class="flex items-start gap-3">
+                            <input type="hidden" name="reuse_course_url_tab" value="0">
+                            <input
+                                id="reuse_course_url_tab"
+                                name="reuse_course_url_tab"
+                                type="checkbox"
+                                value="1"
+                                @checked(old('reuse_course_url_tab', $reuseCourseUrlTab))
+                                class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            >
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900">{{ __('Reuse the same tab when opening a course URL') }}</span>
+                                <span class="block text-sm text-gray-600">{{ __('When enabled, course links open in a named browser tab instead of creating a new tab for each click.') }}</span>
+                            </span>
+                        </label>
+                        <x-input-error :messages="$errors->get('reuse_course_url_tab')" class="mt-2" />
+                    </section>
+
+                    <section class="border-t border-gray-200 p-6">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">{{ __('Automatic request cancellation') }}</h3>
                             <p class="mt-1 text-sm text-gray-600">

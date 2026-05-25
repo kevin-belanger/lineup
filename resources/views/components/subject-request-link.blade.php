@@ -1,14 +1,17 @@
 @props(['supportRequest'])
 
 @php
+    $settings = app(\App\Services\ApplicationSettings::class);
     $url = $supportRequest->subjectUrl();
+    $target = $settings->courseUrlTarget();
+    $rel = $settings->courseUrlRel();
 @endphp
 
 @if ($url)
     <a
         href="{{ $url }}"
-        target="_blank"
-        rel="noopener noreferrer"
+        target="{{ $target }}"
+        @if ($rel) rel="{{ $rel }}" @endif
         class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         aria-label="{{ __('Open the subject link') }}"
         title="{{ __('Open the subject link') }}"

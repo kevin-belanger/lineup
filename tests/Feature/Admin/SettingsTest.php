@@ -32,6 +32,7 @@ class SettingsTest extends TestCase
             'auto_cancel_requests_enabled' => '1',
             'auto_cancel_requests_time' => '16:45',
             'priority_request_default_message' => 'Please support the assessment room.',
+            'reuse_course_url_tab' => '1',
         ]);
 
         $response
@@ -46,6 +47,7 @@ class SettingsTest extends TestCase
         $this->assertTrue($settings->autoCancelRequestsEnabled());
         $this->assertSame('16:45', $settings->autoCancelRequestsTime());
         $this->assertSame('Please support the assessment room.', $settings->priorityRequestDefaultMessage());
+        $this->assertTrue($settings->reuseCourseUrlTab());
 
         $this->actingAs($admin)
             ->get(route('admin.settings.edit'))
@@ -55,7 +57,38 @@ class SettingsTest extends TestCase
             ->assertSee('Application version')
             ->assertSee('America/Vancouver')
             ->assertSee('16:45')
-            ->assertSee('Please support the assessment room.');
+            ->assertSee('Please support the assessment room.')
+            ->assertSee('Reuse the same tab when opening a course URL')
+            ->assertSee('reuse_course_url_tab', false);
+    }
+
+    public function test_course_url_tab_reuse_is_disabled_by_default(): void
+    {
+        $settings = app(ApplicationSettings::class);
+
+        $this->assertFalse($settings->reuseCourseUrlTab());
+        $this->assertSame('_blank', $settings->courseUrlTarget());
+        $this->assertSame('noopener noreferrer', $settings->courseUrlRel());
+    }
+
+    public function test_admin_can_disable_course_url_tab_reuse(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $settings = app(ApplicationSettings::class);
+        $settings->updateReuseCourseUrlTab(true);
+
+        $this->actingAs($admin)->patch(route('admin.settings.update'), [
+            'display_name' => 'LineUp',
+            'default_locale' => 'en',
+            'timezone' => 'America/Toronto',
+            'auto_cancel_requests_enabled' => '0',
+            'auto_cancel_requests_time' => '16:30',
+            'priority_request_default_message' => '',
+            'reuse_course_url_tab' => '0',
+        ])->assertRedirect(route('admin.settings.edit'));
+
+        $this->assertFalse($settings->reuseCourseUrlTab());
+        $this->assertSame('_blank', $settings->courseUrlTarget());
     }
 
     public function test_default_priority_request_message_is_empty_by_default(): void

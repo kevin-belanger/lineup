@@ -18,6 +18,8 @@ class ApplicationSettings
 
     public const PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY = 'requests.priority_default_message';
 
+    public const REUSE_COURSE_URL_TAB_KEY = 'courses.reuse_url_tab';
+
     public const TIMEZONE_KEY = 'app.timezone';
 
     public const DEFAULT_APP_NAME = 'LineUp';
@@ -25,6 +27,8 @@ class ApplicationSettings
     public const DEFAULT_AUTO_CANCEL_REQUESTS_TIME = '16:30';
 
     public const DEFAULT_PRIORITY_REQUEST_MESSAGE = '';
+
+    public const COURSE_URL_WINDOW_TARGET = 'lineup_course_url';
 
     public const DEFAULT_TIMEZONE = 'America/Toronto';
 
@@ -134,6 +138,35 @@ class ApplicationSettings
         );
 
         Cache::forget(self::PRIORITY_REQUEST_DEFAULT_MESSAGE_KEY);
+    }
+
+    public function reuseCourseUrlTab(): bool
+    {
+        return Cache::rememberForever(self::REUSE_COURSE_URL_TAB_KEY, function (): bool {
+            return Setting::query()
+                ->where('key', self::REUSE_COURSE_URL_TAB_KEY)
+                ->value('value') === '1';
+        });
+    }
+
+    public function updateReuseCourseUrlTab(bool $reuseTab): void
+    {
+        Setting::query()->updateOrCreate(
+            ['key' => self::REUSE_COURSE_URL_TAB_KEY],
+            ['value' => $reuseTab ? '1' : '0'],
+        );
+
+        Cache::forget(self::REUSE_COURSE_URL_TAB_KEY);
+    }
+
+    public function courseUrlTarget(): string
+    {
+        return $this->reuseCourseUrlTab() ? self::COURSE_URL_WINDOW_TARGET : '_blank';
+    }
+
+    public function courseUrlRel(): ?string
+    {
+        return $this->reuseCourseUrlTab() ? null : 'noopener noreferrer';
     }
 
     public function timezone(): string

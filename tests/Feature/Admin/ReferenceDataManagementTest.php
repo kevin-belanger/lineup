@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Livewire\Teacher\MyRequests;
 use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\User;
+use App\Services\ApplicationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -418,7 +420,53 @@ class ReferenceDataManagementTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(WaitingQueue::class)
             ->assertSee('Open the subject link')
-            ->assertSee('https://moodle.example.com/course/view.php?id=12&amp;section=3&amp;table=5', false);
+            ->assertSee('https://moodle.example.com/course/view.php?id=12&amp;section=3&amp;table=5', false)
+            ->assertSee('target="_blank"', false)
+            ->assertSee('rel="noopener noreferrer"', false);
+    }
+
+    public function test_course_url_links_can_reuse_a_named_browser_tab_on_teacher_request_cards(): void
+    {
+        app(ApplicationSettings::class)->updateReuseCourseUrlTab(true);
+
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
+        ]);
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'moodle_tile_number' => 3,
+            'table_number' => '5',
+            'status' => SupportRequest::STATUS_WAITING,
+        ]);
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'assigned_teacher_id' => $teacher->id,
+            'moodle_tile_number' => 4,
+            'table_number' => '6',
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->assertSee('target="lineup_course_url"', false)
+            ->assertDontSee('target="_blank"', false)
+            ->assertDontSee('rel="noopener noreferrer"', false);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSee('target="lineup_course_url"', false)
+            ->assertDontSee('target="_blank"', false)
+            ->assertDontSee('rel="noopener noreferrer"', false);
     }
 
     public function test_subject_name_must_be_globally_unique(): void
