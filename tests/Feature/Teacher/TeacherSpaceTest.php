@@ -544,6 +544,103 @@ class TeacherSpaceTest extends TestCase
             ->assertDispatched('teacher-requests-updated');
     }
 
+    public function test_teacher_dashboard_page_title_shows_waiting_count_and_first_active_student(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $firstActiveStudent = User::factory()->create([
+            'first_name' => 'Jean',
+            'last_name' => 'Tremblay',
+        ]);
+        $olderActiveStudent = User::factory()->create([
+            'first_name' => 'Marie',
+            'last_name' => 'Gagnon',
+        ]);
+
+        SupportRequest::factory()->count(3)->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        SupportRequest::factory()->create([
+            'student_id' => $olderActiveStudent->id,
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(5),
+        ]);
+
+        SupportRequest::factory()->create([
+            'student_id' => $firstActiveStudent->id,
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(DashboardView::class)
+            ->assertSet('pageTitle', '(3) - Jean Tremblay - LineUp');
+    }
+
+    public function test_teacher_dashboard_page_title_shows_waiting_count_without_active_student(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+
+        SupportRequest::factory()->count(5)->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(DashboardView::class)
+            ->assertSet('pageTitle', '(5) - LineUp');
+    }
+
+    public function test_teacher_dashboard_page_title_refreshes_when_teacher_requests_change(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $student = User::factory()->create([
+            'first_name' => 'Alice',
+            'last_name' => 'Roy',
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        $component = Livewire::actingAs($teacher)
+            ->test(DashboardView::class)
+            ->assertSet('pageTitle', '(0) - LineUp');
+
+        SupportRequest::factory()->count(2)->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        $component
+            ->dispatch('teacher-requests-updated')
+            ->assertSet('pageTitle', '(2) - Alice Roy - LineUp')
+            ->assertDispatched('teacher-page-title-updated', function (string $event, array $params): bool {
+                return $params['title'] === '(2) - Alice Roy - LineUp';
+            });
+    }
+
     public function test_teacher_lists_no_longer_poll_independently(): void
     {
         $teacher = User::factory()->teacher()->create();
@@ -557,8 +654,10 @@ class TeacherSpaceTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('wire:poll.2s="check"', false)
+            ->assertSee('wire:init="updatePageTitle"', false)
             ->assertDontSee('wire:poll.8s.visible', false)
-            ->assertDontSee('wire:poll.10s.visible', false);
+            ->assertDontSee('wire:poll.10s.visible', false)
+            ->assertDontSee('wire:poll.2s.keep-alive="updatePageTitle"', false);
     }
 
     public function test_teacher_dashboard_links_to_distinct_history_page(): void

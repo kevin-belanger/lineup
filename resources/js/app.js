@@ -45,5 +45,16 @@ function startLiveDurations() {
     window.__lineupLiveDurationTimer = window.setInterval(updateLiveDurations, 1000);
 }
 
+function updateTeacherPageTitle(event) {
+    const title = event.detail?.title;
+
+    if (typeof title !== 'string' || title.length === 0) {
+        return;
+    }
+
+    document.title = title;
+}
+
 document.addEventListener('DOMContentLoaded', startLiveDurations);
 document.addEventListener('livewire:init', startLiveDurations);
+document.addEventListener('teacher-page-title-updated', updateTeacherPageTitle);

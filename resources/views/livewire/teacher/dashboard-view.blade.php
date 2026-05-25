@@ -1,4 +1,4 @@
-<div>
+<div wire:init="updatePageTitle">
     <livewire:teacher.request-change-watcher />
 
     <div class="mx-auto mb-6 flex max-w-7xl justify-end px-4 sm:px-6 lg:px-8">
