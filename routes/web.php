@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicClassroomDisplayController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,14 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return redirect()->route(request()->user()->homeRouteName());
 })->middleware(['auth', 'active', 'approved', 'verified'])->name('dashboard');
+
+Route::get('/display/{slug}', [PublicClassroomDisplayController::class, 'show'])
+    ->where('slug', '[a-z0-9]{5}')
+    ->name('public-display.show');
+
+Route::get('/display/{slug}/requests', [PublicClassroomDisplayController::class, 'requests'])
+    ->where('slug', '[a-z0-9]{5}')
+    ->name('public-display.requests');
 
 Route::get('/approval-pending', function () {
     if (request()->user()->is_approved) {

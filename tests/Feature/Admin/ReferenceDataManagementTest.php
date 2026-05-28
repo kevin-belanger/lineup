@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Livewire\Teacher\MyRequests;
 use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
+use App\Models\PublicDisplaySlug;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\User;
@@ -44,6 +45,86 @@ class ReferenceDataManagementTest extends TestCase
 
         $this->assertSame('Local 302', $classroom->name);
         $this->assertFalse($classroom->is_active);
+    }
+
+    public function test_admin_can_enable_disable_and_regenerate_classroom_public_page(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create([
+            'public_enabled' => false,
+            'public_slug' => null,
+        ]);
+        $firstSlug = PublicDisplaySlug::reserveUnique()->slug;
+
+        $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
+            'name' => $classroom->name,
+            'description' => $classroom->description,
+            'is_active' => '1',
+            'public_enabled' => '1',
+            'public_slug' => $firstSlug,
+        ])->assertRedirect();
+
+        $classroom->refresh();
+
+        $this->assertTrue($classroom->public_enabled);
+        $this->assertMatchesRegularExpression('/^[a-z0-9]{5}$/', $firstSlug);
+        $this->assertSame($firstSlug, $classroom->public_slug);
+        $this->get(route('public-display.show', $firstSlug))->assertOk();
+        $secondSlug = PublicDisplaySlug::reserveUnique()->slug;
+
+        $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
+            'name' => $classroom->name,
+            'description' => $classroom->description,
+            'is_active' => '1',
+            'public_enabled' => '1',
+            'public_slug' => $secondSlug,
+        ])->assertRedirect();
+
+        $classroom->refresh();
+
+        $this->assertMatchesRegularExpression('/^[a-z0-9]{5}$/', $secondSlug);
+        $this->assertNotSame($firstSlug, $secondSlug);
+        $this->assertSame($secondSlug, $classroom->public_slug);
+        $this->get(route('public-display.show', $firstSlug))->assertNotFound();
+        $this->get(route('public-display.show', $secondSlug))->assertOk();
+
+        $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
+            'name' => $classroom->name,
+            'description' => $classroom->description,
+            'is_active' => '1',
+            'public_enabled' => '0',
+        ])->assertRedirect();
+
+        $classroom->refresh();
+
+        $this->assertFalse($classroom->public_enabled);
+        $this->assertNull($classroom->public_slug);
+        $this->assertDatabaseHas('public_display_slugs', ['slug' => $firstSlug]);
+        $this->assertDatabaseHas('public_display_slugs', ['slug' => $secondSlug]);
+        $this->get(route('public-display.show', $secondSlug))->assertNotFound();
+    }
+
+    public function test_admin_can_reserve_classroom_public_slug_without_updating_classroom(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create([
+            'public_enabled' => false,
+            'public_slug' => null,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->postJson(route('admin.classrooms.public-slugs.store'))
+            ->assertOk()
+            ->assertJsonStructure(['slug', 'url']);
+
+        $slug = $response->json('slug');
+
+        $this->assertMatchesRegularExpression('/^[a-z0-9]{5}$/', $slug);
+        $this->assertSame(route('public-display.show', $slug), $response->json('url'));
+        $this->assertDatabaseHas('public_display_slugs', ['slug' => $slug]);
+        $this->assertFalse($classroom->refresh()->public_enabled);
+        $this->assertNull($classroom->public_slug);
+        $this->get(route('public-display.show', $slug))->assertNotFound();
     }
 
     public function test_teacher_can_access_classroom_and_subject_management(): void

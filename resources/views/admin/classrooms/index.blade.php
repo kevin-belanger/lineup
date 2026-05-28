@@ -64,7 +64,42 @@
                         x-cloak
                         x-data="{
                             name: @js($shouldRestoreClassroomCreateInput ? old('name', '') : ''),
+                            publicEnabled: @js((bool) old('public_enabled')),
+                            publicSlug: @js(old('public_slug', '')),
+                            publicUrl: @js(old('public_slug') ? route('public-display.show', old('public_slug')) : ''),
+                            publicSlugError: '',
+                            reservingPublicSlug: false,
+                            publicSlugEndpoint: @js(route('admin.classrooms.public-slugs.store')),
+                            publicSlugErrorMessage: @js(__('Unable to generate the public URL.')),
                             nameError: '',
+                            async reservePublicSlug() {
+                                this.publicSlugError = '';
+                                this.reservingPublicSlug = true;
+
+                                try {
+                                    const response = await fetch(this.publicSlugEndpoint, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': @js(csrf_token()),
+                                        },
+                                        body: '{}',
+                                    });
+
+                                    if (! response.ok) {
+                                        throw new Error('Unable to reserve slug.');
+                                    }
+
+                                    const payload = await response.json();
+                                    this.publicSlug = payload.slug;
+                                    this.publicUrl = payload.url;
+                                } catch (error) {
+                                    this.publicSlugError = this.publicSlugErrorMessage;
+                                } finally {
+                                    this.reservingPublicSlug = false;
+                                }
+                            },
                             validateName() {
                                 this.nameError = this.classroomNameExists(this.name)
                                     ? this.duplicateClassroomMessage
@@ -73,7 +108,7 @@
                                 return this.nameError === '';
                             },
                         }"
-                        x-on:submit="if (! validateName()) $event.preventDefault()"
+                        x-on:submit="if (! validateName() || (publicEnabled && publicSlug === '') || reservingPublicSlug) $event.preventDefault()"
                     >
                         @csrf
                         <input type="hidden" name="create_panel" value="create-classroom">
@@ -99,9 +134,50 @@
                                 {{ __('Active') }}
                             </label>
 
-                            <x-primary-button x-bind:disabled="nameError !== ''" class="disabled:opacity-50">
+                            <x-primary-button x-bind:disabled="nameError !== '' || (publicEnabled && publicSlug === '') || reservingPublicSlug" class="disabled:opacity-50">
                                 {{ __('Create') }}
                             </x-primary-button>
+                        </div>
+
+                        <div class="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4">
+                            <input type="hidden" name="public_enabled" value="0">
+                            <input type="hidden" name="public_slug" x-bind:value="publicSlug">
+                            <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    name="public_enabled"
+                                    value="1"
+                                    x-model="publicEnabled"
+                                    x-on:change="if (publicEnabled && publicSlug === '') reservePublicSlug()"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                >
+                                {{ __('Create a public page') }}
+                            </label>
+
+                            <div x-show="publicEnabled && publicUrl !== ''" class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end" x-cloak>
+                                <div>
+                                    <x-input-label for="new-classroom-public-url" :value="__('Public URL')" />
+                                    <x-text-input id="new-classroom-public-url" type="text" class="mt-1 block w-full bg-white text-sm" x-bind:value="publicUrl" readonly />
+                                </div>
+
+                                <button
+                                    type="button"
+                                    x-on:click="reservePublicSlug()"
+                                    x-bind:disabled="reservingPublicSlug"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                                    title="{{ __('Regenerate public URL') }}"
+                                    aria-label="{{ __('Regenerate public URL') }}"
+                                >
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M7.977 14.652H2.985m0 0v.001m18.03-10.295v4.992m0 0h-4.992m4.993 0-3.181-3.183a8.25 8.25 0 0 0-13.803 3.7" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <p x-show="publicEnabled && reservingPublicSlug" class="text-sm text-gray-500" x-cloak>
+                                {{ __('Generating public URL...') }}
+                            </p>
+                            <p x-show="publicSlugError" x-text="publicSlugError" class="text-sm text-red-600" x-cloak></p>
                         </div>
                     </form>
                 </details>
@@ -252,7 +328,42 @@
                                             class="space-y-4 rounded-lg border border-indigo-100 bg-white p-4 shadow-sm"
                                             x-data="{
                                                 name: @js($classroom->name),
+                                                publicEnabled: @js($classroom->public_enabled),
+                                                publicSlug: @js($classroom->public_slug ?? ''),
+                                                publicUrl: @js($classroom->public_slug ? route('public-display.show', $classroom->public_slug) : ''),
+                                                publicSlugError: '',
+                                                reservingPublicSlug: false,
+                                                publicSlugEndpoint: @js(route('admin.classrooms.public-slugs.store')),
+                                                publicSlugErrorMessage: @js(__('Unable to generate the public URL.')),
                                                 nameError: '',
+                                                async reservePublicSlug() {
+                                                    this.publicSlugError = '';
+                                                    this.reservingPublicSlug = true;
+
+                                                    try {
+                                                        const response = await fetch(this.publicSlugEndpoint, {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Accept': 'application/json',
+                                                                'Content-Type': 'application/json',
+                                                                'X-CSRF-TOKEN': @js(csrf_token()),
+                                                            },
+                                                            body: '{}',
+                                                        });
+
+                                                        if (! response.ok) {
+                                                            throw new Error('Unable to reserve slug.');
+                                                        }
+
+                                                        const payload = await response.json();
+                                                        this.publicSlug = payload.slug;
+                                                        this.publicUrl = payload.url;
+                                                    } catch (error) {
+                                                        this.publicSlugError = this.publicSlugErrorMessage;
+                                                    } finally {
+                                                        this.reservingPublicSlug = false;
+                                                    }
+                                                },
                                                 validateName() {
                                                     this.nameError = this.classroomNameExists(this.name, {{ $classroom->id }})
                                                         ? this.duplicateClassroomMessage
@@ -261,7 +372,7 @@
                                                     return this.nameError === '';
                                                 },
                                             }"
-                                            x-on:submit="if (! validateName()) $event.preventDefault()"
+                                            x-on:submit="if (! validateName() || (publicEnabled && publicSlug === '') || reservingPublicSlug) $event.preventDefault()"
                                         >
                                             @csrf
                                             @method('PATCH')
@@ -289,6 +400,53 @@
                                                 </label>
                                             </div>
 
+                                            <div class="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4">
+                                                <input type="hidden" name="public_enabled" value="0">
+                                                <input type="hidden" name="public_slug" x-bind:value="publicSlug">
+                                                <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="public_enabled"
+                                                        value="1"
+                                                        x-model="publicEnabled"
+                                                        x-on:change="if (publicEnabled && publicSlug === '') reservePublicSlug()"
+                                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                    >
+                                                    {{ __('Create a public page') }}
+                                                </label>
+
+                                                <div x-show="publicEnabled && publicUrl !== ''" class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end" x-cloak>
+                                                    <div>
+                                                        <x-input-label for="classroom-{{ $classroom->id }}-public-url" :value="__('Public URL')" />
+                                                        <x-text-input
+                                                            id="classroom-{{ $classroom->id }}-public-url"
+                                                            type="text"
+                                                            class="mt-1 block w-full bg-white text-sm"
+                                                            x-bind:value="publicUrl"
+                                                            readonly
+                                                        />
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        x-on:click="reservePublicSlug()"
+                                                        x-bind:disabled="reservingPublicSlug"
+                                                        class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                                                        title="{{ __('Regenerate public URL') }}"
+                                                        aria-label="{{ __('Regenerate public URL') }}"
+                                                    >
+                                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M7.977 14.652H2.985m0 0v.001m18.03-10.295v4.992m0 0h-4.992m4.993 0-3.181-3.183a8.25 8.25 0 0 0-13.803 3.7" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+
+                                                <p x-show="publicEnabled && reservingPublicSlug" class="text-sm text-gray-500" x-cloak>
+                                                    {{ __('Generating public URL...') }}
+                                                </p>
+                                                <p x-show="publicSlugError" x-text="publicSlugError" class="text-sm text-red-600" x-cloak></p>
+                                            </div>
+
                                             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                 <x-danger-button type="button" x-data x-on:click="$dispatch('open-modal', 'delete-classroom-{{ $classroom->id }}')">
                                                     {{ __('Delete this room') }}
@@ -299,7 +457,7 @@
                                                         {{ __('Cancel') }}
                                                     </x-secondary-button>
 
-                                                    <x-primary-button x-bind:disabled="nameError !== ''" class="disabled:opacity-50">
+                                                    <x-primary-button x-bind:disabled="nameError !== '' || (publicEnabled && publicSlug === '') || reservingPublicSlug" class="disabled:opacity-50">
                                                         {{ __('Save') }}
                                                     </x-primary-button>
                                                 </div>

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'description', 'is_active'])]
+#[Fillable(['name', 'description', 'is_active', 'public_enabled', 'public_slug'])]
 class Classroom extends Model
 {
     /** @use HasFactory<ClassroomFactory> */
@@ -18,7 +18,13 @@ class Classroom extends Model
     {
         return [
             'is_active' => 'boolean',
+            'public_enabled' => 'boolean',
         ];
+    }
+
+    public static function generateUniquePublicSlug(?self $ignoredClassroom = null): string
+    {
+        return PublicDisplaySlug::reserveUnique()->slug;
     }
 
     public function subjects(): BelongsToMany

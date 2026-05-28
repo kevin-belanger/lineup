@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
+use App\Models\PublicDisplaySlug;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -80,6 +82,16 @@ class ClassroomController extends Controller
         return back()->with('status', __('Room updated.'));
     }
 
+    public function reservePublicSlug(): JsonResponse
+    {
+        $reservedSlug = PublicDisplaySlug::reserveUnique();
+
+        return response()->json([
+            'slug' => $reservedSlug->slug,
+            'url' => route('public-display.show', $reservedSlug->slug),
+        ]);
+    }
+
     public function toggleActive(Classroom $classroom): RedirectResponse
     {
         $classroom->update([
@@ -97,7 +109,7 @@ class ClassroomController extends Controller
     }
 
     /**
-     * @return array{name: string, description: ?string, is_active: bool}
+     * @return array{name: string, description: ?string, is_active: bool, public_enabled: bool, public_slug: ?string}
      */
     private function validatedData(Request $request, ?Classroom $classroom = null): array
     {
@@ -105,8 +117,21 @@ class ClassroomController extends Controller
             'name' => ['required', 'string', 'max:255', Rule::unique('classrooms', 'name')->ignore($classroom)],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['nullable', 'boolean'],
+            'public_enabled' => ['nullable', 'boolean'],
+            'public_slug' => [
+                'exclude_unless:public_enabled,1',
+                'required_if:public_enabled,1',
+                'string',
+                'regex:/^[a-z0-9]{5}$/',
+                Rule::exists('public_display_slugs', 'slug'),
+                Rule::unique('classrooms', 'public_slug')->ignore($classroom),
+            ],
         ], [
             'name.unique' => __('A room with this name already exists.'),
+            'public_slug.exists' => __('The public URL must be generated before saving.'),
+            'public_slug.regex' => __('The public URL must be generated before saving.'),
+            'public_slug.required_if' => __('The public URL must be generated before saving.'),
+            'public_slug.unique' => __('This public URL is already used by another room.'),
         ]);
 
         if ($validator->fails()) {
@@ -114,11 +139,18 @@ class ClassroomController extends Controller
         }
 
         $validated = $validator->validated();
+        $publicEnabled = (bool) ($validated['public_enabled'] ?? false);
+
+        if ($publicEnabled && empty($validated['public_slug'])) {
+            $this->validationToastResponse($request, __('The public URL must be generated before saving.'));
+        }
 
         return [
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? false),
+            'public_enabled' => $publicEnabled,
+            'public_slug' => $publicEnabled ? $validated['public_slug'] : null,
         ];
     }
 

@@ -21,6 +21,7 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin,teacher
 
         Route::get('/classrooms', [ClassroomController::class, 'index'])->name('classrooms.index');
         Route::post('/classrooms', [ClassroomController::class, 'store'])->name('classrooms.store');
+        Route::post('/classrooms/public-slugs', [ClassroomController::class, 'reservePublicSlug'])->name('classrooms.public-slugs.store');
         Route::patch('/classrooms/{classroom}', [ClassroomController::class, 'update'])->name('classrooms.update');
         Route::patch('/classrooms/{classroom}/active', [ClassroomController::class, 'toggleActive'])->name('classrooms.active');
         Route::delete('/classrooms/{classroom}', [ClassroomController::class, 'destroy'])->name('classrooms.destroy');

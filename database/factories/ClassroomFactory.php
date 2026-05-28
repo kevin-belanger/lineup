@@ -21,6 +21,8 @@ class ClassroomFactory extends Factory
             'name' => 'Local '.fake()->unique()->numberBetween(100, 999),
             'description' => fake()->optional()->sentence(),
             'is_active' => true,
+            'public_enabled' => false,
+            'public_slug' => null,
         ];
     }
 }
