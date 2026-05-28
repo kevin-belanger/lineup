@@ -1,76 +1,63 @@
-# Database backup and restore
+# Backup and restore
 
-LineUp database backups and restores are handled from the server with `backup.sh`.
+LineUp backups are created from the server with `backup.sh`.
 
-Backups are not created or restored from the web interface. This keeps database operations outside the Laravel application and avoids giving the web interface direct control over critical server actions.
+Backups are not created or restored from the web interface. This keeps critical server operations outside the Laravel application.
 
-## Create a database backup
-
-To create a SQL backup of the current application database:
+## Create a backup
 
 ```bash
 cd /opt/lineup
-./scripts/backup.sh database
+./scripts/backup.sh
 ```
 
-The script creates the `backups/` directory if it does not already exist and saves the SQL file there.
+The script creates a timestamped backup directory:
 
-The generated backup includes metadata in the SQL header, including:
+```text
+backups/lineup-backup-YYYYMMDD-HHMMSS/
+```
 
-- application name;
-- installed LineUp version;
-- repository URL;
-- generation date and time;
-- application time zone;
-- database name.
+Each backup contains:
 
-This version information is used to help validate compatibility before restoring the backup.
+- `metadata.env`, a Bash-readable metadata file;
+- `database.sql`, a complete MySQL dump;
+- `deleted-tracked-files.txt`, the tracked Git files that were deleted locally;
+- `manifest.txt`, the list of files in the backup;
+- `restore.sh`, the restore script copied from the version that created the backup;
+- `files/`, restored files and the real Docker `storage` volume.
 
-Runtime data such as sessions, cache entries, queued jobs, and failed jobs is excluded from the backup. The table structures remain available, but their temporary data is not restored.
+The `files/storage/` directory is copied from the running `app` container at `/var/www/html/storage`. This captures the real `laravel-storage` Docker volume instead of the placeholder `storage` directory in the Git checkout.
 
-## List available backups
+The backup also includes important local files such as `.env`, `Caddyfile`, and common override files, plus local Git changes and untracked files. Large or generated paths such as `vendor/`, `node_modules/`, `backups/`, `public/build/`, `public/hot`, `public/storage`, and the local `storage/` directory are skipped.
 
-To list existing SQL backups stored in the `backups/` directory:
+The `app` and `mysql` containers must be running when the backup is created.
+
+## Restore a backup
+
+Run the restore script from inside a backup directory:
 
 ```bash
-cd /opt/lineup
-./scripts/backup.sh list
+./restore.sh
 ```
 
-## Restore a database backup
+By default, the script restores to the application path saved in `metadata.env`. If that value is missing, it falls back to `/opt/lineup`.
 
-To restore a backup using an interactive menu:
+You can also provide a target path:
 
 ```bash
-cd /opt/lineup
-./scripts/backup.sh restore
+./restore.sh /opt/lineup
 ```
 
-The script will display the available backup files and ask which one should be restored.
+The restore script requires only Bash, Git, Docker, and Docker Compose on the host.
 
-You can also restore a specific backup file:
+If the target path already exists and contains a `compose.yaml` file, the restore script stops the existing Docker Compose application and removes its volumes. The target directory is then moved aside to:
 
-```bash
-./scripts/backup.sh restore backups/backup-file.sql
+```text
+TARGET.before-restore-YYYYMMDD-HHMMSS
 ```
 
-Replace `backup-file.sql` with the actual backup filename.
+Then the script clones the repository, checks out the saved commit, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores `files/storage/` into the `app` container, starts the application, and clears Laravel caches.
 
-The restore process will:
-
-- verify that the SQL file exists;
-- verify that the MySQL container is running;
-- test the database connection using the credentials from `.env`;
-- read the backup version from the SQL header;
-- compare the backup version with the installed application version;
-- warn the administrator before replacing the current application data;
-- ask for explicit confirmation before continuing;
-- import the SQL file into the MySQL container;
-- run database migrations;
-- refresh Laravel caches.
-
-If the backup version does not match the installed application version, the script displays an additional warning. If the backup is older than the installed application, migrations may update the database after restoration. If the backup is newer than the installed application, restoration may break the application.
-
-Restoring a backup replaces the current application data. Use this only when you understand that the current database content will be overwritten by the backup.
+The restore does not run database migrations. It restores the application to the saved backup state.
 
 The `backups/` directory should not be committed to Git.
