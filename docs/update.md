@@ -39,7 +39,7 @@ The update script will:
 - find the latest valid version tag;
 - switch the project to that version;
 - update the installed version in `.env`;
-- rebuild and restart the Docker containers;
+- rebuild and recreate the Docker containers so `.env` changes are loaded;
 - run database migrations;
 - refresh Laravel caches.
 

@@ -71,17 +71,17 @@ else
     echo "APP_VERSION=$LATEST_TAG" >> .env
 fi
 
-echo "Building and starting containers..."
-docker compose up -d --build
+echo "Building and recreating containers..."
+docker compose up -d --build --force-recreate
 
 echo "Running database migrations..."
-docker compose exec "$APP_SERVICE" php artisan migrate --force
+docker compose exec -T "$APP_SERVICE" php artisan migrate --force
 
 echo "Refreshing Laravel cache..."
-docker compose exec "$APP_SERVICE" php artisan optimize:clear
-docker compose exec "$APP_SERVICE" php artisan config:cache
-docker compose exec "$APP_SERVICE" php artisan route:cache
-docker compose exec "$APP_SERVICE" php artisan view:cache
+docker compose exec -T "$APP_SERVICE" php artisan optimize:clear
+docker compose exec -T "$APP_SERVICE" php artisan config:cache
+docker compose exec -T "$APP_SERVICE" php artisan route:cache
+docker compose exec -T "$APP_SERVICE" php artisan view:cache
 
 echo "Update completed."
 echo "Installed version: $LATEST_TAG"
