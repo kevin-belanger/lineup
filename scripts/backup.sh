@@ -282,14 +282,27 @@ create_database_dump() {
     echo "Creating SQL dump..."
 
     docker compose exec -T "$DB_SERVICE" sh -c \
-        'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --triggers --default-character-set=utf8mb4 --add-drop-table --no-tablespaces "$MYSQL_DATABASE"' \
+        'mysqldump --protocol=tcp -h127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --triggers --default-character-set=utf8mb4 --add-drop-table --no-tablespaces "$MYSQL_DATABASE"' \
         > "$BACKUP_DIR/database.sql"
 }
 
 copy_storage_from_container() {
-    echo "Copying Docker storage volume..."
+    local key_file
 
-    docker compose cp "$APP_SERVICE:/var/www/html/storage" "$FILES_DIR/"
+    echo "Copying persistent Docker storage files..."
+
+    mkdir -p "$FILES_DIR/storage"
+
+    if docker compose exec -T "$APP_SERVICE" test -d /var/www/html/storage/app; then
+        docker compose cp "$APP_SERVICE:/var/www/html/storage/app" "$FILES_DIR/storage/"
+    fi
+
+    while IFS= read -r key_file; do
+        docker compose cp "$APP_SERVICE:/var/www/html/storage/$key_file" "$FILES_DIR/storage/"
+    done < <(
+        docker compose exec -T "$APP_SERVICE" sh -c \
+            'find /var/www/html/storage -maxdepth 1 -type f -name "*.key" -printf "%f\n"'
+    )
 }
 
 create_metadata() {

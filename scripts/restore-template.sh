@@ -103,13 +103,19 @@ apply_deleted_tracked_files() {
     done < "$BACKUP_DIR/deleted-tracked-files.txt"
 }
 
+remove_target_volumes() {
+    echo "Removing existing Docker volumes for target project..."
+
+    docker compose down -v --remove-orphans
+}
+
 wait_for_mysql() {
     local attempt
 
     echo "Waiting for MySQL..."
 
     for attempt in $(seq 1 60); do
-        if docker compose exec -T "$DB_SERVICE" sh -c 'mysqladmin ping -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent' >/dev/null 2>&1; then
+        if docker compose exec -T "$DB_SERVICE" sh -c 'mysql --protocol=tcp -h127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT 1;"' >/dev/null 2>&1; then
             return
         fi
 
@@ -121,22 +127,33 @@ wait_for_mysql() {
 }
 
 prepare_database() {
+    local escaped_table
     local drop_statements
+    local table
+    local table_type
 
     echo "Preparing database..."
 
-    docker compose exec -T "$DB_SERVICE" sh -c \
-        'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"'
+    drop_statements="$(
+        while IFS=$'\t' read -r table table_type; do
+            if [ "$table_type" != "BASE TABLE" ]; then
+                continue
+            fi
 
-    drop_statements="$(docker compose exec -T "$DB_SERVICE" sh -c \
-        'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -B "$MYSQL_DATABASE" -e "SELECT CONCAT('\''DROP TABLE IF EXISTS `'\'' , REPLACE(TABLE_NAME, '\''`'\'', '\''``'\''), '\''`;'\'' ) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = '\''BASE TABLE'\'';"')"
+            escaped_table="${table//\`/\`\`}"
+            printf 'DROP TABLE IF EXISTS `%s`;\n' "$escaped_table"
+        done < <(
+            docker compose exec -T "$DB_SERVICE" sh -c \
+                'mysql --protocol=tcp -h127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -B "$MYSQL_DATABASE" -e "SHOW FULL TABLES;"'
+        )
+    )"
 
     if [ -n "$drop_statements" ]; then
         {
             echo "SET FOREIGN_KEY_CHECKS=0;"
             echo "$drop_statements"
             echo "SET FOREIGN_KEY_CHECKS=1;"
-        } | docker compose exec -T "$DB_SERVICE" sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
+        } | docker compose exec -T "$DB_SERVICE" sh -c 'mysql --protocol=tcp -h127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
     fi
 }
 
@@ -144,7 +161,7 @@ import_database() {
     echo "Importing SQL dump..."
 
     docker compose exec -T "$DB_SERVICE" sh -c \
-        'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' \
+        'mysql --protocol=tcp -h127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' \
         < "$BACKUP_DIR/database.sql"
 }
 
@@ -153,13 +170,23 @@ restore_storage() {
         return
     fi
 
-    echo "Restoring Docker storage volume..."
+    local key_file
+
+    echo "Restoring persistent Docker storage files..."
 
     docker compose up -d --build "$APP_SERVICE"
 
-    docker compose exec -T "$APP_SERVICE" sh -c 'mkdir -p /var/www/html/storage && find /var/www/html/storage -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +'
-    docker compose cp "$BACKUP_DIR/files/storage/." "$APP_SERVICE:/var/www/html/storage"
-    docker compose exec -T "$APP_SERVICE" chown -R www-data:www-data /var/www/html/storage
+    docker compose exec -T "$APP_SERVICE" sh -c 'mkdir -p /var/www/html/storage && rm -rf /var/www/html/storage/app && find /var/www/html/storage -maxdepth 1 -type f -name "*.key" -exec rm -f -- {} +'
+
+    if [ -d "$BACKUP_DIR/files/storage/app" ]; then
+        docker compose cp "$BACKUP_DIR/files/storage/app" "$APP_SERVICE:/var/www/html/storage/"
+    fi
+
+    while IFS= read -r -d '' key_file; do
+        docker compose cp "$key_file" "$APP_SERVICE:/var/www/html/storage/"
+    done < <(find "$BACKUP_DIR/files/storage" -maxdepth 1 -type f -name "*.key" -print0)
+
+    docker compose exec -T "$APP_SERVICE" sh -c 'chown -R www-data:www-data /var/www/html/storage/app 2>/dev/null || true; find /var/www/html/storage -maxdepth 1 -type f -name "*.key" -exec chown www-data:www-data {} +'
 }
 
 clear_laravel_cache() {
@@ -220,6 +247,7 @@ main() {
     (
         cd "$TARGET_DIR"
 
+        remove_target_volumes
         docker compose up -d "$DB_SERVICE" redis
         wait_for_mysql
         prepare_database

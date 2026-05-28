@@ -24,9 +24,9 @@ Each backup contains:
 - `deleted-tracked-files.txt`, the tracked Git files that were deleted locally;
 - `manifest.txt`, the list of files in the backup;
 - `restore.sh`, the restore script copied from the version that created the backup;
-- `files/`, restored files and the real Docker `storage` volume.
+- `files/`, restored files and persistent Docker `storage` files.
 
-The `files/storage/` directory is copied from the running `app` container at `/var/www/html/storage`. This captures the real `laravel-storage` Docker volume instead of the placeholder `storage` directory in the Git checkout.
+The `files/storage/app/` directory and any `files/storage/*.key` files are copied from the running `app` container. This captures persistent Laravel storage from the real `laravel-storage` Docker volume instead of the placeholder `storage` directory in the Git checkout. Runtime files such as cache, compiled views, sessions, and logs are not backed up.
 
 The backup also includes important local files such as `.env`, `Caddyfile`, and common override files, plus local Git changes and untracked files. Large or generated paths such as `vendor/`, `node_modules/`, `backups/`, `public/build/`, `public/hot`, `public/storage`, and the local `storage/` directory are skipped.
 
@@ -56,7 +56,7 @@ If the target path already exists and contains a `compose.yaml` file, the restor
 TARGET.before-restore-YYYYMMDD-HHMMSS
 ```
 
-Then the script clones the repository, checks out the saved commit, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores `files/storage/` into the `app` container, starts the application, and clears Laravel caches.
+Then the script clones the repository, checks out the saved commit, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores persistent storage files into the `app` container, starts the application, and clears Laravel caches.
 
 The restore does not run database migrations. It restores the application to the saved backup state.
 
