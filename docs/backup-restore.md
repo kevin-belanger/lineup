@@ -56,6 +56,8 @@ If the target path already exists and contains a `compose.yaml` file, the restor
 TARGET.before-restore-YYYYMMDD-HHMMSS
 ```
 
+If the backup directory is inside the target path, the restore script first copies it to a temporary location so the backup remains available after the target directory is moved.
+
 Then the script clones the repository, checks out the saved commit, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores persistent storage files into the `app` container, starts the application, and clears Laravel caches.
 
 The restore does not run database migrations. It restores the application to the saved backup state.

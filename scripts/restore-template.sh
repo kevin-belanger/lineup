@@ -5,6 +5,7 @@ set -euo pipefail
 APP_SERVICE="app"
 DB_SERVICE="mysql"
 DEFAULT_TARGET_DIR="/opt/lineup"
+RESTORE_TEMP_DIR=""
 
 if [ "$(basename "${BASH_SOURCE[0]}")" = "restore-template.sh" ]; then
     echo "This file is a restore template and should not be run directly."
@@ -13,6 +14,14 @@ if [ "$(basename "${BASH_SOURCE[0]}")" = "restore-template.sh" ]; then
 fi
 
 BACKUP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
+cleanup_restore_temp_dir() {
+    if [ -n "$RESTORE_TEMP_DIR" ] && [ -d "$RESTORE_TEMP_DIR" ]; then
+        rm -rf "$RESTORE_TEMP_DIR"
+    fi
+}
+
+trap cleanup_restore_temp_dir EXIT
 
 require_command() {
     if ! command -v "$1" >/dev/null 2>&1; then
@@ -101,6 +110,27 @@ apply_deleted_tracked_files() {
 
         rm -rf "$TARGET_DIR/$path"
     done < "$BACKUP_DIR/deleted-tracked-files.txt"
+}
+
+move_backup_outside_target_if_needed() {
+    local backup_abs
+    local target_abs
+
+    if [ ! -d "$TARGET_DIR" ]; then
+        return
+    fi
+
+    backup_abs="$(cd "$BACKUP_DIR" && pwd -P)"
+    target_abs="$(cd "$TARGET_DIR" && pwd -P)"
+
+    case "$backup_abs" in
+        "$target_abs" | "$target_abs"/*)
+            echo "Copying backup to a temporary restore location..."
+            RESTORE_TEMP_DIR="$(mktemp -d)"
+            cp -a "$BACKUP_DIR" "$RESTORE_TEMP_DIR/backup"
+            BACKUP_DIR="$RESTORE_TEMP_DIR/backup"
+            ;;
+    esac
 }
 
 remove_target_volumes() {
@@ -229,6 +259,7 @@ main() {
     fi
 
     mkdir -p "$(dirname "$TARGET_DIR")"
+    move_backup_outside_target_if_needed
     move_existing_target
 
     echo "Cloning repository..."
