@@ -18,6 +18,8 @@
 /public/build
 /public/hot
 /public/storage
+/ssl/*
+!/ssl/.gitkeep
 /storage/*.key
 /storage/pail
 /vendor

@@ -224,6 +224,28 @@ For automatic HTTPS to work:
 - ports 80 and 443 must be reachable from the Internet;
 - the server must be publicly accessible.
 
+### Optional third-party SSL certificates
+
+The `ssl/` directory at the project root is mounted inside the Caddy container at:
+
+```text
+/etc/caddy/ssl
+```
+
+You can place SSL certificates in this directory on the host and use them from the `Caddyfile` when needed. Adapt the file names in the `Caddyfile` so they point to the certificate and key files used by your installation.
+
+Example:
+
+```caddyfile
+lineup.example.com {
+    tls /etc/caddy/ssl/certificat.crt /etc/caddy/ssl/certificat.key
+
+    reverse_proxy app:80
+}
+```
+
+Using third-party certificates is optional. The directory is only made available to Caddy and does not change the default Caddy behavior.
+
 ## Start the application
 
 Build and start the containers:
