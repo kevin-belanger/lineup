@@ -5,10 +5,13 @@ namespace App\Livewire\Teacher;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\ApplicationSettings;
+use App\Services\SupportRequestChangeMarker;
+use App\Services\TeacherActiveRequestOrdering;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -48,6 +51,32 @@ class RequestHistory extends Component
         //
     }
 
+    public function restoreAndAssign(int $supportRequestId): void
+    {
+        $this->restoreCompletedRequest($supportRequestId, [
+            'assigned_teacher_id' => auth()->id(),
+            'assigned_at' => now(),
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'completed_at' => null,
+            'cancelled_by' => null,
+            'cancel_reason' => null,
+            'updated_at' => now(),
+        ], __('Request taken.'));
+    }
+
+    public function restoreToQueue(int $supportRequestId): void
+    {
+        $this->restoreCompletedRequest($supportRequestId, [
+            'assigned_teacher_id' => null,
+            'assigned_at' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+            'completed_at' => null,
+            'cancelled_by' => null,
+            'cancel_reason' => null,
+            'updated_at' => now(),
+        ], __('Request returned to the queue.'), false);
+    }
+
     public function render(ApplicationSettings $settings): View
     {
         $query = $this->historyQuery($settings);
@@ -69,7 +98,8 @@ class RequestHistory extends Component
                 'assignedTeacher:id,first_name,last_name,deleted_at',
                 'priorityRequester:id,first_name,last_name,deleted_at',
             ])
-            ->where('classroom_id', $this->currentClassroomId());
+            ->where('classroom_id', $this->currentClassroomId())
+            ->whereIn('status', SupportRequest::historyStatuses());
 
         $this->applyPeriodFilter($query, $settings->timezone());
         $this->applyTeacherFilter($query);
@@ -211,5 +241,57 @@ class RequestHistory extends Component
     private function currentClassroomId(): ?int
     {
         return session('current_classroom_id');
+    }
+
+    private function restoreCompletedRequest(int $supportRequestId, array $values, string $successMessage, bool $assignToTeacher = true): void
+    {
+        if (! auth()->user()?->is_teacher) {
+            $this->toast('error', __('This request cannot be changed.'));
+            $this->dispatchRefresh();
+
+            return;
+        }
+
+        $classroomId = $this->currentClassroomId();
+
+        $updated = SupportRequest::query()
+            ->whereKey($supportRequestId)
+            ->where('classroom_id', $classroomId)
+            ->where('status', SupportRequest::STATUS_COMPLETED)
+            ->update($values);
+
+        if ($updated === 0) {
+            $this->toast('warning', __('This request cannot be changed.'));
+            $this->dispatchRefresh();
+
+            return;
+        }
+
+        $ordering = app(TeacherActiveRequestOrdering::class);
+
+        if ($assignToTeacher) {
+            if (auth()->user()->place_new_requests_on_top) {
+                $ordering->moveToTop(auth()->id(), $supportRequestId);
+            } else {
+                $ordering->moveToBottom(auth()->id(), $supportRequestId);
+            }
+        } else {
+            $ordering->removeForRequest($supportRequestId);
+        }
+
+        $this->resetPage();
+        $this->toast('success', $successMessage);
+        app(SupportRequestChangeMarker::class)->touch($classroomId);
+        $this->dispatchRefresh();
+    }
+
+    private function dispatchRefresh(): void
+    {
+        DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
+    }
+
+    private function toast(string $type, string $message): void
+    {
+        $this->dispatch('toast', type: $type, message: $message);
     }
 }

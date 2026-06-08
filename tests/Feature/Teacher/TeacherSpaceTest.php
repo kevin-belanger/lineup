@@ -1167,6 +1167,11 @@ class TeacherSpaceTest extends TestCase
             'status' => SupportRequest::STATUS_COMPLETED,
             'created_at' => now(),
         ]);
+        $activeRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'created_at' => now(),
+        ]);
 
         session(['current_classroom_id' => $classroom->id]);
 
@@ -1175,7 +1180,8 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('History')
             ->assertSee($todayRequest->student->fullName())
             ->assertDontSee($oldRequest->student->fullName())
-            ->assertDontSee($otherClassroomRequest->student->fullName());
+            ->assertDontSee($otherClassroomRequest->student->fullName())
+            ->assertDontSee($activeRequest->student->fullName());
     }
 
     public function test_teacher_history_filters_by_period_teacher_and_search(): void
@@ -1228,5 +1234,153 @@ class TeacherSpaceTest extends TestCase
             ->assertSee($oldNetworkRequest->student->fullName())
             ->set('search', 'math')
             ->assertDontSee($oldNetworkRequest->student->fullName());
+    }
+
+    public function test_teacher_can_restore_completed_history_request_as_assigned_to_self(): void
+    {
+        $teacher = User::factory()->teacher()->create(['place_new_requests_on_top' => true]);
+        $previousTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Programmation',
+        ]);
+        $createdAt = now()->subHours(3);
+        $supportRequest = SupportRequest::factory()->completed()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'assigned_teacher_id' => $previousTeacher->id,
+            'assigned_at' => now()->subHours(2),
+            'completed_at' => now()->subHour(),
+            'created_at' => $createdAt,
+            'comment' => 'Conserver cette description',
+            'table_number' => '12',
+            'moodle_tile_number' => 7,
+            'request_type' => 'Validation',
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestHistory::class)
+            ->assertSee('Take')
+            ->assertSee('Return to queue')
+            ->call('restoreAndAssign', $supportRequest->id)
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated')
+            ->assertDontSee($supportRequest->student->fullName());
+
+        $supportRequest->refresh();
+
+        $this->assertSame($teacher->id, $supportRequest->assigned_teacher_id);
+        $this->assertSame(SupportRequest::STATUS_ASSIGNED, $supportRequest->status);
+        $this->assertNotNull($supportRequest->assigned_at);
+        $this->assertNull($supportRequest->completed_at);
+        $this->assertNull($supportRequest->cancelled_by);
+        $this->assertNull($supportRequest->cancel_reason);
+        $this->assertSame('Conserver cette description', $supportRequest->comment);
+        $this->assertSame('12', $supportRequest->table_number);
+        $this->assertSame(7, $supportRequest->moodle_tile_number);
+        $this->assertSame('Validation', $supportRequest->request_type);
+        $this->assertSame($createdAt->toDateTimeString(), $supportRequest->created_at->toDateTimeString());
+        $this->assertDatabaseHas('teacher_active_request_orders', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+        ]);
+        $this->assertSame(1, app(SupportRequestChangeMarker::class)->current($classroom->id));
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSee($supportRequest->student->fullName());
+    }
+
+    public function test_teacher_can_restore_completed_history_request_to_waiting_queue(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $previousTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->completed()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $previousTeacher->id,
+            'assigned_at' => now()->subHours(2),
+            'completed_at' => now()->subHour(),
+        ]);
+        TeacherActiveRequestOrder::query()->create([
+            'teacher_id' => $previousTeacher->id,
+            'support_request_id' => $supportRequest->id,
+            'sort_order' => 10,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestHistory::class)
+            ->call('restoreToQueue', $supportRequest->id)
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated')
+            ->assertDontSee($supportRequest->student->fullName());
+
+        $supportRequest->refresh();
+
+        $this->assertNull($supportRequest->assigned_teacher_id);
+        $this->assertNull($supportRequest->assigned_at);
+        $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->status);
+        $this->assertNull($supportRequest->completed_at);
+        $this->assertDatabaseMissing('teacher_active_request_orders', [
+            'support_request_id' => $supportRequest->id,
+        ]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->assertSee($supportRequest->student->fullName());
+    }
+
+    public function test_teacher_can_restore_only_completed_requests_from_current_classroom_once(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $otherClassroom = Classroom::factory()->create();
+        $waitingRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+        $cancelledRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_CANCELLED,
+            'assigned_teacher_id' => null,
+        ]);
+        $otherClassroomRequest = SupportRequest::factory()->completed()->create([
+            'classroom_id' => $otherClassroom->id,
+        ]);
+        $completedRequest = SupportRequest::factory()->completed()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestHistory::class)
+            ->assertSee($completedRequest->student->fullName())
+            ->assertSee($cancelledRequest->student->fullName())
+            ->assertSee('No actions available')
+            ->assertDontSee($waitingRequest->student->fullName())
+            ->call('restoreToQueue', $waitingRequest->id)
+            ->assertDispatched('toast')
+            ->call('restoreToQueue', $cancelledRequest->id)
+            ->assertDispatched('toast')
+            ->call('restoreToQueue', $otherClassroomRequest->id)
+            ->assertDispatched('toast')
+            ->call('restoreToQueue', $completedRequest->id)
+            ->assertDispatched('teacher-requests-updated')
+            ->call('restoreAndAssign', $completedRequest->id)
+            ->assertDispatched('toast');
+
+        $this->assertSame(SupportRequest::STATUS_WAITING, $waitingRequest->refresh()->status);
+        $this->assertNull($waitingRequest->assigned_teacher_id);
+        $this->assertSame(SupportRequest::STATUS_CANCELLED, $cancelledRequest->refresh()->status);
+        $this->assertSame(SupportRequest::STATUS_COMPLETED, $otherClassroomRequest->refresh()->status);
+        $this->assertSame(SupportRequest::STATUS_WAITING, $completedRequest->refresh()->status);
+        $this->assertNull($completedRequest->assigned_teacher_id);
     }
 }

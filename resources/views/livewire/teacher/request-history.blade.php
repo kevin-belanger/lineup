@@ -121,15 +121,60 @@
                         </div>
                     </div>
 
-                    <div class="flex shrink-0 flex-col gap-1 text-sm text-gray-600 lg:w-56 lg:text-right">
-                        <div>
-                            <span class="font-medium text-gray-800">{{ __('Teacher') }}</span>
-                            <span>{{ $supportRequest->assignedTeacherDisplayName() }}</span>
+                    <div class="flex shrink-0 items-start justify-between gap-3 text-sm text-gray-600 lg:w-72 lg:justify-end lg:text-right">
+                        <div class="flex flex-col gap-1">
+                            <div>
+                                <span class="font-medium text-gray-800">{{ __('Teacher') }}</span>
+                                <span>{{ $supportRequest->assignedTeacherDisplayName() }}</span>
+                            </div>
+                            <div>{{ __('Waiting') }} {{ $waitDuration }}</div>
+                            @if ($serviceDuration)
+                                <div>{{ __('Duration') }} {{ $serviceDuration }}</div>
+                            @endif
                         </div>
-                        <div>{{ __('Waiting') }} {{ $waitDuration }}</div>
-                        @if ($serviceDuration)
-                            <div>{{ __('Duration') }} {{ $serviceDuration }}</div>
-                        @endif
+
+                        <details class="js-history-action-menu relative shrink-0">
+                            <summary
+                                class="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                aria-label="{{ __('Open actions menu') }}"
+                                aria-haspopup="true"
+                                title="{{ __('Open actions menu') }}"
+                            >
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75h.008v.008H12V6.75Zm0 5.25h.008v.008H12V12Zm0 5.25h.008v.008H12v-.008Z" />
+                                </svg>
+                            </summary>
+
+                            <div class="absolute right-0 top-full z-20 mt-2 w-96 rounded-md border border-gray-200 bg-white py-1 text-left shadow-lg" role="menu">
+                                @if ($supportRequest->status === \App\Models\SupportRequest::STATUS_COMPLETED)
+                                    <button
+                                        type="button"
+                                        wire:click="restoreAndAssign({{ $supportRequest->id }})"
+                                        wire:loading.attr="disabled"
+                                        wire:target="restoreAndAssign({{ $supportRequest->id }})"
+                                        class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
+                                        role="menuitem"
+                                    >
+                                        {{ __('Take') }}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        wire:click="restoreToQueue({{ $supportRequest->id }})"
+                                        wire:loading.attr="disabled"
+                                        wire:target="restoreToQueue({{ $supportRequest->id }})"
+                                        class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
+                                        role="menuitem"
+                                    >
+                                        {{ __('Return to queue') }}
+                                    </button>
+                                @else
+                                    <div class="px-4 py-2 text-sm text-gray-500" role="menuitem">
+                                        {{ __('No actions available') }}
+                                    </div>
+                                @endif
+                            </div>
+                        </details>
                     </div>
                 </div>
             </article>
@@ -146,3 +191,35 @@
         </div>
     @endif
 </section>
+
+@once
+    <script>
+        document.addEventListener('click', function (event) {
+            document.querySelectorAll('.js-history-action-menu[open]').forEach(function (menu) {
+                if (!menu.contains(event.target)) {
+                    menu.removeAttribute('open');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.js-history-action-menu[open]').forEach(function (menu) {
+                    menu.removeAttribute('open');
+                });
+            }
+        });
+
+        document.addEventListener('toggle', function (event) {
+            if (!event.target.matches('.js-history-action-menu') || !event.target.open) {
+                return;
+            }
+
+            document.querySelectorAll('.js-history-action-menu[open]').forEach(function (menu) {
+                if (menu !== event.target) {
+                    menu.removeAttribute('open');
+                }
+            });
+        }, true);
+    </script>
+@endonce
