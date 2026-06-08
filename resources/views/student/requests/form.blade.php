@@ -56,7 +56,7 @@
 
                         <div>
                             <x-input-label for="request_type_id" :value="__('Request type')" />
-                            <select id="request_type_id" name="request_type_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <select id="request_type_id" name="request_type_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" @required($requestTypeRequired)>
                                 <option value="">{{ __('Choose') }}</option>
                                 @foreach ($requestTypes as $requestType)
                                     <option value="{{ $requestType->id }}" @selected((string) $selectedRequestTypeId === (string) $requestType->id)>

@@ -8,6 +8,7 @@ use App\Models\RequestType;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\User;
+use App\Services\ApplicationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -321,6 +322,67 @@ class StudentSupportRequestTest extends TestCase
             ->assertSee('Correction');
     }
 
+    public function test_student_request_type_is_required_when_setting_is_enabled(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        RequestType::factory()->create([
+            'name' => 'Correction',
+            'sort_order' => 1,
+        ]);
+        app(ApplicationSettings::class)->updateRequestTypeRequired(true);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.requests.create'))
+            ->assertOk()
+            ->assertSee('name="request_type_id"', false)
+            ->assertSee('required', false);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->post(route('student.requests.store'), [
+                'subject_id' => $subject->id,
+                'moodle_tile_number' => 42,
+                'table_number' => '8',
+            ])
+            ->assertSessionHasErrors('request_type_id');
+
+        $this->assertDatabaseCount('support_requests', 0);
+    }
+
+    public function test_student_request_type_is_optional_when_setting_is_enabled_but_no_types_exist(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        app(ApplicationSettings::class)->updateRequestTypeRequired(true);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->post(route('student.requests.store'), [
+                'subject_id' => $subject->id,
+                'moodle_tile_number' => 42,
+                'table_number' => '8',
+            ])
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertDatabaseHas('support_requests', [
+            'student_id' => $student->id,
+            'request_type' => null,
+        ]);
+    }
+
     public function test_student_can_have_only_one_active_request(): void
     {
         $student = User::factory()->create();
@@ -406,6 +468,43 @@ class StudentSupportRequestTest extends TestCase
         $this->assertSame(7, $supportRequest->moodle_tile_number);
         $this->assertSame('12', $supportRequest->table_number);
         $this->assertSame('Correction', $supportRequest->request_type);
+    }
+
+    public function test_student_request_type_is_required_when_editing_if_setting_is_enabled(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+        $supportRequest = SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'status' => SupportRequest::STATUS_WAITING,
+        ]);
+
+        RequestType::factory()->create([
+            'name' => 'Correction',
+            'sort_order' => 1,
+        ]);
+        app(ApplicationSettings::class)->updateRequestTypeRequired(true);
+
+        $this
+            ->actingAs($student)
+            ->get(route('student.requests.edit', $supportRequest))
+            ->assertOk()
+            ->assertSee('name="request_type_id"', false)
+            ->assertSee('required', false);
+
+        $this
+            ->actingAs($student)
+            ->patch(route('student.requests.update', $supportRequest), [
+                'subject_id' => $subject->id,
+                'moodle_tile_number' => 7,
+                'table_number' => '12',
+            ])
+            ->assertSessionHasErrors('request_type_id');
     }
 
     public function test_student_edit_preserves_copied_request_type_when_original_type_was_deleted(): void

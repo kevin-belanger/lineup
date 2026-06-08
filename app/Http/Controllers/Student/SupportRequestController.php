@@ -7,6 +7,7 @@ use App\Models\Classroom;
 use App\Models\RequestType;
 use App\Models\Subject;
 use App\Models\SupportRequest;
+use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,7 @@ class SupportRequestController extends Controller
             'classroom' => $classroom,
             'subjects' => $this->activeSubjects($classroom),
             'requestTypes' => $this->requestTypes(),
+            'requestTypeRequired' => $this->requestTypeRequired(),
             'action' => route('student.requests.store'),
             'method' => 'POST',
         ]);
@@ -93,6 +95,7 @@ class SupportRequestController extends Controller
             'classroom' => $supportRequest->classroom,
             'subjects' => $this->activeSubjects($supportRequest->classroom),
             'requestTypes' => $this->requestTypes(),
+            'requestTypeRequired' => $this->requestTypeRequired(),
             'action' => route('student.requests.update', $supportRequest),
             'method' => 'PATCH',
         ]);
@@ -168,6 +171,7 @@ class SupportRequestController extends Controller
     private function validatedData(Request $request, Classroom $classroom, ?SupportRequest $supportRequest = null): array
     {
         $requestTypes = $this->requestTypes();
+        $requestTypeRequired = $requestTypes->isNotEmpty() && $this->requestTypeRequired();
 
         $validated = $request->validate([
             'subject_id' => [
@@ -178,7 +182,7 @@ class SupportRequestController extends Controller
             'moodle_tile_number' => ['required', 'integer', 'min:1', 'max:9999'],
             'table_number' => ['required', 'string', 'max:50'],
             'request_type_id' => [
-                'nullable',
+                $requestTypeRequired ? 'required' : 'nullable',
                 'integer',
                 Rule::exists('request_types', 'id'),
             ],
@@ -245,6 +249,11 @@ class SupportRequestController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    private function requestTypeRequired(): bool
+    {
+        return app(ApplicationSettings::class)->requestTypeRequired();
     }
 
     private function authorizeStudentRequest(Request $request, SupportRequest $supportRequest): void

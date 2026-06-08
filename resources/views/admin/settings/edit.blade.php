@@ -246,12 +246,16 @@
                         class="border-t border-gray-200 p-6"
                         x-data="{
                             requestTypes: @js($requestTypeNames),
+                            requestTypeRequired: @js((bool) old('request_type_required', $requestTypeRequired) && count($requestTypeNames) > 0),
                             add() {
                                 this.requestTypes.push('');
                                 this.$nextTick(() => this.$refs.requestTypes?.lastElementChild?.querySelector('input')?.focus());
                             },
                             remove(index) {
                                 this.requestTypes.splice(index, 1);
+                                if (this.requestTypes.length === 0) {
+                                    this.requestTypeRequired = false;
+                                }
                             },
                         }"
                     >
@@ -298,15 +302,35 @@
                             </div>
                         </div>
 
-                        <button
-                            type="button"
-                            class="mt-4 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                            @click="add()"
-                        >
-                            {{ __('Add') }}
-                        </button>
+                        <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <label for="request_type_required" class="flex items-start gap-3">
+                                <input type="hidden" name="request_type_required" value="0">
+                                <input
+                                    id="request_type_required"
+                                    name="request_type_required"
+                                    type="checkbox"
+                                    value="1"
+                                    x-model="requestTypeRequired"
+                                    :disabled="requestTypes.length === 0"
+                                    class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                <span>
+                                    <span class="block text-sm font-medium text-gray-900">{{ __('Make required') }}</span>
+                                    <span class="block text-sm text-gray-600">{{ __('Students must choose a request type when creating or editing a request.') }}</span>
+                                </span>
+                            </label>
+
+                            <button
+                                type="button"
+                                class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                @click="add()"
+                            >
+                                {{ __('Add') }}
+                            </button>
+                        </div>
 
                         <x-input-error :messages="$errors->get('request_types')" class="mt-2" />
+                        <x-input-error :messages="$errors->get('request_type_required')" class="mt-2" />
                         @foreach ($errors->get('request_types.*') as $messages)
                             <x-input-error :messages="$messages" class="mt-2" />
                         @endforeach

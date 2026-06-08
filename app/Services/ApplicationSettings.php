@@ -20,6 +20,8 @@ class ApplicationSettings
 
     public const REUSE_COURSE_URL_TAB_KEY = 'courses.reuse_url_tab';
 
+    public const REQUEST_TYPE_REQUIRED_KEY = 'requests.type_required';
+
     public const TIMEZONE_KEY = 'app.timezone';
 
     public const DEFAULT_APP_NAME = 'LineUp';
@@ -148,6 +150,25 @@ class ApplicationSettings
         );
 
         Cache::forget(self::REUSE_COURSE_URL_TAB_KEY);
+    }
+
+    public function requestTypeRequired(): bool
+    {
+        return Cache::rememberForever(self::REQUEST_TYPE_REQUIRED_KEY, function (): bool {
+            return Setting::query()
+                ->where('key', self::REQUEST_TYPE_REQUIRED_KEY)
+                ->value('value') === '1';
+        });
+    }
+
+    public function updateRequestTypeRequired(bool $required): void
+    {
+        Setting::query()->updateOrCreate(
+            ['key' => self::REQUEST_TYPE_REQUIRED_KEY],
+            ['value' => $required ? '1' : '0'],
+        );
+
+        Cache::forget(self::REQUEST_TYPE_REQUIRED_KEY);
     }
 
     public function courseUrlTarget(): string

@@ -52,6 +52,7 @@ class SettingsTest extends TestCase
         $this->assertSame('16:45', $settings->autoCancelRequestsTime());
         $this->assertSame('Please support the assessment room.', $settings->priorityRequestDefaultMessage());
         $this->assertTrue($settings->reuseCourseUrlTab());
+        $this->assertFalse($settings->requestTypeRequired());
 
         $this->actingAs($admin)
             ->get(route('admin.settings.edit'))
@@ -180,6 +181,7 @@ class SettingsTest extends TestCase
                 'auto_cancel_requests_time' => '16:30',
                 'priority_request_default_message' => '',
                 'reuse_course_url_tab' => '0',
+                'request_type_required' => '1',
                 'request_types' => [
                     ' Correction ',
                     'Validation',
@@ -195,7 +197,30 @@ class SettingsTest extends TestCase
             ['Correction', 'Validation'],
             RequestType::query()->orderBy('sort_order')->pluck('name')->all(),
         );
+        $this->assertTrue(app(ApplicationSettings::class)->requestTypeRequired());
         $this->assertSame('Explanation', $supportRequest->refresh()->request_type);
+    }
+
+    public function test_request_type_required_setting_is_disabled_when_no_request_types_are_configured(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this
+            ->actingAs($admin)
+            ->patch(route('admin.settings.update'), [
+                'display_name' => 'LineUp',
+                'default_locale' => 'en',
+                'timezone' => 'America/Toronto',
+                'auto_cancel_requests_enabled' => '0',
+                'auto_cancel_requests_time' => '16:30',
+                'priority_request_default_message' => '',
+                'reuse_course_url_tab' => '0',
+                'request_type_required' => '1',
+                'request_types' => [],
+            ])
+            ->assertRedirect(route('admin.settings.edit'));
+
+        $this->assertFalse(app(ApplicationSettings::class)->requestTypeRequired());
     }
 
     public function test_request_type_changes_are_validated_with_the_main_settings_form(): void
