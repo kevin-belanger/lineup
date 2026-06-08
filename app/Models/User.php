@@ -26,6 +26,7 @@ use Illuminate\Notifications\Notifiable;
     'approved_by',
     'is_active',
     'preferred_locale',
+    'place_new_requests_on_top',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -50,6 +51,7 @@ class User extends Authenticatable
             'approved_at' => 'datetime',
             'is_active' => 'boolean',
             'deleted_at' => 'datetime',
+            'place_new_requests_on_top' => 'boolean',
         ];
     }
 

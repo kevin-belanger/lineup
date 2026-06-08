@@ -7,7 +7,33 @@
 
     <div class="mb-4 flex items-start justify-between gap-3">
         <div>
-            <h3 class="text-lg font-semibold text-gray-950">{{ __('Active requests') }}</h3>
+            <div class="flex items-center gap-1.5">
+                <h3 class="text-lg font-semibold text-gray-950">{{ __('Active requests') }}</h3>
+                <details class="js-my-requests-settings-menu relative">
+                    <summary
+                        class="inline-flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-md text-gray-400 transition hover:bg-white hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        aria-label="{{ __('Active request options') }}"
+                        aria-haspopup="true"
+                        title="{{ __('Active request options') }}"
+                    >
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a7.723 7.723 0 0 1 0 .255c-.007.378.138.75.431.992l1.003.827c.424.35.534.955.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.542-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.297-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.075-.124.073-.044.146-.086.22-.127.332-.184.582-.496.644-.87l.213-1.281Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                    </summary>
+
+                    <div class="absolute left-0 top-full z-20 mt-2 w-72 rounded-md border border-gray-200 bg-white p-3 text-sm shadow-lg sm:left-auto sm:right-0" role="menu">
+                        <label class="flex items-start gap-2 text-gray-700">
+                            <input
+                                type="checkbox"
+                                wire:model.live="placeNewRequestsOnTop"
+                                class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            >
+                            <span>{{ __('Place new requests at the top') }}</span>
+                        </label>
+                    </div>
+                </details>
+            </div>
             <p class="text-sm text-gray-600">{{ __('Requests taken in this room.') }}</p>
         </div>
         <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-800">{{ $requests->count() }}</span>
@@ -274,7 +300,7 @@
 @once
     <script>
         document.addEventListener('click', function (event) {
-            document.querySelectorAll('.js-my-requests-action-menu[open]').forEach(function (menu) {
+            document.querySelectorAll('.js-my-requests-action-menu[open], .js-my-requests-settings-menu[open]').forEach(function (menu) {
                 if (!menu.contains(event.target)) {
                     menu.removeAttribute('open');
                 }
@@ -283,18 +309,18 @@
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
-                document.querySelectorAll('.js-my-requests-action-menu[open]').forEach(function (menu) {
+                document.querySelectorAll('.js-my-requests-action-menu[open], .js-my-requests-settings-menu[open]').forEach(function (menu) {
                     menu.removeAttribute('open');
                 });
             }
         });
 
         document.addEventListener('toggle', function (event) {
-            if (!event.target.matches('.js-my-requests-action-menu') || !event.target.open) {
+            if (!event.target.matches('.js-my-requests-action-menu, .js-my-requests-settings-menu') || !event.target.open) {
                 return;
             }
 
-            document.querySelectorAll('.js-my-requests-action-menu[open]').forEach(function (menu) {
+            document.querySelectorAll('.js-my-requests-action-menu[open], .js-my-requests-settings-menu[open]').forEach(function (menu) {
                 if (menu !== event.target) {
                     menu.removeAttribute('open');
                 }

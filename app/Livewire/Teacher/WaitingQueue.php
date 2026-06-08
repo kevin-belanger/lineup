@@ -38,7 +38,14 @@ class WaitingQueue extends Component
             return;
         }
 
-        app(TeacherActiveRequestOrdering::class)->moveToTop(auth()->id(), $supportRequestId);
+        $ordering = app(TeacherActiveRequestOrdering::class);
+
+        if (auth()->user()->place_new_requests_on_top) {
+            $ordering->moveToTop(auth()->id(), $supportRequestId);
+        } else {
+            $ordering->moveToBottom(auth()->id(), $supportRequestId);
+        }
+
         $this->toast('success', __('Request taken.'));
         app(SupportRequestChangeMarker::class)->touch($classroomId);
         $this->dispatchRefresh();

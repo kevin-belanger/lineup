@@ -807,6 +807,66 @@ class TeacherSpaceTest extends TestCase
             ]);
     }
 
+    public function test_teacher_can_choose_to_add_newly_assigned_requests_to_bottom(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'place_new_requests_on_top' => false,
+        ]);
+        $classroom = Classroom::factory()->create();
+        $existing = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(5),
+        ]);
+        $waiting = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+        ]);
+        TeacherActiveRequestOrder::query()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $existing->id,
+            'sort_order' => 1,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingQueue::class)
+            ->call('assign', $waiting->id);
+
+        $this->assertSame(0, TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('support_request_id', $waiting->id)
+            ->value('sort_order'));
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSeeInOrder([
+                $existing->student->fullName(),
+                $waiting->student->fullName(),
+            ]);
+    }
+
+    public function test_teacher_can_update_active_request_placement_preference_from_my_requests(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSet('placeNewRequestsOnTop', true)
+            ->assertSee('Active request options')
+            ->assertSee('Place new requests at the top')
+            ->set('placeNewRequestsOnTop', false)
+            ->assertSet('placeNewRequestsOnTop', false);
+
+        $this->assertFalse($teacher->refresh()->place_new_requests_on_top);
+    }
+
     public function test_active_request_order_is_removed_when_request_leaves_my_requests(): void
     {
         $teacher = User::factory()->teacher()->create();

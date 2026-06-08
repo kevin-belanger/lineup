@@ -20,6 +20,19 @@ class TeacherActiveRequestOrdering
         );
     }
 
+    public function moveToBottom(int $teacherId, int $supportRequestId): void
+    {
+        TeacherActiveRequestOrder::query()->updateOrCreate(
+            [
+                'teacher_id' => $teacherId,
+                'support_request_id' => $supportRequestId,
+            ],
+            [
+                'sort_order' => $this->previousSortOrder($teacherId),
+            ],
+        );
+    }
+
     /**
      * @param  array<int, int|string>  $orderedSupportRequestIds
      */
@@ -111,5 +124,18 @@ class TeacherActiveRequestOrdering
         return ((int) TeacherActiveRequestOrder::query()
             ->where('teacher_id', $teacherId)
             ->max('sort_order')) + 1;
+    }
+
+    private function previousSortOrder(int $teacherId): int
+    {
+        $minimumSortOrder = TeacherActiveRequestOrder::query()
+            ->where('teacher_id', $teacherId)
+            ->min('sort_order');
+
+        if ($minimumSortOrder === null) {
+            return -1;
+        }
+
+        return ((int) $minimumSortOrder) - 1;
     }
 }

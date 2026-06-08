@@ -37,6 +37,7 @@ class UserFactory extends Factory
             'approved_at' => now(),
             'approved_by' => null,
             'is_active' => true,
+            'place_new_requests_on_top' => true,
             'remember_token' => Str::random(10),
         ];
     }

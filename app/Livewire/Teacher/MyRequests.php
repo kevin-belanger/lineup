@@ -14,6 +14,22 @@ class MyRequests extends Component
 {
     public int $refreshKey = 0;
 
+    public bool $placeNewRequestsOnTop = true;
+
+    public function mount(): void
+    {
+        $this->placeNewRequestsOnTop = (bool) auth()->user()->place_new_requests_on_top;
+    }
+
+    public function updatedPlaceNewRequestsOnTop(bool $value): void
+    {
+        auth()->user()->forceFill([
+            'place_new_requests_on_top' => $value,
+        ])->save();
+
+        $this->toast('success', __('Preference saved.'));
+    }
+
     public function complete(int $supportRequestId): void
     {
         $this->updateAssignedRequest($supportRequestId, [
