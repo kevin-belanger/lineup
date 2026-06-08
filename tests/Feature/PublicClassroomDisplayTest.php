@@ -108,6 +108,73 @@ class PublicClassroomDisplayTest extends TestCase
             ->assertDontSee('Tile');
     }
 
+    public function test_public_display_highlights_priority_requests_without_table_number(): void
+    {
+        $classroom = Classroom::factory()->create([
+            'public_enabled' => true,
+            'public_slug' => 'pr123',
+        ]);
+        $requester = User::factory()->teacher()->create(['first_name' => 'Pierre', 'last_name' => 'Priorite']);
+
+        SupportRequest::factory()->create([
+            'student_id' => null,
+            'classroom_id' => $classroom->id,
+            'subject_id' => null,
+            'assigned_teacher_id' => null,
+            'is_priority' => true,
+            'priority_requested_by_teacher_id' => $requester->id,
+            'moodle_tile_number' => null,
+            'table_number' => null,
+            'type' => null,
+            'request_type' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+            'comment' => 'Message interne a ne pas afficher',
+        ]);
+
+        $this->get(route('public-display.show', $classroom->public_slug))
+            ->assertOk()
+            ->assertSee('public-display__request--priority')
+            ->assertSee('Pierre Priorite')
+            ->assertDontSee('NULL')
+            ->assertDontSee('Message interne a ne pas afficher');
+    }
+
+    public function test_public_display_shows_priority_requests_before_regular_requests(): void
+    {
+        $classroom = Classroom::factory()->create([
+            'public_enabled' => true,
+            'public_slug' => 'tp123',
+        ]);
+        $student = User::factory()->create(['first_name' => 'Alice', 'last_name' => 'Avant']);
+        $requester = User::factory()->teacher()->create(['first_name' => 'Pierre', 'last_name' => 'Priorite']);
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'student_id' => $student->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'table_number' => '7',
+            'created_at' => now()->subMinutes(20),
+        ]);
+        SupportRequest::factory()->create([
+            'student_id' => null,
+            'classroom_id' => $classroom->id,
+            'subject_id' => null,
+            'assigned_teacher_id' => null,
+            'is_priority' => true,
+            'priority_requested_by_teacher_id' => $requester->id,
+            'moodle_tile_number' => null,
+            'table_number' => null,
+            'type' => null,
+            'request_type' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+            'created_at' => now()->subMinutes(5),
+        ]);
+
+        $this->get(route('public-display.show', $classroom->public_slug))
+            ->assertOk()
+            ->assertSeeInOrder(['Pierre Priorite', 'Alice Avant']);
+    }
+
     public function test_public_requests_endpoint_uses_version_to_skip_unchanged_lists(): void
     {
         $classroom = Classroom::factory()->create([

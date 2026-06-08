@@ -1,13 +1,15 @@
 <div class="public-display__list">
     @forelse ($requests as $supportRequest)
-        <article class="public-display__request">
+        <article class="public-display__request @if ($supportRequest->is_priority) public-display__request--priority @endif">
             <div class="public-display__student">
-                {{ $supportRequest->student?->fullName() ?? 'N/A' }}
+                {{ $supportRequest->is_priority ? ($supportRequest->priorityRequester?->fullName() ?? 'N/A') : ($supportRequest->student?->fullName() ?? 'N/A') }}
             </div>
 
-            <div class="public-display__table">
-                {{ $supportRequest->table_number }}
-            </div>
+            @unless ($supportRequest->is_priority)
+                <div class="public-display__table">
+                    {{ $supportRequest->table_number }}
+                </div>
+            @endunless
         </article>
     @empty
         <div class="public-display__empty">

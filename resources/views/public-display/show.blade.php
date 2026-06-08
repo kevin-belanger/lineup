@@ -94,6 +94,14 @@
                 box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
             }
 
+            .public-display__request--priority {
+                background: #fff1f2;
+                border-color: #fb7185;
+                border-left: 0.6rem solid #be123c;
+                box-shadow: 0 8px 20px rgb(190 18 60 / 0.12);
+                color: #881337;
+            }
+
             .public-display__student {
                 min-width: 0;
                 overflow: hidden;
@@ -102,6 +110,10 @@
                 font-size: clamp(1.5rem, 3vw, 2.25rem);
                 font-weight: 700;
                 color: #111827;
+            }
+
+            .public-display__request--priority .public-display__student {
+                color: #881337;
             }
 
             .public-display__table {
