@@ -166,6 +166,13 @@
                             </div>
                         </div>
                         <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
+
+                        @if ($serverClockWarning)
+                            <div class="mt-3 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                <p class="font-semibold">{{ __('Warning') }}</p>
+                                <p class="mt-1">{{ __('The server time appears to be incorrect.') }}</p>
+                            </div>
+                        @endif
                     </section>
 
                     <section class="border-t border-gray-200 p-6">

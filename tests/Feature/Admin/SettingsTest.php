@@ -118,6 +118,62 @@ class SettingsTest extends TestCase
         $this->assertSame('Europe/Paris', app(ApplicationSettings::class)->timezone());
     }
 
+    public function test_admin_settings_warn_when_server_clock_is_offset(): void
+    {
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'https://www.microsoft.com' => Http::response('', 200, [
+                'Date' => now()->subSeconds(120)->toRfc7231String(),
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('Warning')
+            ->assertSee('The server time appears to be incorrect.');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'HEAD'
+            && $request->url() === 'https://www.microsoft.com');
+    }
+
+    public function test_admin_settings_do_not_warn_when_server_clock_is_valid(): void
+    {
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'https://www.microsoft.com' => Http::response('', 200, [
+                'Date' => now()->subSeconds(30)->toRfc7231String(),
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertDontSee('The server time appears to be incorrect.');
+    }
+
+    public function test_admin_settings_do_not_warn_when_server_clock_check_fails(): void
+    {
+        Http::fake([
+            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'https://www.microsoft.com' => Http::response('', 500),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertDontSee('The server time appears to be incorrect.');
+    }
+
     public function test_course_url_tab_reuse_is_disabled_by_default(): void
     {
         $settings = app(ApplicationSettings::class);

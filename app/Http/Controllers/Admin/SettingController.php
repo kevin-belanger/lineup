@@ -7,6 +7,7 @@ use App\Models\RequestType;
 use App\Services\ApplicationSettings;
 use App\Services\ApplicationUpdateChecker;
 use App\Services\LocaleManager;
+use App\Services\ServerClockChecker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,12 +20,14 @@ class SettingController extends Controller
         ApplicationSettings $settings,
         LocaleManager $localeManager,
         ApplicationUpdateChecker $updateChecker,
+        ServerClockChecker $serverClockChecker,
     ): View {
         return view('admin.settings.edit', [
             'displayName' => $settings->displayName(),
             'defaultLocale' => $settings->defaultLocale(),
             'availableLocales' => $localeManager->availableLocales(),
             'updateStatus' => $updateChecker->check(),
+            'serverClockWarning' => $serverClockChecker->hasWarning(),
             'timezone' => $settings->timezone(),
             'timezones' => $settings->availableTimezones(),
             'autoCancelRequestsEnabled' => $settings->autoCancelRequestsEnabled(),
