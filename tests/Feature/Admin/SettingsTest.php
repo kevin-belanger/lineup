@@ -146,54 +146,80 @@ class SettingsTest extends TestCase
         $this->assertSame('_blank', $settings->courseUrlTarget());
     }
 
-    public function test_admin_can_manage_request_types_without_changing_existing_requests(): void
+    public function test_admin_can_manage_request_types_when_saving_settings_without_changing_existing_requests(): void
     {
         Http::fake([
             'api.github.com/repos/*/*/tags*' => Http::response([]),
         ]);
 
         $admin = User::factory()->admin()->create();
+        $existing = RequestType::query()->create([
+            'name' => 'Explanation',
+            'sort_order' => 1,
+        ]);
+        $supportRequest = SupportRequest::factory()->create([
+            'request_type' => 'Explanation',
+        ]);
 
         $this
             ->actingAs($admin)
             ->get(route('admin.settings.edit'))
             ->assertOk()
             ->assertSee('Request types')
-            ->assertSee('No request types configured.');
+            ->assertSee('Explanation')
+            ->assertSee('request_types[]', false)
+            ->assertDontSee(route('admin.settings.update').'/request-types');
 
         $this
             ->actingAs($admin)
-            ->post(route('admin.settings.request-types.store'), [
-                'name' => ' Correction ',
+            ->patch(route('admin.settings.update'), [
+                'display_name' => 'LineUp',
+                'default_locale' => 'en',
+                'timezone' => 'America/Toronto',
+                'auto_cancel_requests_enabled' => '0',
+                'auto_cancel_requests_time' => '16:30',
+                'priority_request_default_message' => '',
+                'reuse_course_url_tab' => '0',
+                'request_types' => [
+                    ' Correction ',
+                    'Validation',
+                ],
             ])
             ->assertRedirect(route('admin.settings.edit'))
             ->assertSessionHas('toast');
 
-        $requestType = RequestType::query()->firstOrFail();
-
-        $this->assertSame('Correction', $requestType->name);
-        $this->assertSame(1, $requestType->sort_order);
-
-        $this
-            ->actingAs($admin)
-            ->post(route('admin.settings.request-types.store'), [
-                'name' => 'Correction',
-            ])
-            ->assertSessionHasErrors('name');
-
-        $supportRequest = SupportRequest::factory()->create([
-            'request_type' => 'Correction',
-        ]);
-
-        $this
-            ->actingAs($admin)
-            ->delete(route('admin.settings.request-types.destroy', $requestType))
-            ->assertRedirect(route('admin.settings.edit'));
-
         $this->assertDatabaseMissing('request_types', [
-            'id' => $requestType->id,
+            'id' => $existing->id,
         ]);
-        $this->assertSame('Correction', $supportRequest->refresh()->request_type);
+        $this->assertSame(
+            ['Correction', 'Validation'],
+            RequestType::query()->orderBy('sort_order')->pluck('name')->all(),
+        );
+        $this->assertSame('Explanation', $supportRequest->refresh()->request_type);
+    }
+
+    public function test_request_type_changes_are_validated_with_the_main_settings_form(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this
+            ->actingAs($admin)
+            ->patch(route('admin.settings.update'), [
+                'display_name' => 'LineUp',
+                'default_locale' => 'en',
+                'timezone' => 'America/Toronto',
+                'auto_cancel_requests_enabled' => '0',
+                'auto_cancel_requests_time' => '16:30',
+                'priority_request_default_message' => '',
+                'reuse_course_url_tab' => '0',
+                'request_types' => [
+                    'Correction',
+                    ' Correction ',
+                ],
+            ])
+            ->assertSessionHasErrors('request_types.1');
+
+        $this->assertDatabaseCount('request_types', 0);
     }
 
     public function test_default_priority_request_message_is_empty_by_default(): void

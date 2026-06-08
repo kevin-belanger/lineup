@@ -9,6 +9,7 @@ use App\Services\ApplicationUpdateChecker;
 use App\Services\LocaleManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -39,6 +40,12 @@ class SettingController extends Controller
 
     public function update(Request $request, ApplicationSettings $settings, LocaleManager $localeManager): RedirectResponse
     {
+        $request->merge([
+            'request_types' => collect($request->input('request_types', []))
+                ->map(fn (mixed $name): string => trim((string) $name))
+                ->all(),
+        ]);
+
         $validated = $request->validate([
             'display_name' => ['required', 'string', 'max:100'],
             'default_locale' => ['required', 'string', Rule::in($localeManager->availableLocales())],
@@ -51,17 +58,22 @@ class SettingController extends Controller
             ],
             'priority_request_default_message' => ['nullable', 'string', 'max:500'],
             'reuse_course_url_tab' => ['nullable', 'boolean'],
+            'request_types' => ['array'],
+            'request_types.*' => ['required', 'string', 'max:100', 'distinct'],
         ]);
 
-        $settings->updateDisplayName($validated['display_name']);
-        $settings->updateDefaultLocale($validated['default_locale']);
-        $settings->updateTimezone($validated['timezone']);
-        $settings->updateAutoCancelRequests(
-            $request->boolean('auto_cancel_requests_enabled'),
-            $validated['auto_cancel_requests_time'] ?? $settings->autoCancelRequestsTime(),
-        );
-        $settings->updatePriorityRequestDefaultMessage($validated['priority_request_default_message'] ?? '');
-        $settings->updateReuseCourseUrlTab($request->boolean('reuse_course_url_tab'));
+        DB::transaction(function () use ($settings, $validated, $request): void {
+            $settings->updateDisplayName($validated['display_name']);
+            $settings->updateDefaultLocale($validated['default_locale']);
+            $settings->updateTimezone($validated['timezone']);
+            $settings->updateAutoCancelRequests(
+                $request->boolean('auto_cancel_requests_enabled'),
+                $validated['auto_cancel_requests_time'] ?? $settings->autoCancelRequestsTime(),
+            );
+            $settings->updatePriorityRequestDefaultMessage($validated['priority_request_default_message'] ?? '');
+            $settings->updateReuseCourseUrlTab($request->boolean('reuse_course_url_tab'));
+            $this->syncRequestTypes($validated['request_types'] ?? []);
+        });
 
         return redirect()
             ->route('admin.settings.edit')
@@ -71,38 +83,18 @@ class SettingController extends Controller
             ]);
     }
 
-    public function storeRequestType(Request $request): RedirectResponse
+    /**
+     * @param  array<int, string>  $names
+     */
+    private function syncRequestTypes(array $names): void
     {
-        $request->merge([
-            'name' => trim((string) $request->input('name', '')),
-        ]);
+        RequestType::query()->delete();
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100', Rule::unique('request_types', 'name')],
-        ]);
-
-        RequestType::query()->create([
-            'name' => $validated['name'],
-            'sort_order' => ((int) RequestType::query()->max('sort_order')) + 1,
-        ]);
-
-        return redirect()
-            ->route('admin.settings.edit')
-            ->with('toast', [
-                'type' => 'success',
-                'message' => __('Request type created.'),
+        foreach (array_values($names) as $index => $name) {
+            RequestType::query()->create([
+                'name' => $name,
+                'sort_order' => $index + 1,
             ]);
-    }
-
-    public function destroyRequestType(RequestType $requestType): RedirectResponse
-    {
-        $requestType->delete();
-
-        return redirect()
-            ->route('admin.settings.edit')
-            ->with('toast', [
-                'type' => 'success',
-                'message' => __('Request type deleted.'),
-            ]);
+        }
     }
 }
