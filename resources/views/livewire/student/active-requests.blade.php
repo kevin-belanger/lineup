@@ -82,25 +82,4 @@
             </div>
         @endforelse
     </div>
-
-    @if ($confirmingAssignedCancellationId)
-        <div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-            <button type="button" class="absolute inset-0 bg-gray-500 opacity-75" wire:click="dismissAssignedCancellation" aria-label="{{ __('Back') }}"></button>
-
-            <x-confirmation-panel
-                :title="__('Cancel request')"
-                :message="__('This request has already been taken by a teacher. Do you really want to cancel it?')"
-            >
-                <x-slot name="actions">
-                    <x-secondary-button type="button" wire:click="dismissAssignedCancellation">
-                        {{ __('Back') }}
-                    </x-secondary-button>
-
-                    <x-danger-button type="button" wire:click="cancelAssignedRequest" wire:loading.attr="disabled" wire:target="cancelAssignedRequest">
-                        {{ __('Cancel my request') }}
-                    </x-danger-button>
-                </x-slot>
-            </x-confirmation-panel>
-        </div>
-    @endif
 </section>

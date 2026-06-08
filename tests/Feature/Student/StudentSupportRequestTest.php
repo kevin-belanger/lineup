@@ -580,7 +580,7 @@ class StudentSupportRequestTest extends TestCase
         $this->assertSame($teacher->id, $supportRequest->assigned_teacher_id);
     }
 
-    public function test_student_can_cancel_assigned_request_after_confirmation(): void
+    public function test_student_cannot_cancel_assigned_request_from_active_request_card(): void
     {
         $student = User::factory()->create();
         $teacher = User::factory()->teacher()->create();
@@ -594,17 +594,14 @@ class StudentSupportRequestTest extends TestCase
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
             ->call('confirmAssignedCancellation', $supportRequest->id)
-            ->assertSee('This request has already been taken by a teacher. Do you really want to cancel it?')
-            ->assertSee('Cancel my request')
-            ->call('cancelAssignedRequest')
             ->assertDispatched('toast');
 
         $supportRequest->refresh();
 
-        $this->assertSame(SupportRequest::STATUS_CANCELLED, $supportRequest->status);
+        $this->assertSame(SupportRequest::STATUS_ASSIGNED, $supportRequest->status);
         $this->assertSame($teacher->id, $supportRequest->assigned_teacher_id);
-        $this->assertSame(SupportRequest::CANCELLED_BY_STUDENT, $supportRequest->cancelled_by);
-        $this->assertSame(SupportRequest::CANCEL_REASON_NO_LONGER_NEEDED, $supportRequest->cancel_reason);
+        $this->assertNull($supportRequest->cancelled_by);
+        $this->assertNull($supportRequest->cancel_reason);
     }
 
     public function test_student_assigned_cancellation_button_is_icon_only_and_discreet(): void

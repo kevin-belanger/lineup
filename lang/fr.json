@@ -344,6 +344,7 @@
     "You already have an active request.": "Vous avez déjà une demande active.",
     "You are receiving this email because we received a password reset request for your account.": "Vous recevez ce courriel parce que nous avons reçu une demande de réinitialisation du mot de passe pour votre compte.",
     "You can use [table] to insert the table number and [section] to insert the Moodle tile number in the URL.": "Vous pouvez utiliser [table] pour insérer le numéro de table et [section] pour insérer le numéro de tuile Moodle dans l’URL.",
+    "You cannot cancel a request while it is being handled by a teacher.": "Vous ne pouvez pas annuler une demande lorsqu’elle est prise en charge par un enseignant.",
     "You cannot deactivate your own account.": "Vous ne pouvez pas désactiver votre propre compte.",
     "You cannot remove your own admin role.": "Vous ne pouvez pas retirer votre propre rôle administrateur.",
     "You cannot remove your own student role.": "Vous ne pouvez pas retirer votre propre rôle étudiant.",
