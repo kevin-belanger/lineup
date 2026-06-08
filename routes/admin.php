@@ -18,6 +18,7 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin,teacher
         Route::patch('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::patch('/users/{user}/roles', [UserController::class, 'updateRoles'])->name('users.roles');
         Route::patch('/users/{user}/active', [UserController::class, 'toggleActive'])->name('users.active');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/classrooms', [ClassroomController::class, 'index'])->name('classrooms.index');
         Route::post('/classrooms', [ClassroomController::class, 'store'])->name('classrooms.store');

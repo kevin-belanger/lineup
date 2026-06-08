@@ -52,7 +52,7 @@ class PublicClassroomDisplayController extends Controller
     private function waitingRequests(Classroom $classroom)
     {
         return SupportRequest::query()
-            ->with(['student:id,first_name,last_name', 'priorityRequester:id,first_name,last_name'])
+            ->with(['student:id,first_name,last_name,deleted_at', 'priorityRequester:id,first_name,last_name,deleted_at'])
             ->where('classroom_id', $classroom->id)
             ->where('status', SupportRequest::STATUS_WAITING)
             ->orderByDesc('is_priority')

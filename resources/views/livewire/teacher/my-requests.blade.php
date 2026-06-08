@@ -72,7 +72,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $priorityBadgeClass }}">{{ __('Priority') }}</span>
-                                        <span class="font-semibold text-gray-950">{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->fullName() ?? 'N/A' }}</span>
+                                        <span class="font-semibold text-gray-950">{{ __('Sent by') }} {{ $supportRequest->priorityRequesterDisplayName() }}</span>
                                     </div>
                                     <div class="mt-2 text-sm text-gray-700">{{ $supportRequest->comment }}</div>
                                 </div>
@@ -151,7 +151,7 @@
                         <div class="min-w-0 flex-1 space-y-2">
                             <div class="px-2">
                                 <div class="min-w-0 text-base font-semibold text-gray-950">
-                                    {{ $supportRequest->student?->fullName() ?? 'N/A' }}
+                                    {{ $supportRequest->studentDisplayName() }}
                                 </div>
                             </div>
 

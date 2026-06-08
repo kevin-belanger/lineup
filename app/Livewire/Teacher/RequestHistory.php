@@ -64,10 +64,10 @@ class RequestHistory extends Component
     {
         $query = SupportRequest::query()
             ->with([
-                'student:id,first_name,last_name',
+                'student:id,first_name,last_name,deleted_at',
                 'subject:id,name,url',
-                'assignedTeacher:id,first_name,last_name',
-                'priorityRequester:id,first_name,last_name',
+                'assignedTeacher:id,first_name,last_name,deleted_at',
+                'priorityRequester:id,first_name,last_name,deleted_at',
             ])
             ->where('classroom_id', $this->currentClassroomId());
 

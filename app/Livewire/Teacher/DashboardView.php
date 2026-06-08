@@ -45,7 +45,7 @@ class DashboardView extends Component
             ->count();
 
         $activeStudentName = SupportRequest::query()
-            ->with('student:id,first_name,last_name')
+            ->with('student:id,first_name,last_name,deleted_at')
             ->leftJoin('teacher_active_request_orders as active_request_orders', function ($join): void {
                 $join
                     ->on('support_requests.id', '=', 'active_request_orders.support_request_id')
@@ -63,7 +63,7 @@ class DashboardView extends Component
             ->orderByDesc('support_requests.id')
             ->first()
             ?->student
-            ?->fullName();
+            ?->displayName();
 
         if ($activeStudentName !== null && $activeStudentName !== '') {
             return sprintf('(%d) - %s - %s', $waitingCount, $activeStudentName, $baseTitle);

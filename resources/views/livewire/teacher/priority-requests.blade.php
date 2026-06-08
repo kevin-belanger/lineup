@@ -63,7 +63,7 @@
                                     data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
                                 >{{ __('Since') }} {{ $durationMinutes }} min</span>
                                 @if ($supportRequest->assignedTeacher)
-                                    <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ __('Taken by') }} {{ $supportRequest->assignedTeacher->fullName() }}</span>
+                                    <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ __('Taken by') }} {{ $supportRequest->assignedTeacherDisplayName() }}</span>
                                 @endif
                             </div>
                         </div>

@@ -107,17 +107,17 @@ class SupportRequest extends Model
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'student_id');
+        return $this->belongsTo(User::class, 'student_id')->withTrashed();
     }
 
     public function assignedTeacher(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_teacher_id');
+        return $this->belongsTo(User::class, 'assigned_teacher_id')->withTrashed();
     }
 
     public function priorityRequester(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'priority_requested_by_teacher_id');
+        return $this->belongsTo(User::class, 'priority_requested_by_teacher_id')->withTrashed();
     }
 
     public function classroom(): BelongsTo
@@ -142,6 +142,21 @@ class SupportRequest extends Model
     public function statusLabel(): string
     {
         return self::statusLabels()[$this->status] ?? $this->status;
+    }
+
+    public function studentDisplayName(): string
+    {
+        return $this->student?->displayName() ?? 'N/A';
+    }
+
+    public function assignedTeacherDisplayName(): string
+    {
+        return $this->assignedTeacher?->displayName() ?? 'N/A';
+    }
+
+    public function priorityRequesterDisplayName(): string
+    {
+        return $this->priorityRequester?->displayName() ?? 'N/A';
     }
 
     public function subjectUrl(): ?string

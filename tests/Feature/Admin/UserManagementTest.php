@@ -2,9 +2,14 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Livewire\Teacher\RequestHistory;
+use App\Models\SupportRequest;
+use App\Models\TeacherActiveRequestOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
@@ -373,6 +378,147 @@ class UserManagementTest extends TestCase
         $this->assertSame('jean@example.com', $user->email);
         $this->assertTrue($user->is_teacher);
         $this->assertTrue(Hash::check('Nouveau-Mot2Passe!', $user->password));
+    }
+
+    public function test_admin_can_soft_delete_user_and_keep_request_history(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create([
+            'first_name' => 'Marie',
+            'last_name' => 'Archive',
+            'email' => 'marie.archive@example.com',
+            'remember_token' => 'token-value',
+            'is_active' => true,
+        ]);
+        $supportRequest = SupportRequest::factory()->completed()->create([
+            'student_id' => $user->id,
+            'created_at' => now(),
+        ]);
+
+        DB::table('sessions')->insert([
+            'id' => 'deleted-user-session',
+            'user_id' => $user->id,
+            'ip_address' => null,
+            'user_agent' => null,
+            'payload' => '',
+            'last_activity' => time(),
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.destroy', $user))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'User deleted.');
+
+        $this->assertSoftDeleted('users', ['id' => $user->id]);
+
+        $deletedUser = User::withTrashed()->findOrFail($user->id);
+
+        $this->assertNull($deletedUser->email);
+        $this->assertNull($deletedUser->email_verified_at);
+        $this->assertNull($deletedUser->remember_token);
+        $this->assertFalse($deletedUser->is_active);
+        $this->assertDatabaseMissing('sessions', ['id' => 'deleted-user-session']);
+        $this->assertDatabaseHas('support_requests', [
+            'id' => $supportRequest->id,
+            'student_id' => $user->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('Deleted users')
+            ->assertSee('Marie Archive')
+            ->assertDontSee('marie.archive@example.com');
+
+        session(['current_classroom_id' => $supportRequest->classroom_id]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestHistory::class)
+            ->assertSee('Marie Archive (deleted user)');
+    }
+
+    public function test_deleted_user_email_can_be_reused(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create([
+            'email' => 'reuse@example.com',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.destroy', $user))
+            ->assertRedirect();
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.store'), [
+                'first_name' => 'Reuse',
+                'email' => 'reuse@example.com',
+                'password' => 'password',
+                'is_student' => '1',
+                'is_active' => '1',
+                'is_approved' => '1',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('open_create_panel', 'users');
+
+        $this->assertSame(1, User::query()->where('email', 'reuse@example.com')->count());
+    }
+
+    public function test_deleting_teacher_returns_active_assigned_requests_to_waiting(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $teacher = User::factory()->teacher()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+        TeacherActiveRequestOrder::query()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+            'sort_order' => 10,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.destroy', $teacher))
+            ->assertRedirect();
+
+        $supportRequest->refresh();
+
+        $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->status);
+        $this->assertNull($supportRequest->assigned_teacher_id);
+        $this->assertNull($supportRequest->assigned_at);
+        $this->assertDatabaseMissing('teacher_active_request_orders', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+        ]);
+    }
+
+    public function test_admin_cannot_delete_own_account(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.destroy', $admin))
+            ->assertRedirect()
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'You cannot delete your own account.',
+            ]);
+
+        $this->assertFalse($admin->fresh()->trashed());
+    }
+
+    public function test_teacher_cannot_delete_users(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $user = User::factory()->create();
+
+        $this->actingAs($teacher)
+            ->delete(route('admin.users.destroy', $user))
+            ->assertForbidden();
+
+        $this->assertFalse($user->fresh()->trashed());
     }
 
     public function test_user_password_can_not_be_empty(): void

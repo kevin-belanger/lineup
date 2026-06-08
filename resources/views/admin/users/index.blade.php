@@ -271,6 +271,63 @@
 
                 @include('admin.users.partials.user-table', ['users' => $users, 'emptyMessage' => __('No users match the filters.')])
             </section>
+
+            <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <details>
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 transition hover:bg-gray-50">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Deleted users') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Deleted users are shown for audit only and cannot be edited or restored.') }}</p>
+                        </div>
+                        <span class="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">{{ $deletedUsers->count() }}</span>
+                    </summary>
+
+                    <div class="border-t border-gray-100">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('User') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Roles') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Deleted at') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 bg-white">
+                                    @forelse ($deletedUsers as $deletedUser)
+                                        <tr>
+                                            <td class="px-4 py-4 align-top">
+                                                <div class="font-medium text-gray-900">{{ $deletedUser->fullName() }}</div>
+                                            </td>
+                                            <td class="px-4 py-4 align-top text-sm text-gray-700">
+                                                <div class="flex flex-wrap gap-2">
+                                                    @if ($deletedUser->is_student)
+                                                        <span class="rounded-full bg-gray-100 px-2.5 py-1">{{ __('Student') }}</span>
+                                                    @endif
+                                                    @if ($deletedUser->is_teacher)
+                                                        <span class="rounded-full bg-indigo-100 px-2.5 py-1 text-indigo-800">{{ __('Teacher') }}</span>
+                                                    @endif
+                                                    @if ($deletedUser->is_admin)
+                                                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">{{ __('Admin') }}</span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-4 align-top text-sm text-gray-600">
+                                                {{ $deletedUser->deleted_at?->format('Y-m-d H:i') }}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
+                                                {{ __('No deleted users.') }}
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
+            </section>
         </div>
     </div>
 </x-app-layout>

@@ -181,6 +181,15 @@
                             </div>
 
                             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                @if (Auth::user()->is_admin && ! Auth::user()->is($user))
+                                    <x-danger-button
+                                        type="button"
+                                        x-on:click="$dispatch('open-modal', 'delete-user-{{ $user->id }}')"
+                                    >
+                                        {{ __('Delete this user') }}
+                                    </x-danger-button>
+                                @endif
+
                                 <x-secondary-button type="reset" x-on:click="editingUser = null">
                                     {{ __('Cancel') }}
                                 </x-secondary-button>
@@ -292,6 +301,30 @@
                                 </form>
                             </div>
                         </x-modal>
+
+                        @if (Auth::user()->is_admin && ! Auth::user()->is($user))
+                            <x-modal name="delete-user-{{ $user->id }}" maxWidth="md" focusable>
+                                <x-confirmation-panel
+                                    :title="__('Delete this user')"
+                                    :message="__('This user will no longer be able to sign in. Their requests will remain visible in history with a deleted user label.')"
+                                >
+                                    <x-slot name="actions">
+                                        <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                                            {{ __('Cancel') }}
+                                        </x-secondary-button>
+
+                                        <form method="POST" action="{{ route('admin.users.destroy', $user) }}">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <x-danger-button>
+                                                {{ __('Delete this user') }}
+                                            </x-danger-button>
+                                        </form>
+                                    </x-slot>
+                                </x-confirmation-panel>
+                            </x-modal>
+                        @endif
                     </td>
                 </tr>
             @empty

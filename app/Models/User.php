@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -30,7 +31,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -48,12 +49,13 @@ class User extends Authenticatable
             'is_approved' => 'boolean',
             'approved_at' => 'datetime',
             'is_active' => 'boolean',
+            'deleted_at' => 'datetime',
         ];
     }
 
     public function approver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(User::class, 'approved_by')->withTrashed();
     }
 
     public function approvedUsers(): HasMany
@@ -87,6 +89,17 @@ class User extends Authenticatable
             $this->first_name,
             $this->last_name,
         ], fn ($value): bool => $value !== null && $value !== '')));
+    }
+
+    public function displayName(): string
+    {
+        $name = $this->fullName();
+
+        if ($this->trashed()) {
+            return __(':name (deleted user)', ['name' => $name]);
+        }
+
+        return $name;
     }
 
     public function canManageAdministration(): bool

@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\SupportRequest;
+use App\Models\TeacherActiveRequestOrder;
 use App\Models\User;
+use App\Services\SupportRequestChangeMarker;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -30,7 +34,7 @@ class UserController extends Controller
         ];
 
         $users = User::query()
-            ->with('approver:id,first_name,last_name')
+            ->with('approver:id,first_name,last_name,deleted_at')
             ->when($filters['search'] !== '', function ($query) use ($filters): void {
                 $terms = preg_split('/\s+/', $filters['search'], -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
@@ -80,12 +84,17 @@ class UserController extends Controller
                 'admin' => __('Admins'),
             ],
             'emailValidationOptions' => User::query()
+                ->whereNotNull('email')
                 ->get(['id', 'email'])
                 ->map(fn (User $user): array => [
                     'id' => $user->id,
                     'email' => mb_strtolower(trim($user->email)),
                 ])
                 ->values(),
+            'deletedUsers' => User::query()
+                ->onlyTrashed()
+                ->latest('deleted_at')
+                ->get(['id', 'first_name', 'last_name', 'is_student', 'is_teacher', 'is_admin', 'deleted_at']),
         ]);
     }
 
@@ -259,6 +268,63 @@ class UserController extends Controller
         ])->save();
 
         return back()->with('status', $user->is_active ? __('Account activated.') : __('Account deactivated.'));
+    }
+
+    public function destroy(Request $request, User $user, SupportRequestChangeMarker $changeMarker): RedirectResponse
+    {
+        if (! $request->user()->is_admin) {
+            abort(403, __('Only administrators can delete users.'));
+        }
+
+        if ($request->user()->is($user)) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => __('You cannot delete your own account.'),
+            ]);
+        }
+
+        DB::transaction(function () use ($user, $changeMarker): void {
+            $classroomIds = SupportRequest::query()
+                ->where('assigned_teacher_id', $user->id)
+                ->whereIn('status', SupportRequest::teacherActiveStatuses())
+                ->whereNotNull('classroom_id')
+                ->pluck('classroom_id')
+                ->unique()
+                ->all();
+
+            SupportRequest::query()
+                ->where('assigned_teacher_id', $user->id)
+                ->whereIn('status', SupportRequest::teacherActiveStatuses())
+                ->update([
+                    'status' => SupportRequest::STATUS_WAITING,
+                    'assigned_teacher_id' => null,
+                    'assigned_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            TeacherActiveRequestOrder::query()
+                ->where('teacher_id', $user->id)
+                ->delete();
+
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->delete();
+
+            $user->forceFill([
+                'email' => null,
+                'email_verified_at' => null,
+                'remember_token' => null,
+                'is_active' => false,
+            ])->save();
+
+            $user->delete();
+
+            foreach ($classroomIds as $classroomId) {
+                $changeMarker->touch((int) $classroomId);
+            }
+        });
+
+        return back()->with('status', __('User deleted.'));
     }
 
     /**

@@ -72,6 +72,13 @@ class ProfileController extends Controller
 
         Auth::logout();
 
+        $user->forceFill([
+            'email' => null,
+            'email_verified_at' => null,
+            'remember_token' => null,
+            'is_active' => false,
+        ])->save();
+
         $user->delete();
 
         $request->session()->invalidate();

@@ -2,7 +2,7 @@
     @forelse ($requests as $supportRequest)
         <article class="public-display__request @if ($supportRequest->is_priority) public-display__request--priority @endif">
             <div class="public-display__student">
-                {{ $supportRequest->is_priority ? ($supportRequest->priorityRequester?->fullName() ?? 'N/A') : ($supportRequest->student?->fullName() ?? 'N/A') }}
+                {{ $supportRequest->is_priority ? $supportRequest->priorityRequesterDisplayName() : $supportRequest->studentDisplayName() }}
             </div>
 
             @unless ($supportRequest->is_priority)

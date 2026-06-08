@@ -75,7 +75,7 @@ class MyRequests extends Component
     {
         return view('livewire.teacher.my-requests', [
             'requests' => SupportRequest::query()
-                ->with(['student:id,first_name,last_name', 'subject:id,name,url', 'priorityRequester:id,first_name,last_name'])
+                ->with(['student:id,first_name,last_name,deleted_at', 'subject:id,name,url', 'priorityRequester:id,first_name,last_name,deleted_at'])
                 ->leftJoin('teacher_active_request_orders as active_request_orders', function ($join): void {
                     $join
                         ->on('support_requests.id', '=', 'active_request_orders.support_request_id')

@@ -78,7 +78,7 @@
                                 @if ($supportRequest->is_priority)
                                     {{ __('Priority request') }}
                                 @else
-                                    {{ $supportRequest->student?->fullName() ?? 'N/A' }}
+                                    {{ $supportRequest->studentDisplayName() }}
                                 @endif
                             </div>
 
@@ -93,7 +93,7 @@
 
                         <div class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600">
                             @if ($supportRequest->is_priority)
-                                <span>{{ __('Sent by') }} {{ $supportRequest->priorityRequester?->fullName() ?? 'N/A' }}</span>
+                                <span>{{ __('Sent by') }} {{ $supportRequest->priorityRequesterDisplayName() }}</span>
                             @else
                                 <span class="inline-flex items-center gap-1">
                                     <span>{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}</span>
@@ -124,7 +124,7 @@
                     <div class="flex shrink-0 flex-col gap-1 text-sm text-gray-600 lg:w-56 lg:text-right">
                         <div>
                             <span class="font-medium text-gray-800">{{ __('Teacher') }}</span>
-                            <span>{{ $supportRequest->assignedTeacher?->fullName() ?? 'N/A' }}</span>
+                            <span>{{ $supportRequest->assignedTeacherDisplayName() }}</span>
                         </div>
                         <div>{{ __('Waiting') }} {{ $waitDuration }}</div>
                         @if ($serviceDuration)
