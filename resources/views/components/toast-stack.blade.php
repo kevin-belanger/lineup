@@ -48,6 +48,7 @@
                 id: Date.now() + Math.random(),
                 type,
                 message: detail.message ?? '',
+                action: detail.action ?? null,
                 timeout,
                 remaining: timeout,
                 startedAt: Date.now(),
@@ -108,6 +109,15 @@
                 clearInterval(this.progressInterval);
                 this.progressInterval = null;
             }
+        },
+        runAction(toast) {
+            const action = toast.action;
+
+            if (action?.event && window.Livewire) {
+                window.Livewire.dispatch(action.event, action.payload ?? {});
+            }
+
+            this.remove(toast.id);
         },
         updateProgress() {
             this.toasts.forEach((toast) => {
@@ -172,7 +182,18 @@
             :class="classes(toast.type)"
         >
             <div class="flex items-start justify-between gap-3">
-                <p class="leading-5" x-text="toast.message"></p>
+                <div class="min-w-0">
+                    <p class="leading-5" x-text="toast.message"></p>
+
+                    <template x-if="toast.action">
+                        <button
+                            type="button"
+                            x-on:click="runAction(toast)"
+                            class="mt-2 inline-flex font-semibold underline-offset-2 hover:underline focus:outline-none focus:underline"
+                            x-text="toast.action.label"
+                        ></button>
+                    </template>
+                </div>
                 <button
                     type="button"
                     x-on:click="remove(toast.id)"

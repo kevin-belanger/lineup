@@ -5,6 +5,7 @@ namespace App\Livewire\Teacher;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\ApplicationSettings;
+use App\Services\CompletedSupportRequestRestorer;
 use App\Services\SupportRequestChangeMarker;
 use App\Services\TeacherActiveRequestOrdering;
 use Carbon\CarbonImmutable;
@@ -53,28 +54,12 @@ class RequestHistory extends Component
 
     public function restoreAndAssign(int $supportRequestId): void
     {
-        $this->restoreCompletedRequest($supportRequestId, [
-            'assigned_teacher_id' => auth()->id(),
-            'assigned_at' => now(),
-            'status' => SupportRequest::STATUS_ASSIGNED,
-            'completed_at' => null,
-            'cancelled_by' => null,
-            'cancel_reason' => null,
-            'updated_at' => now(),
-        ], __('Request taken.'));
+        $this->restoreCompletedRequest($supportRequestId, __('Request taken.'));
     }
 
     public function restoreToQueue(int $supportRequestId): void
     {
-        $this->restoreCompletedRequest($supportRequestId, [
-            'assigned_teacher_id' => null,
-            'assigned_at' => null,
-            'status' => SupportRequest::STATUS_WAITING,
-            'completed_at' => null,
-            'cancelled_by' => null,
-            'cancel_reason' => null,
-            'updated_at' => now(),
-        ], __('Request returned to the queue.'), false);
+        $this->restoreCompletedRequest($supportRequestId, __('Request returned to the queue.'), false);
     }
 
     public function render(ApplicationSettings $settings): View
@@ -243,7 +228,7 @@ class RequestHistory extends Component
         return session('current_classroom_id');
     }
 
-    private function restoreCompletedRequest(int $supportRequestId, array $values, string $successMessage, bool $assignToTeacher = true): void
+    private function restoreCompletedRequest(int $supportRequestId, string $successMessage, bool $assignToTeacher = true): void
     {
         if (! auth()->user()?->is_teacher) {
             $this->toast('error', __('This request cannot be changed.'));
@@ -254,13 +239,12 @@ class RequestHistory extends Component
 
         $classroomId = $this->currentClassroomId();
 
-        $updated = SupportRequest::query()
-            ->whereKey($supportRequestId)
-            ->where('classroom_id', $classroomId)
-            ->where('status', SupportRequest::STATUS_COMPLETED)
-            ->update($values);
+        $restorer = app(CompletedSupportRequestRestorer::class);
+        $restored = $assignToTeacher
+            ? $restorer->restoreAsAssigned($supportRequestId, $classroomId, auth()->user())
+            : $restorer->restoreAsWaiting($supportRequestId, $classroomId, auth()->user());
 
-        if ($updated === 0) {
+        if (! $restored) {
             $this->toast('warning', __('This request cannot be changed.'));
             $this->dispatchRefresh();
 

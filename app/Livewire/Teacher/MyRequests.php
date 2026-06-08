@@ -3,6 +3,7 @@
 namespace App\Livewire\Teacher;
 
 use App\Models\SupportRequest;
+use App\Services\CompletedSupportRequestRestorer;
 use App\Services\SupportRequestChangeMarker;
 use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
@@ -36,7 +37,11 @@ class MyRequests extends Component
             'status' => SupportRequest::STATUS_COMPLETED,
             'completed_at' => now(),
             'updated_at' => now(),
-        ], __('Request completed.'));
+        ], __('Request completed.'), true, [
+            'label' => __('Cancel'),
+            'event' => 'undo-completed-request',
+            'payload' => ['supportRequestId' => $supportRequestId],
+        ]);
     }
 
     public function pause(int $supportRequestId): void
@@ -87,6 +92,35 @@ class MyRequests extends Component
         $this->refreshKey++;
     }
 
+    #[On('undo-completed-request')]
+    public function undoComplete(int $supportRequestId): void
+    {
+        $classroomId = $this->currentClassroomId();
+
+        $restored = app(CompletedSupportRequestRestorer::class)
+            ->restoreAsAssigned($supportRequestId, $classroomId, auth()->user(), true);
+
+        if (! $restored) {
+            $this->toast('info', __('This request cannot be changed.'));
+            $this->dispatchRefresh();
+
+            return;
+        }
+
+        $ordering = app(TeacherActiveRequestOrdering::class);
+
+        if (auth()->user()->place_new_requests_on_top) {
+            $ordering->moveToTop(auth()->id(), $supportRequestId);
+        } else {
+            $ordering->moveToBottom(auth()->id(), $supportRequestId);
+        }
+
+        $this->refreshKey++;
+        $this->toast('success', __('Request taken.'));
+        app(SupportRequestChangeMarker::class)->touch($classroomId);
+        $this->dispatchRefresh();
+    }
+
     public function render(): View
     {
         return view('livewire.teacher.my-requests', [
@@ -111,7 +145,7 @@ class MyRequests extends Component
         ]);
     }
 
-    private function updateAssignedRequest(int $supportRequestId, array $values, string $successMessage, bool $allowPriority = true): void
+    private function updateAssignedRequest(int $supportRequestId, array $values, string $successMessage, bool $allowPriority = true, ?array $toastAction = null): void
     {
         $classroomId = $this->currentClassroomId();
 
@@ -129,7 +163,7 @@ class MyRequests extends Component
 
         if ($updated === 0) {
             $this->toast('error', __('This request cannot be changed.'));
-            DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
+            $this->dispatchRefresh();
 
             return;
         }
@@ -139,9 +173,9 @@ class MyRequests extends Component
         }
 
         $this->refreshKey++;
-        $this->toast('success', $successMessage);
+        $this->toast('success', $successMessage, $toastAction, $toastAction === null ? null : 7000);
         app(SupportRequestChangeMarker::class)->touch($classroomId);
-        DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
+        $this->dispatchRefresh();
     }
 
     private function currentClassroomId(): ?int
@@ -185,6 +219,11 @@ class MyRequests extends Component
         $this->dispatch('teacher-requests-updated');
     }
 
+    private function dispatchRefresh(): void
+    {
+        DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
+    }
+
     private function requestLeavesActiveSection(array $values): bool
     {
         if (array_key_exists('assigned_teacher_id', $values) && $values['assigned_teacher_id'] !== auth()->id()) {
@@ -195,8 +234,8 @@ class MyRequests extends Component
             && ! in_array($values['status'], SupportRequest::teacherActiveStatuses(), true);
     }
 
-    private function toast(string $type, string $message): void
+    private function toast(string $type, string $message, ?array $action = null, ?int $timeout = null): void
     {
-        $this->dispatch('toast', type: $type, message: $message);
+        $this->dispatch('toast', type: $type, message: $message, action: $action, timeout: $timeout);
     }
 }

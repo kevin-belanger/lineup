@@ -413,6 +413,90 @@ class TeacherSpaceTest extends TestCase
         $this->assertSame(SupportRequest::STATUS_ASSIGNED, $otherRequest->refresh()->status);
     }
 
+    public function test_teacher_can_undo_completion_from_toast_action(): void
+    {
+        $teacher = User::factory()->teacher()->create(['place_new_requests_on_top' => true]);
+        $classroom = Classroom::factory()->create();
+        $createdAt = now()->subHour();
+        $supportRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now()->subMinutes(30),
+            'created_at' => $createdAt,
+            'comment' => 'Ne pas recréer la demande',
+            'table_number' => '18',
+            'moodle_tile_number' => 4,
+            'request_type' => 'Correction',
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->call('complete', $supportRequest->id)
+            ->assertDispatched('toast', fn (string $event, array $params): bool => $event === 'toast'
+                && ($params['message'] ?? null) === 'Request completed.'
+                && ($params['timeout'] ?? null) === 7000
+                && ($params['action']['label'] ?? null) === 'Cancel'
+                && ($params['action']['event'] ?? null) === 'undo-completed-request'
+                && ($params['action']['payload']['supportRequestId'] ?? null) === $supportRequest->id)
+            ->assertDispatched('teacher-requests-updated')
+            ->call('undoComplete', $supportRequest->id)
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated')
+            ->assertSee($supportRequest->student->fullName());
+
+        $supportRequest->refresh();
+
+        $this->assertSame($teacher->id, $supportRequest->assigned_teacher_id);
+        $this->assertSame(SupportRequest::STATUS_ASSIGNED, $supportRequest->status);
+        $this->assertNotNull($supportRequest->assigned_at);
+        $this->assertNull($supportRequest->completed_at);
+        $this->assertSame('Ne pas recréer la demande', $supportRequest->comment);
+        $this->assertSame('18', $supportRequest->table_number);
+        $this->assertSame(4, $supportRequest->moodle_tile_number);
+        $this->assertSame('Correction', $supportRequest->request_type);
+        $this->assertSame($createdAt->toDateTimeString(), $supportRequest->created_at->toDateTimeString());
+        $this->assertDatabaseHas('teacher_active_request_orders', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+        ]);
+    }
+
+    public function test_teacher_cannot_undo_completion_after_request_changed_state(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->completed()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'assigned_at' => now()->subMinutes(30),
+            'completed_at' => now()->subMinute(),
+        ]);
+
+        $supportRequest->update([
+            'assigned_teacher_id' => null,
+            'assigned_at' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+            'completed_at' => null,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->call('undoComplete', $supportRequest->id)
+            ->assertDispatched('toast')
+            ->assertDispatched('teacher-requests-updated');
+
+        $supportRequest->refresh();
+
+        $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->status);
+        $this->assertNull($supportRequest->assigned_teacher_id);
+        $this->assertNull($supportRequest->completed_at);
+    }
+
     public function test_teacher_can_manage_other_teacher_active_requests_from_current_classroom(): void
     {
         $teacher = User::factory()->teacher()->create();
