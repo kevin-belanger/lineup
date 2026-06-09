@@ -26,9 +26,6 @@ services:
 
     scheduler:
         image: lineup-app:latest
-        build:
-            context: .
-            dockerfile: Dockerfile
         restart: unless-stopped
         env_file:
             - .env

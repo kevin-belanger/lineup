@@ -24,7 +24,7 @@ RUN apt-get update \
         libzip-dev \
         unzip \
         zip \
-    && docker-php-ext-install \
+    && docker-php-ext-install -j"$(nproc)" \
         bcmath \
         curl \
         intl \
