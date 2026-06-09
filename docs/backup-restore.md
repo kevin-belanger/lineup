@@ -8,7 +8,7 @@ Backups are not created or restored from the web interface. This keeps critical 
 
 ```bash
 cd /opt/lineup
-./scripts/backup.sh
+sudo ./scripts/backup.sh
 ```
 
 The script creates a timestamped backup directory:
@@ -37,7 +37,7 @@ The `app` and `mysql` containers must be running when the backup is created.
 Run the restore script from inside a backup directory:
 
 ```bash
-./restore.sh
+sudo ./restore.sh
 ```
 
 By default, the script restores to the application path saved in `metadata.env`. If that value is missing, it falls back to `/opt/lineup`.
@@ -45,7 +45,7 @@ By default, the script restores to the application path saved in `metadata.env`.
 You can also provide a target path:
 
 ```bash
-./restore.sh /opt/lineup
+sudo ./restore.sh /opt/lineup
 ```
 
 The restore script requires only Bash, Git, Docker, and Docker Compose on the host.
@@ -58,8 +58,8 @@ TARGET.before-restore-YYYYMMDD-HHMMSS
 
 If the backup directory is inside the target path, the restore script first copies it to a temporary location so the backup remains available after the target directory is moved.
 
-Then the script clones the repository, checks out the saved commit, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores persistent storage files into the `app` container, starts the application, and clears Laravel caches.
+Then the script clones the repository, checks out the exact saved commit from `metadata.env`, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores persistent storage files into the `app` container, starts the application, and clears Laravel caches.
 
-The restore does not run database migrations. It restores the application to the saved backup state.
+The restore does not select the latest Git tag or latest GitHub Release. It restores the application to the saved backup state and does not run database migrations.
 
 The `backups/` directory should not be committed to Git.

@@ -8,13 +8,28 @@ use Throwable;
 class ApplicationUpdateChecker
 {
     private const VALID_TAG_PATTERN = '/^v[0-9]+\.[0-9]+\.[0-9]+.*$/';
+    private const BRANCH_VERSION_PATTERN = '/^(.+) ([0-9a-f]{7,40})$/i';
 
     public function check(): ApplicationUpdateStatus
     {
         $installedVersion = (string) config('app.version', 'dev');
-        $tagsUrl = $this->tagsApiUrl((string) config('app.repository_url', ''));
+        $branchVersion = $this->branchVersion($installedVersion);
 
-        if ($tagsUrl === null) {
+        if ($branchVersion !== null) {
+            return new ApplicationUpdateStatus(
+                installedVersion: $installedVersion,
+                latestVersion: null,
+                checked: true,
+                comparisonAvailable: false,
+                updateAvailable: false,
+                installedBranch: $branchVersion['branch'],
+                installedCommit: $branchVersion['commit'],
+            );
+        }
+
+        $releaseUrl = $this->latestReleaseApiUrl((string) config('app.repository_url', ''));
+
+        if ($releaseUrl === null) {
             return $this->unavailable($installedVersion);
         }
 
@@ -22,13 +37,13 @@ class ApplicationUpdateChecker
             $response = Http::timeout(3)
                 ->acceptJson()
                 ->withUserAgent('LineUp update checker')
-                ->get($tagsUrl);
+                ->get($releaseUrl);
 
             if (! $response->successful()) {
                 return $this->unavailable($installedVersion);
             }
 
-            $latestVersion = $this->latestVersionTag($response->json());
+            $latestVersion = $this->latestReleaseTag($response->json());
 
             if ($latestVersion === null) {
                 return $this->unavailable($installedVersion);
@@ -59,7 +74,7 @@ class ApplicationUpdateChecker
         );
     }
 
-    private function tagsApiUrl(string $repositoryUrl): ?string
+    private function latestReleaseApiUrl(string $repositoryUrl): ?string
     {
         $path = trim((string) parse_url($repositoryUrl, PHP_URL_PATH), '/');
 
@@ -74,31 +89,37 @@ class ApplicationUpdateChecker
             return null;
         }
 
-        return sprintf('https://api.github.com/repos/%s/%s/tags?per_page=100', $owner, $repository);
+        return sprintf('https://api.github.com/repos/%s/%s/releases/latest', $owner, $repository);
     }
 
-    private function latestVersionTag(mixed $tags): ?string
+    /**
+     * @return array{branch: string, commit: string}|null
+     */
+    private function branchVersion(string $version): ?array
     {
-        if (! is_array($tags)) {
+        if (preg_match(self::BRANCH_VERSION_PATTERN, $version, $matches) !== 1) {
             return null;
         }
 
-        $versionTags = collect($tags)
-            ->pluck('name')
-            ->filter(fn (mixed $tag): bool => is_string($tag) && $this->isValidVersionTag($tag))
-            ->values()
-            ->all();
+        return [
+            'branch' => $matches[1],
+            'commit' => $matches[2],
+        ];
+    }
 
-        if ($versionTags === []) {
+    private function latestReleaseTag(mixed $release): ?string
+    {
+        if (! is_array($release)) {
             return null;
         }
 
-        usort($versionTags, fn (string $a, string $b): int => version_compare(
-            $this->normalizeVersion($b),
-            $this->normalizeVersion($a),
-        ));
+        $tag = $release['tag_name'] ?? null;
 
-        return $versionTags[0];
+        if (! is_string($tag) || ! $this->isValidVersionTag($tag)) {
+            return null;
+        }
+
+        return $tag;
     }
 
     private function isValidVersionTag(string $version): bool

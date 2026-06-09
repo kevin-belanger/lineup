@@ -49,11 +49,25 @@
                                         <dd class="font-medium text-gray-900">{{ $updateStatus->latestVersion }}</dd>
                                     </div>
                                 @endif
+
+                                @if ($updateStatus->isBranchVersion())
+                                    <div class="flex justify-between gap-4">
+                                        <dt class="text-gray-600">{{ __('Git branch') }}</dt>
+                                        <dd class="font-medium text-gray-900">{{ $updateStatus->installedBranch }}</dd>
+                                    </div>
+                                    <div class="flex justify-between gap-4">
+                                        <dt class="text-gray-600">{{ __('Git commit') }}</dt>
+                                        <dd class="font-medium text-gray-900">{{ $updateStatus->installedCommit }}</dd>
+                                    </div>
+                                @endif
                             </dl>
                         </div>
 
                         <div class="mt-4 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-                            @if (! $updateStatus->checked)
+                            @if ($updateStatus->isBranchVersion())
+                                <p class="font-medium text-gray-900">{{ __('This installation is using a non-stable branch version.') }}</p>
+                                <p class="mt-1">{{ __('Stable release comparison does not apply to branch-based versions.') }}</p>
+                            @elseif (! $updateStatus->checked)
                                 <p>{{ __('Unable to check for updates at this time.') }}</p>
                             @elseif (! $updateStatus->comparisonAvailable)
                                 <p>{{ __('Unable to determine whether this installation is up to date.') }}</p>

@@ -12,31 +12,23 @@ The recommended production installation method is the automated installer.
 
 Use a fresh Ubuntu server.
 
-Before running the installer, update the server packages and make sure `curl` is available:
-
-```bash
-sudo apt update
-sudo apt upgrade -y
-sudo apt install -y curl ca-certificates
-```
-
-If the upgrade installs indicates that a reboot is required, reboot the server before continuing.
-
-Then run the installer:
+Download the installer and run it with root privileges:
 
 ```bash
 cd /tmp
 curl -fsSL https://raw.githubusercontent.com/kevin-belanger/lineup/main/scripts/install.sh -o install.sh
 chmod +x install.sh
-./install.sh
+sudo ./install.sh
 ```
+
+The installer can also be run directly from a root session.
 
 The installer will:
 
 - validate that the server is suitable for a fresh installation;
 - install required packages;
 - install Docker from Docker’s official repository;
-- clone the latest official LineUp release tag;
+- clone the latest published LineUp GitHub Release;
 - create and configure `.env`;
 - configure Caddy;
 - build and start the Docker containers;
@@ -45,7 +37,7 @@ The installer will:
 
 The installer is for fresh installations only. Do not use it to update an existing installation.
 
-For the manual installation procedure, see:
+The manual installation procedure is an advanced reference for troubleshooting or custom installations:
 
 ```text
 docs/manual-installation.md
@@ -53,16 +45,16 @@ docs/manual-installation.md
 
 ## Updating LineUp
 
-Production updates are deployed through Git version tags, not through every commit on `main`.
+Production updates are deployed through published GitHub Releases, not through every commit on `main` or every Git tag.
 
 To update an existing installation:
 
 ```bash
 cd /opt/lineup
-./scripts/update.sh
+sudo ./scripts/update.sh
 ```
 
-The update script installs the latest valid release tag, updates `APP_VERSION`, rebuilds the containers, runs migrations, and refreshes Laravel caches.
+Without arguments, the update script installs the latest published GitHub Release, updates `APP_VERSION` from the release `tag_name`, rebuilds the containers, runs migrations, and refreshes Laravel caches. It can also install code directly from a named remote branch when that is explicitly requested.
 
 For details, see:
 
@@ -78,19 +70,19 @@ Create a backup:
 
 ```bash
 cd /opt/lineup
-./scripts/backup.sh database
+sudo ./scripts/backup.sh database
 ```
 
 List available backups:
 
 ```bash
-./scripts/backup.sh list
+sudo ./scripts/backup.sh list
 ```
 
 Restore a backup:
 
 ```bash
-./scripts/backup.sh restore
+sudo ./scripts/backup.sh restore
 ```
 
 For details, see:
@@ -107,17 +99,17 @@ Useful commands:
 
 ```bash
 cd /opt/lineup
-docker compose ps
-docker compose logs --tail=100 app
-docker compose logs --tail=100 scheduler
+sudo docker compose ps
+sudo docker compose logs --tail=100 app
+sudo docker compose logs --tail=100 scheduler
 ```
 
 Do not use these commands during normal maintenance:
 
 ```bash
-docker compose down -v
-docker volume prune
-docker system prune --volumes
+sudo docker compose down -v
+sudo docker volume prune
+sudo docker system prune --volumes
 ```
 
 They can delete Docker volumes, including the MySQL database volume.

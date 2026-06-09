@@ -3,6 +3,7 @@
 set -euo pipefail
 
 REPOSITORY_URL="https://github.com/kevin-belanger/lineup.git"
+GITHUB_LATEST_RELEASE_URL="https://api.github.com/repos/kevin-belanger/lineup/releases/latest"
 INSTALL_DIR="/opt/lineup"
 VERSION_TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+.*$'
 
@@ -12,8 +13,8 @@ DEFAULT_ADMIN_FIRST_NAME="Administrator"
 DEFAULT_ADMIN_LAST_NAME=""
 DEFAULT_ADMIN_EMAIL="admin@example.com"
 
-DOCKER_CMD="sudo docker"
-COMPOSE_CMD="sudo docker compose"
+DOCKER_CMD="docker"
+COMPOSE_CMD="docker compose"
 
 echo
 echo "=== LineUp production installer ==="
@@ -133,6 +134,50 @@ set_env_value() {
     fi
 }
 
+fetch_latest_release_tag() {
+    local body
+    local http_status
+    local response
+    local release_tag
+
+    if ! response="$(curl -sSL \
+        -H "Accept: application/vnd.github+json" \
+        -H "User-Agent: LineUp-installer" \
+        -w '\n%{http_code}' \
+        "$GITHUB_LATEST_RELEASE_URL")"; then
+        echo "Error: unable to retrieve the latest published GitHub Release from GitHub." >&2
+        exit 1
+    fi
+
+    http_status="${response##*$'\n'}"
+    body="${response%$'\n'*}"
+
+    if [ "$http_status" = "404" ]; then
+        echo "Error: no published GitHub Release was found for LineUp." >&2
+        exit 1
+    fi
+
+    if [ "$http_status" != "200" ]; then
+        echo "Error: unable to retrieve the latest published GitHub Release from GitHub. HTTP status: $http_status" >&2
+        exit 1
+    fi
+
+    release_tag="$(printf '%s\n' "$body" | sed -n 's/^[[:space:]]*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+
+    if [ -z "$release_tag" ]; then
+        echo "Error: no published GitHub Release was found for LineUp." >&2
+        exit 1
+    fi
+
+    if ! printf '%s\n' "$release_tag" | grep -Eq "$VERSION_TAG_PATTERN"; then
+        echo "Error: latest published GitHub Release has an invalid tag: $release_tag" >&2
+        echo "Expected tags like v0.0.1, v0.1.0, or v1.0.0." >&2
+        exit 1
+    fi
+
+    printf '%s' "$release_tag"
+}
+
 require_ubuntu() {
     if [ ! -f /etc/os-release ]; then
         echo "Error: unable to detect operating system."
@@ -149,23 +194,9 @@ require_ubuntu() {
     fi
 }
 
-require_sudo() {
-    if ! command -v sudo >/dev/null 2>&1; then
-        echo "Error: sudo is required."
-        exit 1
-    fi
-
-    if ! sudo -v; then
-        echo "Error: this user must have sudo privileges."
-        exit 1
-    fi
-}
-
-require_non_root_user() {
-    if [ "$EUID" -eq 0 ]; then
-        echo "Error: do not run this installer with sudo."
-        echo "Run it as a regular user with sudo privileges:"
-        echo "./install.sh"
+require_root() {
+    if [ "$EUID" -ne 0 ]; then
+        echo "This installer must be run as root. Use: sudo ./install.sh"
         exit 1
     fi
 }
@@ -182,7 +213,7 @@ check_fresh_install() {
 check_ports() {
     local used_ports=""
 
-    if sudo ss -tulpn | grep -E ':(80|443)\s' >/tmp/lineup-used-ports.txt 2>/dev/null; then
+    if ss -tulpn | grep -E ':(80|443)\s' >/tmp/lineup-used-ports.txt 2>/dev/null; then
         used_ports="$(cat /tmp/lineup-used-ports.txt)"
     fi
 
@@ -200,41 +231,72 @@ check_ports() {
 
 install_base_packages() {
     echo
-    echo "Installing base packages..."
+    echo "Installing or updating base packages..."
 
-    sudo apt update
-    sudo apt install -y git openssl ca-certificates curl
+    apt update
+    apt install -y git openssl ca-certificates curl iproute2
 }
 
 install_docker() {
+    local conflicting_packages=(
+        docker.io
+        docker-compose
+        docker-compose-v2
+        docker-doc
+        podman-docker
+        containerd
+        runc
+    )
+    local installed_conflicting_packages=()
+    local package
+    local docker_suite
+
     echo
-    echo "Installing Docker from the official Docker repository..."
+    echo "Installing or updating Docker from the official Docker repository..."
 
-    sudo apt remove -y docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc || true
+    for package in "${conflicting_packages[@]}"; do
+        if dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q "install ok installed"; then
+            installed_conflicting_packages+=("$package")
+        fi
+    done
 
-    sudo install -m 0755 -d /etc/apt/keyrings
+    if [ "${#installed_conflicting_packages[@]}" -gt 0 ]; then
+        apt remove -y "${installed_conflicting_packages[@]}"
+    else
+        echo "No conflicting Docker packages are installed."
+    fi
 
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+    install -m 0755 -d /etc/apt/keyrings
+
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
         -o /etc/apt/keyrings/docker.asc
 
-    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
 
     # shellcheck disable=SC1091
     . /etc/os-release
 
-    sudo tee /etc/apt/sources.list.d/docker.sources > /dev/null <<EOF
+    docker_suite="${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}"
+
+    if [ -z "$docker_suite" ]; then
+        echo "Error: unable to determine the Ubuntu release codename for Docker."
+        exit 1
+    fi
+
+    tee /etc/apt/sources.list.d/docker.sources > /dev/null <<EOF
 Types: deb
 URIs: https://download.docker.com/linux/ubuntu
-Suites: ${UBUNTU_CODENAME:-$VERSION_CODENAME}
+Suites: ${docker_suite}
 Components: stable
 Architectures: $(dpkg --print-architecture)
 Signed-By: /etc/apt/keyrings/docker.asc
 EOF
 
-    sudo apt update
-    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    apt update
+    apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-    sudo usermod -aG docker "$USER" || true
+    echo
+    echo "Installed Docker versions:"
 
     $DOCKER_CMD --version
     $COMPOSE_CMD version
@@ -242,20 +304,23 @@ EOF
 
 clone_latest_release() {
     echo
+    echo "Retrieving latest published GitHub Release..."
+
+    LATEST_TAG="$(fetch_latest_release_tag)"
+
+    echo "Latest published release: $LATEST_TAG"
+    echo
     echo "Cloning LineUp..."
 
-    sudo git clone "$REPOSITORY_URL" "$INSTALL_DIR"
-    sudo chown -R "$USER":"$USER" "$INSTALL_DIR"
+    git clone "$REPOSITORY_URL" "$INSTALL_DIR"
+    chown -R root:root "$INSTALL_DIR"
 
     cd "$INSTALL_DIR"
 
     git fetch --tags
 
-    LATEST_TAG="$(git tag --sort=-v:refname | grep -E "$VERSION_TAG_PATTERN" | head -n 1 || true)"
-
-    if [ -z "$LATEST_TAG" ]; then
-        echo "Error: no valid release tag found."
-        echo "Expected tags like v0.0.1, v0.1.0, or v1.0.0."
+    if ! git rev-parse -q --verify "refs/tags/$LATEST_TAG" >/dev/null; then
+        echo "Error: published GitHub Release tag was not found in Git: $LATEST_TAG"
         exit 1
     fi
 
@@ -466,25 +531,20 @@ print_summary() {
         echo "SMTP was not configured."
         echo "Password reset and email-based features will not send real emails until mail settings are configured in .env."
     fi
-
-    echo
-    echo "Docker group note:"
-    echo "  Your user was added to the docker group."
-    echo "  Log out and log back in before running commands."
 }
 
 main() {
+    require_root
+
     if ! confirm "Continue with a fresh LineUp installation?"; then
         echo "Installation cancelled."
         exit 0
     fi
 
     require_ubuntu
-    require_sudo
-    require_non_root_user
     check_fresh_install
-    check_ports
     install_base_packages
+    check_ports
     install_docker
     clone_latest_release
     create_env_file

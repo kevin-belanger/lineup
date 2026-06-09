@@ -24,8 +24,8 @@ Verify the scheduler is running:
 
 ```bash
 cd /opt/lineup
-docker compose ps scheduler
-docker compose logs --tail=100 scheduler
+sudo docker compose ps scheduler
+sudo docker compose logs --tail=100 scheduler
 ```
 
 ## Useful commands
@@ -34,37 +34,37 @@ View running containers:
 
 ```bash
 cd /opt/lineup
-docker compose ps
+sudo docker compose ps
 ```
 
 View recent application container logs:
 
 ```bash
-docker compose logs --tail=100 app
+sudo docker compose logs --tail=100 app
 ```
 
 View recent scheduler logs:
 
 ```bash
-docker compose logs --tail=100 scheduler
+sudo docker compose logs --tail=100 scheduler
 ```
 
 View Laravel logs:
 
 ```bash
-docker compose exec app ls -lh storage/logs
+sudo docker compose exec app ls -lh storage/logs
 ```
 
 Restart containers:
 
 ```bash
-docker compose restart
+sudo docker compose restart
 ```
 
 Rebuild containers:
 
 ```bash
-docker compose up -d --build
+sudo docker compose up -d --build
 ```
 
 ## Disk usage
@@ -72,13 +72,13 @@ docker compose up -d --build
 Show Docker disk usage:
 
 ```bash
-docker system df
+sudo docker system df
 ```
 
 List Docker volumes:
 
 ```bash
-docker volume ls
+sudo docker volume ls
 ```
 
 ## Commands to avoid
@@ -86,9 +86,9 @@ docker volume ls
 Do not use these commands during normal maintenance:
 
 ```bash
-docker compose down -v
-docker volume prune
-docker system prune --volumes
+sudo docker compose down -v
+sudo docker volume prune
+sudo docker system prune --volumes
 ```
 
 They can delete Docker volumes, including the MySQL database volume.

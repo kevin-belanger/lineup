@@ -10,7 +10,15 @@ class ApplicationUpdateStatus
         public readonly bool $checked,
         public readonly bool $comparisonAvailable,
         public readonly bool $updateAvailable,
+        public readonly ?string $installedBranch = null,
+        public readonly ?string $installedCommit = null,
     ) {}
+
+    public function isBranchVersion(): bool
+    {
+        return $this->installedBranch !== null
+            && $this->installedCommit !== null;
+    }
 
     public function isUpToDate(): bool
     {

@@ -1,8 +1,10 @@
 # Manual production installation
 
-This is the detailed manual installation procedure for LineUp.
+This is the detailed manual installation procedure for LineUp. It is intended as an advanced reference for troubleshooting or custom installations.
 
 For most installations, use the automated installer from the main `README.md` instead.
+
+The automated installer installs Git, Docker, Docker Compose, and the other required packages automatically.
 
 ## Docker production stack
 
@@ -20,6 +22,8 @@ Caddy is the public web entry point. The default `Caddyfile` can use plain HTTP 
 
 Use a fresh Ubuntu server.
 
+The examples below assume you are running the procedure from a root session. If you run them from a regular user account, use `sudo` for commands that install packages, write under `/opt/lineup`, or run Docker.
+
 Install the basic tools:
 
 ```bash
@@ -32,7 +36,7 @@ sudo apt install -y git openssl ca-certificates curl
 Remove conflicting old packages if they exist:
 
 ```bash
-sudo apt remove -y docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc
+sudo apt remove -y docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc || true
 ```
 
 Add Docker's official repository:
@@ -62,45 +66,54 @@ sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-Allow your user to use Docker:
-
-```bash
-sudo usermod -aG docker $USER
-```
-
-Log out, then log back in.
-
 Verify the installation:
 
 ```bash
-docker --version
-docker compose version
+sudo docker --version
+sudo docker compose version
 ```
 
-## Clone the project
+## Clone the latest stable release
 
-Clone the repository and switch to the latest release tag:
+Stable versions are published GitHub Releases. Retrieve the latest published release `tag_name`, then clone the repository and switch to that tag:
 
 ```bash
+LATEST_TAG="$(
+    curl -fsSL \
+        -H "Accept: application/vnd.github+json" \
+        -H "User-Agent: LineUp-manual-install" \
+        https://api.github.com/repos/kevin-belanger/lineup/releases/latest \
+        | sed -n 's/^[[:space:]]*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        | head -n 1
+)"
+
+if [ -z "$LATEST_TAG" ]; then
+    echo "No published GitHub Release found."
+    exit 1
+fi
+
+if ! printf '%s\n' "$LATEST_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+.*$'; then
+    echo "Invalid release tag: $LATEST_TAG"
+    exit 1
+fi
+
 cd /opt
 git clone https://github.com/kevin-belanger/lineup.git lineup
 cd lineup
 
 git fetch --tags
 
-LATEST_TAG="$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.*$' | head -n 1)"
-
-if [ -z "$LATEST_TAG" ]; then
-    echo "No valid release tag found."
+if ! git rev-parse -q --verify "refs/tags/$LATEST_TAG" >/dev/null; then
+    echo "Published GitHub Release tag was not found in Git: $LATEST_TAG"
     exit 1
 fi
 
 git checkout "$LATEST_TAG"
 ```
 
-Production installations should use tagged releases instead of the `main` branch.
+Production installations should use published GitHub Releases instead of the `main` branch or unpublished Git tags.
 
-Release tags must start with `vX.X.X`, for example:
+Release `tag_name` values must start with `vX.X.X`, for example:
 
 ```text
 v0.0.1
@@ -116,7 +129,7 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Set the installed application version from the checked-out release tag:
+Set the installed application version from the checked-out release `tag_name`:
 
 ```bash
 sed -i "s|^APP_VERSION=.*|APP_VERSION=${LATEST_TAG}|" .env

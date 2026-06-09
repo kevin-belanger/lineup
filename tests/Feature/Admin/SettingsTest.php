@@ -19,8 +19,8 @@ class SettingsTest extends TestCase
     public function test_admin_can_update_application_display_name(): void
     {
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([
-                ['name' => 'v0.0.1'],
+            'api.github.com/repos/*/*/releases/latest' => Http::response([
+                'tag_name' => 'v0.0.1',
             ]),
         ]);
 
@@ -70,7 +70,7 @@ class SettingsTest extends TestCase
     public function test_settings_use_complete_php_timezone_list_with_utc_default(): void
     {
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'api.github.com/repos/*/*/releases/latest' => Http::response([]),
         ]);
 
         $admin = User::factory()->admin()->create();
@@ -121,7 +121,7 @@ class SettingsTest extends TestCase
     public function test_admin_settings_warn_when_server_clock_is_offset(): void
     {
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'api.github.com/repos/*/*/releases/latest' => Http::response([]),
             'https://www.microsoft.com' => Http::response('', 200, [
                 'Date' => now()->subSeconds(120)->toRfc7231String(),
             ]),
@@ -143,7 +143,7 @@ class SettingsTest extends TestCase
     public function test_admin_settings_do_not_warn_when_server_clock_is_valid(): void
     {
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'api.github.com/repos/*/*/releases/latest' => Http::response([]),
             'https://www.microsoft.com' => Http::response('', 200, [
                 'Date' => now()->subSeconds(30)->toRfc7231String(),
             ]),
@@ -161,7 +161,7 @@ class SettingsTest extends TestCase
     public function test_admin_settings_do_not_warn_when_server_clock_check_fails(): void
     {
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'api.github.com/repos/*/*/releases/latest' => Http::response([]),
             'https://www.microsoft.com' => Http::response('', 500),
         ]);
 
@@ -206,7 +206,7 @@ class SettingsTest extends TestCase
     public function test_admin_can_manage_request_types_when_saving_settings_without_changing_existing_requests(): void
     {
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([]),
+            'api.github.com/repos/*/*/releases/latest' => Http::response([]),
         ]);
 
         $admin = User::factory()->admin()->create();
@@ -334,11 +334,8 @@ class SettingsTest extends TestCase
         ]);
 
         Http::fake([
-            'api.github.com/repos/kevin-belanger/lineup/tags*' => Http::response([
-                ['name' => 'not-a-version'],
-                ['name' => 'v0.1.0-beta'],
-                ['name' => 'v0.0.10'],
-                ['name' => 'v0.0.2'],
+            'api.github.com/repos/kevin-belanger/lineup/releases/latest' => Http::response([
+                'tag_name' => 'v0.1.0-beta',
             ]),
         ]);
 
@@ -369,8 +366,8 @@ class SettingsTest extends TestCase
         ]);
 
         Http::fake([
-            'api.github.com/repos/kevin-belanger/lineup/tags*' => Http::response([
-                ['name' => 'v0.0.1'],
+            'api.github.com/repos/kevin-belanger/lineup/releases/latest' => Http::response([
+                'tag_name' => 'v0.0.1',
             ]),
         ]);
 
@@ -389,7 +386,7 @@ class SettingsTest extends TestCase
     public function test_admin_settings_do_not_crash_when_update_check_fails(): void
     {
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([], 500),
+            'api.github.com/repos/*/*/releases/latest' => Http::response([], 500),
         ]);
 
         $admin = User::factory()->admin()->create([
@@ -412,8 +409,8 @@ class SettingsTest extends TestCase
         ]);
 
         Http::fake([
-            'api.github.com/repos/kevin-belanger/lineup/tags*' => Http::response([
-                ['name' => 'v0.0.1'],
+            'api.github.com/repos/kevin-belanger/lineup/releases/latest' => Http::response([
+                'tag_name' => 'v0.0.1',
             ]),
         ]);
 
@@ -428,6 +425,38 @@ class SettingsTest extends TestCase
             ->assertOk()
             ->assertSee('dev')
             ->assertSee('Unable to determine whether this installation is up to date.');
+    }
+
+    public function test_admin_settings_handle_branch_installed_value(): void
+    {
+        config([
+            'app.version' => 'MAIN abc1234',
+            'app.repository_url' => 'https://github.com/kevin-belanger/lineup',
+        ]);
+
+        Http::fake([
+            'api.github.com/repos/kevin-belanger/lineup/releases/latest' => Http::response([
+                'tag_name' => 'v1.0.0',
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create([
+            'is_student' => false,
+            'is_teacher' => false,
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertSee('MAIN abc1234')
+            ->assertSee('Git branch')
+            ->assertSee('MAIN')
+            ->assertSee('Git commit')
+            ->assertSee('abc1234')
+            ->assertSee('This installation is using a non-stable branch version.')
+            ->assertSee('Stable release comparison does not apply to branch-based versions.')
+            ->assertDontSee('The application is up to date.');
     }
 
     public function test_application_display_name_is_required(): void

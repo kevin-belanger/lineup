@@ -17,8 +17,8 @@ class NavigationTest extends TestCase
         parent::setUp();
 
         Http::fake([
-            'api.github.com/repos/*/*/tags*' => Http::response([
-                ['name' => 'v0.0.1'],
+            'api.github.com/repos/*/*/releases/latest' => Http::response([
+                'tag_name' => 'v0.0.1',
             ]),
         ]);
     }

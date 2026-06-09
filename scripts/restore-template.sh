@@ -44,6 +44,16 @@ require_backup_file() {
     fi
 }
 
+require_metadata_value() {
+    local name="$1"
+    local value="${!name:-}"
+
+    if [ -z "$value" ]; then
+        echo "Error: backup metadata is missing required value: $name"
+        exit 1
+    fi
+}
+
 is_safe_relative_path() {
     local path="$1"
 
@@ -241,6 +251,9 @@ main() {
 
     # shellcheck disable=SC1091
     source "$BACKUP_DIR/metadata.env"
+
+    require_metadata_value "REPO_URL"
+    require_metadata_value "GIT_COMMIT"
 
     TARGET_DIR="${1:-${APP_DIR:-$DEFAULT_TARGET_DIR}}"
 
