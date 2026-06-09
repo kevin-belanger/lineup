@@ -140,11 +140,36 @@ set_app_version() {
     fi
 }
 
+wait_for_laravel_database() {
+    local attempt
+    local max_attempts=60
+    local wait_seconds=2
+
+    echo
+    echo "Waiting for Laravel database connection..."
+
+    for attempt in $(seq 1 "$max_attempts"); do
+        if docker compose exec -T "$APP_SERVICE" php artisan tinker --execute='DB::connection()->getPdo();' >/dev/null 2>&1; then
+            echo "Laravel can connect to the database."
+            return
+        fi
+
+        echo "Database not ready yet. Retrying in ${wait_seconds}s... (${attempt}/${max_attempts})"
+        sleep "$wait_seconds"
+    done
+
+    echo "Error: Laravel could not connect to the database after $((max_attempts * wait_seconds)) seconds."
+    echo "Check the MySQL container logs with: docker compose logs mysql"
+    exit 1
+}
+
 run_application_update() {
     require_docker_compose_service
 
     echo "Building and recreating containers..."
     docker compose up -d --build --force-recreate
+
+    wait_for_laravel_database
 
     echo "Running database migrations..."
     docker compose exec -T "$APP_SERVICE" php artisan migrate --force
