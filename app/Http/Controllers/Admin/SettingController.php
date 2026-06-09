@@ -35,6 +35,8 @@ class SettingController extends Controller
             'priorityRequestDefaultMessage' => $settings->priorityRequestDefaultMessage(),
             'reuseCourseUrlTab' => $settings->reuseCourseUrlTab(),
             'requestTypeRequired' => $settings->requestTypeRequired(),
+            'maintenanceModeEnabled' => $settings->maintenanceModeEnabled(),
+            'maintenanceMessage' => $settings->maintenanceMessage(),
             'requestTypes' => RequestType::query()
                 ->orderBy('sort_order')
                 ->orderBy('name')
@@ -63,6 +65,8 @@ class SettingController extends Controller
             'priority_request_default_message' => ['nullable', 'string', 'max:500'],
             'reuse_course_url_tab' => ['nullable', 'boolean'],
             'request_type_required' => ['nullable', 'boolean'],
+            'maintenance_mode' => ['nullable', 'boolean'],
+            'maintenance_message' => ['nullable', 'string', 'max:500'],
             'request_types' => ['array'],
             'request_types.*' => ['required', 'string', 'max:100', 'distinct'],
         ]);
@@ -78,6 +82,10 @@ class SettingController extends Controller
             $settings->updatePriorityRequestDefaultMessage($validated['priority_request_default_message'] ?? '');
             $settings->updateReuseCourseUrlTab($request->boolean('reuse_course_url_tab'));
             $settings->updateRequestTypeRequired($request->boolean('request_type_required') && ! empty($validated['request_types'] ?? []));
+            $settings->updateMaintenanceMode(
+                $request->boolean('maintenance_mode'),
+                $validated['maintenance_message'] ?? null,
+            );
             $this->syncRequestTypes($validated['request_types'] ?? []);
         });
 

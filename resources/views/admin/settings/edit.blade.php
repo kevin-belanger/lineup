@@ -191,6 +191,46 @@
 
                     <section class="border-t border-gray-200 p-6">
                         <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Maintenance mode') }}</h3>
+                            <p class="mt-1 text-sm text-gray-600">
+                                {{ __('When enabled, only administrators can access the application.') }}
+                            </p>
+                        </div>
+
+                        <div class="mt-5 space-y-5">
+                            <label for="maintenance_mode" class="flex items-start gap-3">
+                                <input type="hidden" name="maintenance_mode" value="0">
+                                <input
+                                    id="maintenance_mode"
+                                    name="maintenance_mode"
+                                    type="checkbox"
+                                    value="1"
+                                    @checked(old('maintenance_mode', $maintenanceModeEnabled))
+                                    class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                >
+                                <span>
+                                    <span class="block text-sm font-medium text-gray-900">{{ __('Enable maintenance mode') }}</span>
+                                    <span class="block text-sm text-gray-600">{{ __('Teachers, students, visitors, and public display pages will see the maintenance message.') }}</span>
+                                </span>
+                            </label>
+                            <x-input-error :messages="$errors->get('maintenance_mode')" class="mt-2" />
+
+                            <div>
+                                <x-input-label for="maintenance_message" :value="__('Maintenance message')" />
+                                <textarea
+                                    id="maintenance_message"
+                                    name="maintenance_message"
+                                    rows="3"
+                                    maxlength="500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >{{ old('maintenance_message', $maintenanceMessage) }}</textarea>
+                                <x-input-error :messages="$errors->get('maintenance_message')" class="mt-2" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="border-t border-gray-200 p-6">
+                        <div>
                             <x-input-label for="priority_request_default_message" :value="__('Default priority request message')" />
                             <p class="mt-1 text-sm text-gray-600">
                                 {{ __('This message is automatically inserted when a teacher opens the priority request page.') }}

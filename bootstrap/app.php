@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\BlockDuringMaintenance;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsApproved;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', SetLocale::class);
+        $middleware->appendToGroup('web', BlockDuringMaintenance::class);
 
         $middleware->alias([
             'active' => EnsureUserIsActive::class,

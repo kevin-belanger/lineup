@@ -24,11 +24,17 @@ class ApplicationSettings
 
     public const TIMEZONE_KEY = 'app.timezone';
 
+    public const MAINTENANCE_MODE_KEY = 'app.maintenance_mode';
+
+    public const MAINTENANCE_MESSAGE_KEY = 'app.maintenance_message';
+
     public const DEFAULT_APP_NAME = 'LineUp';
 
     public const DEFAULT_AUTO_CANCEL_REQUESTS_TIME = '16:30';
 
     public const DEFAULT_PRIORITY_REQUEST_MESSAGE = '';
+
+    public const DEFAULT_MAINTENANCE_MESSAGE = 'The application is temporarily under maintenance. Please try again later.';
 
     public const COURSE_URL_WINDOW_TARGET = 'lineup_course_url';
 
@@ -200,6 +206,42 @@ class ApplicationSettings
         Cache::forget(self::TIMEZONE_KEY);
     }
 
+    public function maintenanceModeEnabled(): bool
+    {
+        return Cache::rememberForever(self::MAINTENANCE_MODE_KEY, function (): bool {
+            return Setting::query()
+                ->where('key', self::MAINTENANCE_MODE_KEY)
+                ->value('value') === '1';
+        });
+    }
+
+    public function maintenanceMessage(): string
+    {
+        $message = Cache::rememberForever(self::MAINTENANCE_MESSAGE_KEY, function (): string {
+            $value = Setting::query()->where('key', self::MAINTENANCE_MESSAGE_KEY)->value('value');
+
+            return $this->normalizeMaintenanceMessage($value);
+        });
+
+        return $this->maintenanceMessageOrDefault($message);
+    }
+
+    public function updateMaintenanceMode(bool $enabled, ?string $message): void
+    {
+        Setting::query()->updateOrCreate(
+            ['key' => self::MAINTENANCE_MODE_KEY],
+            ['value' => $enabled ? '1' : '0'],
+        );
+
+        Setting::query()->updateOrCreate(
+            ['key' => self::MAINTENANCE_MESSAGE_KEY],
+            ['value' => $this->normalizeMaintenanceMessage($message)],
+        );
+
+        Cache::forget(self::MAINTENANCE_MODE_KEY);
+        Cache::forget(self::MAINTENANCE_MESSAGE_KEY);
+    }
+
     /**
      * @return array<int, string>
      */
@@ -237,6 +279,18 @@ class ApplicationSettings
     private function normalizePriorityRequestDefaultMessage(?string $message): string
     {
         return mb_substr(trim((string) $message), 0, 500);
+    }
+
+    private function normalizeMaintenanceMessage(?string $message): string
+    {
+        return mb_substr(trim((string) $message), 0, 500);
+    }
+
+    private function maintenanceMessageOrDefault(?string $message): string
+    {
+        $message = $this->normalizeMaintenanceMessage($message);
+
+        return $message !== '' ? $message : __(self::DEFAULT_MAINTENANCE_MESSAGE);
     }
 
     private function normalizeTimezone(?string $timezone): string
