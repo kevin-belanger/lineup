@@ -37,10 +37,10 @@ The installer will:
 
 The installer is for fresh installations only. Do not use it to update an existing installation.
 
-The manual installation procedure is an advanced reference for troubleshooting or custom installations:
+Detailed production installation notes are available for the automated installer and for advanced troubleshooting:
 
 ```text
-docs/manual-installation.md
+docs/installation.md
 ```
 
 ## Updating LineUp

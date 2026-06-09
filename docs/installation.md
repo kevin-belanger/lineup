@@ -1,10 +1,12 @@
-# Manual production installation
+# Production installation
 
-This is the detailed manual installation procedure for LineUp. It is intended as an advanced reference for troubleshooting or custom installations.
+This document explains the production installation flow for LineUp.
 
-For most installations, use the automated installer from the main `README.md` instead.
+For normal production installations, use the automated installer from the main `README.md`.
 
-The automated installer installs Git, Docker, Docker Compose, and the other required packages automatically.
+The automated installer is the recommended installation method. It installs Git, Docker, Docker Compose, and the other required packages automatically.
+
+The command sections below are an advanced reference for troubleshooting or custom installations.
 
 ## Docker production stack
 
@@ -81,7 +83,7 @@ Stable versions are published GitHub Releases. Retrieve the latest published rel
 LATEST_TAG="$(
     curl -fsSL \
         -H "Accept: application/vnd.github+json" \
-        -H "User-Agent: LineUp-manual-install" \
+        -H "User-Agent: LineUp-installer" \
         https://api.github.com/repos/kevin-belanger/lineup/releases/latest \
         | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
         | head -n 1
@@ -298,7 +300,7 @@ The application should now be available at the `APP_URL` configured in `.env`.
 
 ## Notes
 
-Do not run `php artisan key:generate` manually inside the production container to create the application key.
+Do not run `php artisan key:generate` inside the production container to create the application key.
 
 In this Docker setup, the `.env` file belongs to the server and is not copied into the Docker image. The `APP_KEY` value should be generated directly in the server `.env` file before starting the containers.
 

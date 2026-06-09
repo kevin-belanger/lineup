@@ -85,6 +85,8 @@ APP_VERSION=MAIN abc1234
 
 The script does not delete Docker volumes. Application data, uploaded files, Redis data, Caddy data, and the MySQL database are preserved.
 
+Before switching versions, the script compares the currently installed commit with the target commit. If the target is not a descendant of the current commit, the script warns that the change may be a downgrade, branch switch, or rewritten history, and asks for confirmation before continuing. Database migrations are not rolled back automatically.
+
 You can verify the installed application version from the admin settings page.
 
 ## Important warnings

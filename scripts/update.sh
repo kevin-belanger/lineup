@@ -96,6 +96,32 @@ require_docker_compose_service() {
     fi
 }
 
+confirm_non_forward_update_if_needed() {
+    local target_commit="$1"
+    local current_commit
+    local confirmation
+
+    current_commit="$(git rev-parse HEAD)"
+
+    if git merge-base --is-ancestor "$current_commit" "$target_commit"; then
+        return
+    fi
+
+    echo
+    echo "Warning: the target commit is not a descendant of the currently installed commit."
+    echo "This may be a downgrade, branch switch, or rewritten Git history."
+    echo "Database migrations are not rolled back automatically."
+    echo "The database may not be compatible with the target version."
+    echo "Create a backup before continuing."
+    echo
+    read -r -p "Type CONTINUE to proceed: " confirmation
+
+    if [ "$confirmation" != "CONTINUE" ]; then
+        echo "Update cancelled."
+        exit 0
+    fi
+}
+
 escape_sed_replacement() {
     printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'
 }
@@ -132,6 +158,7 @@ run_application_update() {
 
 run_stable_update() {
     local latest_tag
+    local target_commit
 
     if ! command -v curl >/dev/null 2>&1; then
         echo "Error: required command not found: curl"
@@ -151,6 +178,8 @@ run_stable_update() {
         exit 1
     fi
 
+    target_commit="$(git rev-parse "$latest_tag^{commit}")"
+
     CURRENT_VERSION="$(grep '^APP_VERSION=' .env | cut -d '=' -f2- || true)"
     CURRENT_VERSION="${CURRENT_VERSION:-dev}"
 
@@ -166,6 +195,8 @@ run_stable_update() {
         echo "LineUp is already up to date."
         exit 0
     fi
+
+    confirm_non_forward_update_if_needed "$target_commit"
 
     echo "Updating to $latest_tag..."
     git checkout "$latest_tag"
@@ -188,6 +219,7 @@ run_branch_update() {
     local requested_commit="${2:-}"
     local remote_ref
     local commit_sha
+    local target_commit
     local installed_commit
     local installed_version
 
@@ -233,12 +265,20 @@ run_branch_update() {
             exit 1
         fi
 
-        echo "Updating to commit $commit_sha from origin/$branch..."
-        git checkout --detach "$commit_sha"
+        target_commit="$commit_sha"
+    else
+        target_commit="$(git rev-parse "$remote_ref^{commit}")"
+    fi
+
+    confirm_non_forward_update_if_needed "$target_commit"
+
+    if [ -n "$requested_commit" ]; then
+        echo "Updating to commit $target_commit from origin/$branch..."
     else
         echo "Updating to latest commit from origin/$branch..."
-        git checkout --detach "$remote_ref"
     fi
+
+    git checkout --detach "$target_commit"
 
     installed_commit="$(git rev-parse --short HEAD)"
     installed_version="$branch $installed_commit"
