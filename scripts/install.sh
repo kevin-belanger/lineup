@@ -162,7 +162,7 @@ fetch_latest_release_tag() {
         exit 1
     fi
 
-    release_tag="$(printf '%s\n' "$body" | sed -n 's/^[[:space:]]*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+    release_tag="$(printf '%s\n' "$body" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
 
     if [ -z "$release_tag" ]; then
         echo "Error: no published GitHub Release was found for LineUp." >&2

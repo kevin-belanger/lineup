@@ -83,7 +83,7 @@ LATEST_TAG="$(
         -H "Accept: application/vnd.github+json" \
         -H "User-Agent: LineUp-manual-install" \
         https://api.github.com/repos/kevin-belanger/lineup/releases/latest \
-        | sed -n 's/^[[:space:]]*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
         | head -n 1
 )"
 
