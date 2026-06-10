@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 
+COMPOSE_CMD=(docker compose --project-directory "$PROJECT_DIR" -f "$PROJECT_DIR/compose.yaml")
 APP_SERVICE="app"
 VERSION_TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+.*$'
 GITHUB_LATEST_RELEASE_URL="https://api.github.com/repos/kevin-belanger/lineup/releases/latest"
@@ -90,7 +91,7 @@ require_clean_worktree() {
 }
 
 require_docker_compose_service() {
-    if ! docker compose config --services | grep -qx "$APP_SERVICE"; then
+    if ! "${COMPOSE_CMD[@]}" config --services | grep -qx "$APP_SERVICE"; then
         echo "Error: Docker Compose service '$APP_SERVICE' was not found."
         exit 1
     fi
@@ -149,7 +150,7 @@ wait_for_laravel_database() {
     echo "Waiting for Laravel database connection..."
 
     for attempt in $(seq 1 "$max_attempts"); do
-        if docker compose exec -T "$APP_SERVICE" php artisan tinker --execute='DB::connection()->getPdo();' >/dev/null 2>&1; then
+        if "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan tinker --execute='DB::connection()->getPdo();' >/dev/null 2>&1; then
             echo "Laravel can connect to the database."
             return
         fi
@@ -167,18 +168,18 @@ run_application_update() {
     require_docker_compose_service
 
     echo "Building and recreating containers..."
-    docker compose up -d --build --force-recreate
+    "${COMPOSE_CMD[@]}" up -d --build --force-recreate
 
     wait_for_laravel_database
 
     echo "Running database migrations..."
-    docker compose exec -T "$APP_SERVICE" php artisan migrate --force
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan migrate --force
 
     echo "Refreshing Laravel cache..."
-    docker compose exec -T "$APP_SERVICE" php artisan optimize:clear
-    docker compose exec -T "$APP_SERVICE" php artisan config:cache
-    docker compose exec -T "$APP_SERVICE" php artisan route:cache
-    docker compose exec -T "$APP_SERVICE" php artisan view:cache
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan optimize:clear
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan config:cache
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan route:cache
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan view:cache
 }
 
 run_stable_update() {

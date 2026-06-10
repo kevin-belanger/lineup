@@ -40,6 +40,8 @@ Run the restore script from inside a backup directory:
 sudo ./restore.sh
 ```
 
+The restore script must be run with root privileges. It can also be run directly from a root session.
+
 By default, the script restores to the application path saved in `metadata.env`. If that value is missing, it falls back to `/opt/lineup`.
 
 You can also provide a target path:
@@ -48,7 +50,9 @@ You can also provide a target path:
 sudo ./restore.sh /opt/lineup
 ```
 
-The restore script requires only Bash, Git, Docker, and Docker Compose on the host.
+The restore script can be used on a fresh Ubuntu server or on a server that already has Docker and other applications. It installs or updates the required host packages, including Git, Docker, and Docker Compose, using Docker's official repository.
+
+If the server already runs other Docker applications, the restore only removes Docker volumes for the target LineUp Compose project. Installing or updating Docker may still briefly affect Docker while packages are updated.
 
 If the target path already exists and contains a `compose.yaml` file, the restore script stops the existing Docker Compose application and removes its volumes. The target directory is then moved aside to:
 

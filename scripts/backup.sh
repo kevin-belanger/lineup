@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 cd "$APP_DIR"
 
+COMPOSE_CMD=(docker compose --project-directory "$APP_DIR" -f "$APP_DIR/compose.yaml")
 APP_SERVICE="app"
 DB_SERVICE="mysql"
 BACKUP_ROOT="backups"
@@ -66,12 +67,12 @@ require_project_root() {
 }
 
 require_docker_compose() {
-    if ! docker compose version >/dev/null 2>&1; then
+    if ! "${COMPOSE_CMD[@]}" version >/dev/null 2>&1; then
         echo "Error: Docker Compose is not available."
         exit 1
     fi
 
-    if ! docker compose config >/dev/null 2>&1; then
+    if ! "${COMPOSE_CMD[@]}" config >/dev/null 2>&1; then
         echo "Error: Docker Compose configuration is invalid or unavailable."
         exit 1
     fi
@@ -80,7 +81,7 @@ require_docker_compose() {
 require_service() {
     local service="$1"
 
-    if ! docker compose config --services | grep -qx "$service"; then
+    if ! "${COMPOSE_CMD[@]}" config --services | grep -qx "$service"; then
         echo "Error: Docker Compose service '$service' was not found."
         exit 1
     fi
@@ -91,7 +92,7 @@ require_running_container() {
     local container_id
     local running_state
 
-    container_id="$(docker compose ps -q "$service" || true)"
+    container_id="$("${COMPOSE_CMD[@]}" ps -q "$service" || true)"
 
     if [ -z "$container_id" ]; then
         echo "Error: Docker Compose service '$service' is not running."
@@ -281,7 +282,7 @@ copy_untracked_files_ignored_by_git() {
 create_database_dump() {
     echo "Creating SQL dump..."
 
-    docker compose exec -T "$DB_SERVICE" sh -c \
+    "${COMPOSE_CMD[@]}" exec -T "$DB_SERVICE" sh -c \
         'mysqldump --protocol=tcp -h127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --triggers --default-character-set=utf8mb4 --add-drop-table --no-tablespaces "$MYSQL_DATABASE"' \
         > "$BACKUP_DIR/database.sql"
 }
@@ -293,14 +294,14 @@ copy_storage_from_container() {
 
     mkdir -p "$FILES_DIR/storage"
 
-    if docker compose exec -T "$APP_SERVICE" test -d /var/www/html/storage/app; then
-        docker compose cp "$APP_SERVICE:/var/www/html/storage/app" "$FILES_DIR/storage/"
+    if "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" test -d /var/www/html/storage/app; then
+        "${COMPOSE_CMD[@]}" cp "$APP_SERVICE:/var/www/html/storage/app" "$FILES_DIR/storage/"
     fi
 
     while IFS= read -r key_file; do
-        docker compose cp "$APP_SERVICE:/var/www/html/storage/$key_file" "$FILES_DIR/storage/"
+        "${COMPOSE_CMD[@]}" cp "$APP_SERVICE:/var/www/html/storage/$key_file" "$FILES_DIR/storage/"
     done < <(
-        docker compose exec -T "$APP_SERVICE" sh -c \
+        "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" sh -c \
             'find /var/www/html/storage -maxdepth 1 -type f -name "*.key" -printf "%f\n"'
     )
 }
