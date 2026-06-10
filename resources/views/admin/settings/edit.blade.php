@@ -3,28 +3,39 @@
         <x-admin-breadcrumb :current="__('Settings')" />
     </x-slot>
 
-    <div class="py-12">
-        <div class="mx-auto max-w-3xl sm:px-6 lg:px-8">
+    <div class="py-8">
+        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
             <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <form method="POST" action="{{ route('admin.settings.update') }}">
+                <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-4 bg-gray-50 p-4 sm:p-6">
                     @csrf
                     @method('PATCH')
                     @php
+                        $settingsSectionClass = 'rounded-lg border border-gray-200 bg-white p-5 shadow-sm sm:p-6';
+                        $settingsTitleClass = 'text-base font-semibold leading-6 text-gray-900';
+                        $settingsDescriptionClass = 'mt-1 text-sm leading-6 text-gray-600';
                         $requestTypeNames = collect(old('request_types', $requestTypes->pluck('name')->all()))
                             ->map(fn ($name) => (string) $name)
                             ->values()
                             ->all();
                     @endphp
 
-                    <section class="p-6">
-                        <x-input-label for="display_name" :value="__('Application name')" />
-                        <x-text-input id="display_name" name="display_name" type="text" class="mt-1 block w-full" :value="old('display_name', $displayName)" required maxlength="100" />
+                    <section class="{{ $settingsSectionClass }}">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Application name') }}</h3>
+                        </div>
+
+                        <x-input-label for="display_name" :value="__('Application name')" class="sr-only" />
+                        <x-text-input id="display_name" name="display_name" type="text" class="mt-4 block w-full" :value="old('display_name', $displayName)" required maxlength="100" />
                         <x-input-error :messages="$errors->get('display_name')" class="mt-2" />
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
-                        <x-input-label for="default_locale" :value="__('Default language')" />
-                        <select id="default_locale" name="default_locale" required class="mt-1 block w-48 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <section class="{{ $settingsSectionClass }}">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Default language') }}</h3>
+                        </div>
+
+                        <x-input-label for="default_locale" :value="__('Default language')" class="sr-only" />
+                        <select id="default_locale" name="default_locale" required class="mt-4 block w-48 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             @foreach ($availableLocales as $locale)
                                 <option value="{{ $locale }}" @selected(old('default_locale', $defaultLocale) === $locale)>
                                     {{ $locale }}
@@ -34,9 +45,9 @@
                         <x-input-error :messages="$errors->get('default_locale')" class="mt-2" />
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Application version') }}</h3>
+                    <section class="{{ $settingsSectionClass }}">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Application version') }}</h3>
                             <dl class="mt-3 space-y-2 text-sm">
                                 <div class="flex justify-between gap-4">
                                     <dt class="text-gray-600">{{ __('Installed version') }}</dt>
@@ -88,16 +99,18 @@
                         </div>
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
-                        <div>
-                            <x-input-label for="timezone" :value="__('Application time zone')" />
-                            <p class="mt-1 text-sm text-gray-600">
+                    <section class="{{ $settingsSectionClass }}">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Application time zone') }}</h3>
+                            <p class="{{ $settingsDescriptionClass }}">
                                 {{ __('This time zone is used for scheduled tasks, such as automatically cancelling requests at the end of the day.') }}
                             </p>
                         </div>
 
+                        <x-input-label for="timezone" :value="__('Application time zone')" class="sr-only" />
+
                         <div
-                            class="relative mt-3"
+                            class="relative mt-4"
                             x-data="{
                                 open: false,
                                 search: '',
@@ -189,10 +202,10 @@
                         @endif
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Maintenance mode') }}</h3>
-                            <p class="mt-1 text-sm text-gray-600">
+                    <section class="{{ $settingsSectionClass }}">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Maintenance mode') }}</h3>
+                            <p class="{{ $settingsDescriptionClass }}">
                                 {{ __('When enabled, only administrators can access the application.') }}
                             </p>
                         </div>
@@ -229,14 +242,15 @@
                         </div>
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
-                        <div>
-                            <x-input-label for="priority_request_default_message" :value="__('Default priority request message')" />
-                            <p class="mt-1 text-sm text-gray-600">
+                    <section class="{{ $settingsSectionClass }}">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Default priority request message') }}</h3>
+                            <p class="{{ $settingsDescriptionClass }}">
                                 {{ __('This message is automatically inserted when a teacher opens the priority request page.') }}
                             </p>
                         </div>
 
+                        <x-input-label for="priority_request_default_message" :value="__('Default priority request message')" class="sr-only" />
                         <textarea
                             id="priority_request_default_message"
                             name="priority_request_default_message"
@@ -247,7 +261,7 @@
                         <x-input-error :messages="$errors->get('priority_request_default_message')" class="mt-2" />
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
+                    <section class="{{ $settingsSectionClass }}">
                         <label for="reuse_course_url_tab" class="flex items-start gap-3">
                             <input type="hidden" name="reuse_course_url_tab" value="0">
                             <input
@@ -259,17 +273,17 @@
                                 class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                             >
                             <span>
-                                <span class="block text-sm font-medium text-gray-900">{{ __('Reuse the same tab when opening a course URL') }}</span>
-                                <span class="block text-sm text-gray-600">{{ __('When enabled, course links open in a named browser tab instead of creating a new tab for each click.') }}</span>
+                                <span class="block {{ $settingsTitleClass }}">{{ __('Reuse the same tab when opening a course URL') }}</span>
+                                <span class="block {{ $settingsDescriptionClass }}">{{ __('When enabled, course links open in a named browser tab instead of creating a new tab for each click.') }}</span>
                             </span>
                         </label>
                         <x-input-error :messages="$errors->get('reuse_course_url_tab')" class="mt-2" />
                     </section>
 
-                    <section class="border-t border-gray-200 p-6">
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Automatic request cancellation') }}</h3>
-                            <p class="mt-1 text-sm text-gray-600">
+                    <section class="{{ $settingsSectionClass }}">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Automatic request cancellation') }}</h3>
+                            <p class="{{ $settingsDescriptionClass }}">
                                 {{ __('At the selected time, all requests that are still waiting or taken will be cancelled automatically. Completed or already cancelled requests will not be changed.') }}
                             </p>
                         </div>
@@ -304,7 +318,7 @@
                     </section>
 
                     <section
-                        class="border-t border-gray-200 p-6"
+                        class="{{ $settingsSectionClass }}"
                         x-data="{
                             requestTypes: @js($requestTypeNames),
                             requestTypeRequired: @js((bool) old('request_type_required', $requestTypeRequired) && count($requestTypeNames) > 0),
@@ -320,9 +334,9 @@
                             },
                         }"
                     >
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900">{{ __('Request types') }}</h3>
-                            <p class="mt-1 text-sm text-gray-600">
+                        <div class="max-w-2xl">
+                            <h3 class="{{ $settingsTitleClass }}">{{ __('Request types') }}</h3>
+                            <p class="{{ $settingsDescriptionClass }}">
                                 {{ __('These choices appear in the student request form.') }}
                             </p>
                         </div>
@@ -397,7 +411,7 @@
                         @endforeach
                     </section>
 
-                    <section class="border-t border-gray-200 bg-gray-50 p-6">
+                    <section class="flex justify-end">
                         <x-primary-button>
                             {{ __('Save') }}
                         </x-primary-button>
