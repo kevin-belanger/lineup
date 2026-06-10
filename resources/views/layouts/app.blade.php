@@ -29,6 +29,25 @@
                 </header>
             @endisset
 
+            @auth
+                @php($settings = app(\App\Services\ApplicationSettings::class))
+
+                @if (Auth::user()->is_admin && $settings->maintenanceModeEnabled())
+                    <div class="bg-gray-100 px-4 pt-6 sm:px-6 lg:px-8">
+                        <div class="mx-auto flex max-w-7xl flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <span class="font-semibold">{{ __('Maintenance mode is enabled.') }}</span>
+                                <span>{{ __('Only administrators can currently access the application.') }}</span>
+                            </div>
+
+                            <a href="{{ route('admin.settings.edit') }}" class="font-medium text-amber-900 underline-offset-4 hover:underline">
+                                {{ __('Open settings') }}
+                            </a>
+                        </div>
+                    </div>
+                @endif
+            @endauth
+
             <!-- Page Content -->
             <main class="flex-1">
                 {{ $slot }}

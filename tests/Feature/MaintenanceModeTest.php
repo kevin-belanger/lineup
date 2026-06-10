@@ -44,7 +44,10 @@ class MaintenanceModeTest extends TestCase
             ->actingAs($admin)
             ->get(route('admin.settings.edit'))
             ->assertOk()
-            ->assertSee('Maintenance mode');
+            ->assertSee('Maintenance mode')
+            ->assertSee('Maintenance mode is enabled.')
+            ->assertSee('Only administrators can currently access the application.')
+            ->assertSee(route('admin.settings.edit'), false);
     }
 
     public function test_admin_can_disable_maintenance_mode(): void
@@ -65,6 +68,12 @@ class MaintenanceModeTest extends TestCase
 
         $this->assertFalse(app(ApplicationSettings::class)->maintenanceModeEnabled());
         $this->assertSame('0', Setting::query()->where('key', ApplicationSettings::MAINTENANCE_MODE_KEY)->value('value'));
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.settings.edit'))
+            ->assertOk()
+            ->assertDontSee('Maintenance mode is enabled.');
     }
 
     public function test_login_stays_accessible_in_maintenance_mode(): void
