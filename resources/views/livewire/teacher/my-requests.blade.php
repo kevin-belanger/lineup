@@ -8,7 +8,7 @@
     <div class="mb-4 flex items-start justify-between gap-3">
         <div>
             <div class="flex items-center gap-1.5">
-                <h3 class="text-lg font-semibold text-gray-950">{{ __('Active requests') }}</h3>
+                <h3 class="text-lg font-semibold text-gray-950">{{ __('Your active requests') }}</h3>
                 <details class="js-my-requests-settings-menu relative">
                     <summary
                         class="inline-flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-md text-gray-400 transition hover:bg-white hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -34,7 +34,7 @@
                     </div>
                 </details>
             </div>
-            <p class="text-sm text-gray-600">{{ __('Requests taken in this room.') }}</p>
+            <p class="text-sm text-gray-600">{{ __('Requests you are currently taking.') }}</p>
         </div>
         <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-800">{{ $requests->count() }}</span>
     </div>

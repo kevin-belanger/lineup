@@ -9,7 +9,7 @@
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
             <div>
                 <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-700">{{ __('Other teachers') }}</h3>
-                <p class="text-xs text-gray-500">{{ __('Requests assigned in this room, occasional management.') }}</p>
+                <p class="text-xs text-gray-500">{{ __('Requests taken by other teachers.') }}</p>
             </div>
 
             <div class="flex items-center gap-3">

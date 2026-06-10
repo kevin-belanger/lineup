@@ -44,7 +44,7 @@ class ActiveRequests extends Component
             ->exists();
 
         $this->toast('info', $exists
-            ? __('You cannot cancel a request while it is being handled by a teacher.')
+            ? __('You cannot cancel a request while it is being taken by a teacher.')
             : __('The request has been updated.'));
     }
 
