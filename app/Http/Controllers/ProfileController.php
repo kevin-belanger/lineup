@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Services\LocaleManager;
+use App\Services\UserSoftDeletionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -62,7 +63,7 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, UserSoftDeletionService $userSoftDeletionService): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
@@ -72,14 +73,7 @@ class ProfileController extends Controller
 
         Auth::logout();
 
-        $user->forceFill([
-            'email' => null,
-            'email_verified_at' => null,
-            'remember_token' => null,
-            'is_active' => false,
-        ])->save();
-
-        $user->delete();
+        $userSoftDeletionService->delete($user);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\SupportRequest;
+use App\Models\TeacherActiveRequestOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -128,6 +130,42 @@ class ProfileTest extends TestCase
         $this->assertGuest();
         $this->assertTrue($user->fresh()->trashed());
         $this->assertNull($user->fresh()->email);
+    }
+
+    public function test_teacher_profile_deletion_returns_active_assigned_requests_to_waiting(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+        TeacherActiveRequestOrder::query()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+            'sort_order' => 10,
+        ]);
+
+        $response = $this
+            ->actingAs($teacher)
+            ->delete('/profile', [
+                'password' => 'password',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/');
+
+        $supportRequest->refresh();
+
+        $this->assertGuest();
+        $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->status);
+        $this->assertNull($supportRequest->assigned_teacher_id);
+        $this->assertNull($supportRequest->assigned_at);
+        $this->assertDatabaseMissing('teacher_active_request_orders', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+        ]);
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void

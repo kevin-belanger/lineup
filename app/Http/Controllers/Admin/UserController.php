@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SupportRequest;
-use App\Models\TeacherActiveRequestOrder;
 use App\Models\User;
-use App\Services\SupportRequestChangeMarker;
+use App\Services\UserSoftDeletionService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -270,7 +267,7 @@ class UserController extends Controller
         return back()->with('status', $user->is_active ? __('Account activated.') : __('Account deactivated.'));
     }
 
-    public function destroy(Request $request, User $user, SupportRequestChangeMarker $changeMarker): RedirectResponse
+    public function destroy(Request $request, User $user, UserSoftDeletionService $userSoftDeletionService): RedirectResponse
     {
         if (! $request->user()->is_admin) {
             abort(403, __('Only administrators can delete users.'));
@@ -283,46 +280,7 @@ class UserController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($user, $changeMarker): void {
-            $classroomIds = SupportRequest::query()
-                ->where('assigned_teacher_id', $user->id)
-                ->whereIn('status', SupportRequest::teacherActiveStatuses())
-                ->whereNotNull('classroom_id')
-                ->pluck('classroom_id')
-                ->unique()
-                ->all();
-
-            SupportRequest::query()
-                ->where('assigned_teacher_id', $user->id)
-                ->whereIn('status', SupportRequest::teacherActiveStatuses())
-                ->update([
-                    'status' => SupportRequest::STATUS_WAITING,
-                    'assigned_teacher_id' => null,
-                    'assigned_at' => null,
-                    'updated_at' => now(),
-                ]);
-
-            TeacherActiveRequestOrder::query()
-                ->where('teacher_id', $user->id)
-                ->delete();
-
-            DB::table('sessions')
-                ->where('user_id', $user->id)
-                ->delete();
-
-            $user->forceFill([
-                'email' => null,
-                'email_verified_at' => null,
-                'remember_token' => null,
-                'is_active' => false,
-            ])->save();
-
-            $user->delete();
-
-            foreach ($classroomIds as $classroomId) {
-                $changeMarker->touch((int) $classroomId);
-            }
-        });
+        $userSoftDeletionService->delete($user);
 
         return back()->with('status', __('User deleted.'));
     }
