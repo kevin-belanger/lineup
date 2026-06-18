@@ -30,6 +30,9 @@
                         <x-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
                             {{ __('Priority requests') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('teacher.personal-notes.index')" :active="request()->routeIs('teacher.personal-notes.*')">
+                            {{ __('Personal notes') }}
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
@@ -127,6 +130,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
                     {{ __('Priority requests') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('teacher.personal-notes.index')" :active="request()->routeIs('teacher.personal-notes.*')">
+                    {{ __('Personal notes') }}
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->canManageAdministration())

@@ -2,12 +2,14 @@
 
 namespace App\Livewire\Teacher;
 
+use App\Models\PersonalNote;
 use App\Models\SupportRequest;
 use App\Services\CompletedSupportRequestRestorer;
 use App\Services\SupportRequestChangeMarker;
 use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -16,6 +18,9 @@ class MyRequests extends Component
     public int $refreshKey = 0;
 
     public bool $placeNewRequestsOnTop = true;
+
+    /** @var array<int, string> */
+    public array $noteBodies = [];
 
     public function mount(): void
     {
@@ -84,6 +89,42 @@ class MyRequests extends Component
         array_splice($orderedIds, max(0, min($position, count($orderedIds))), 0, [$supportRequestId]);
 
         $this->persistActiveRequestOrder($orderedIds, app(TeacherActiveRequestOrdering::class));
+    }
+
+    public function savePersonalNote(int $supportRequestId): void
+    {
+        $body = trim((string) ($this->noteBodies[$supportRequestId] ?? ''));
+
+        Validator::make(
+            ['noteBodies' => [$supportRequestId => $body]],
+            ['noteBodies.'.$supportRequestId => ['required', 'string', 'max:2000']],
+            [],
+            ['noteBodies.'.$supportRequestId => __('Note')],
+        )->validate();
+
+        $supportRequestExists = SupportRequest::query()
+            ->whereKey($supportRequestId)
+            ->where('classroom_id', $this->currentClassroomId())
+            ->where('assigned_teacher_id', auth()->id())
+            ->whereIn('status', SupportRequest::teacherActiveStatuses())
+            ->exists();
+
+        if (! $supportRequestExists) {
+            $this->toast('error', __('This request cannot be changed.'));
+
+            return;
+        }
+
+        PersonalNote::query()->create([
+            'teacher_id' => auth()->id(),
+            'support_request_id' => $supportRequestId,
+            'body' => $body,
+        ]);
+
+        unset($this->noteBodies[$supportRequestId]);
+
+        $this->dispatch('close-modal', 'personal-note-'.$supportRequestId);
+        $this->toast('success', __('Personal note saved.'));
     }
 
     #[On('teacher-requests-updated')]

@@ -75,6 +75,11 @@ class User extends Authenticatable
         return $this->hasMany(SupportRequest::class, 'assigned_teacher_id');
     }
 
+    public function personalNotes(): HasMany
+    {
+        return $this->hasMany(PersonalNote::class, 'teacher_id');
+    }
+
     public function hasRole(string $role): bool
     {
         return match ($role) {

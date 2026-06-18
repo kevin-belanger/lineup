@@ -109,19 +109,58 @@
                             </button>
                         </div>
 
-                        <div class="flex flex-wrap gap-2 text-sm">
-                            @if ($supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED)
-                                <span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">{{ __('Paused') }}</span>
-                            @endif
-                            <span
-                                class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100"
-                                data-live-duration
-                                data-live-duration-prefix="{{ __('Since') }}"
-                                data-started-at="{{ $durationStartedAt->toIso8601String() }}"
-                            >{{ __('Since') }} {{ $durationMinutes }} min</span>
+                        <div class="flex flex-wrap justify-end gap-2 text-sm">
+                            <div class="flex flex-wrap gap-2">
+                                @if ($supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED)
+                                    <span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">{{ __('Paused') }}</span>
+                                @endif
+                                <span
+                                    class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100"
+                                    data-live-duration
+                                    data-live-duration-prefix="{{ __('Since') }}"
+                                    data-started-at="{{ $durationStartedAt->toIso8601String() }}"
+                                >{{ __('Since') }} {{ $durationMinutes }} min</span>
+                            </div>
                         </div>
                     </div>
                 </article>
+                <x-modal name="personal-note-{{ $supportRequest->id }}" maxWidth="lg" focusable>
+                    <form
+                        wire:submit="savePersonalNote({{ $supportRequest->id }})"
+                        x-data
+                        x-on:open-modal.window="$event.detail === 'personal-note-{{ $supportRequest->id }}' && setTimeout(() => $refs.noteBody?.focus(), 150)"
+                        class="p-6"
+                    >
+                        <h3 class="text-lg font-semibold text-gray-900">{{ __('Personal note') }}</h3>
+                        <p class="mt-1 text-sm text-gray-600">{{ __('This note is private and visible only to you.') }}</p>
+
+                        <div class="mt-5">
+                            @include('livewire.teacher.partials.personal-note-request-summary', ['supportRequest' => $supportRequest])
+                        </div>
+
+                        <div class="mt-5">
+                            <x-input-label for="personal-note-{{ $supportRequest->id }}-body" :value="__('Note')" />
+                            <textarea
+                                id="personal-note-{{ $supportRequest->id }}-body"
+                                x-ref="noteBody"
+                                wire:model="noteBodies.{{ $supportRequest->id }}"
+                                rows="5"
+                                maxlength="2000"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            ></textarea>
+                            <x-input-error :messages="$errors->get('noteBodies.'.$supportRequest->id)" class="mt-2" />
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-3">
+                            <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                                {{ __('Cancel') }}
+                            </x-secondary-button>
+                            <x-primary-button wire:loading.attr="disabled" wire:target="savePersonalNote({{ $supportRequest->id }})">
+                                {{ __('Save note') }}
+                            </x-primary-button>
+                        </div>
+                    </form>
+                </x-modal>
                 @continue
             @endif
 
@@ -258,6 +297,16 @@
                                     >
                                         {{ __('Return to queue') }}
                                     </button>
+
+                                    <button
+                                        type="button"
+                                        x-data
+                                        x-on:click="$dispatch('open-modal', 'personal-note-{{ $supportRequest->id }}'); $el.closest('details')?.removeAttribute('open')"
+                                        class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                        role="menuitem"
+                                    >
+                                        {{ __('Create personal note') }}
+                                    </button>
                                 </div>
                             </details>
                         </div>
@@ -289,6 +338,43 @@
                     <div class="clear-both"></div>
                 </div>
             </article>
+            <x-modal name="personal-note-{{ $supportRequest->id }}" maxWidth="lg" focusable>
+                <form
+                    wire:submit="savePersonalNote({{ $supportRequest->id }})"
+                    x-data
+                    x-on:open-modal.window="$event.detail === 'personal-note-{{ $supportRequest->id }}' && setTimeout(() => $refs.noteBody?.focus(), 150)"
+                    class="p-6"
+                >
+                    <h3 class="text-lg font-semibold text-gray-900">{{ __('Personal note') }}</h3>
+                    <p class="mt-1 text-sm text-gray-600">{{ __('This note is private and visible only to you.') }}</p>
+
+                    <div class="mt-5">
+                        @include('livewire.teacher.partials.personal-note-request-summary', ['supportRequest' => $supportRequest])
+                    </div>
+
+                    <div class="mt-5">
+                        <x-input-label for="personal-note-{{ $supportRequest->id }}-body" :value="__('Note')" />
+                        <textarea
+                            id="personal-note-{{ $supportRequest->id }}-body"
+                            x-ref="noteBody"
+                            wire:model="noteBodies.{{ $supportRequest->id }}"
+                            rows="5"
+                            maxlength="2000"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        ></textarea>
+                        <x-input-error :messages="$errors->get('noteBodies.'.$supportRequest->id)" class="mt-2" />
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3">
+                        <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                            {{ __('Cancel') }}
+                        </x-secondary-button>
+                        <x-primary-button wire:loading.attr="disabled" wire:target="savePersonalNote({{ $supportRequest->id }})">
+                            {{ __('Save note') }}
+                        </x-primary-button>
+                    </div>
+                </form>
+            </x-modal>
         @empty
             <div class="rounded-lg border border-dashed border-indigo-200 bg-white/70 p-6 text-center text-sm text-gray-600">
                 {{ __('No active requests.') }}

@@ -5,10 +5,12 @@ namespace Tests\Feature\Teacher;
 use App\Livewire\Teacher\DashboardView;
 use App\Livewire\Teacher\MyRequests;
 use App\Livewire\Teacher\OtherTeacherRequests;
+use App\Livewire\Teacher\PersonalNotes;
 use App\Livewire\Teacher\RequestChangeWatcher;
 use App\Livewire\Teacher\RequestHistory;
 use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
+use App\Models\PersonalNote;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\TeacherActiveRequestOrder;
@@ -1000,6 +1002,158 @@ class TeacherSpaceTest extends TestCase
         ]);
         $this->assertDatabaseMissing('teacher_active_request_orders', [
             'support_request_id' => $managedByOtherTeacher->id,
+        ]);
+    }
+
+    public function test_teacher_can_create_personal_note_from_active_request(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $student = User::factory()->create([
+            'first_name' => 'Camille',
+            'last_name' => 'Tremblay',
+        ]);
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Francais',
+            'url' => 'https://moodle.example.test/course?table=[table]&section=[section]',
+        ]);
+        $supportRequest = SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+            'table_number' => '14',
+            'moodle_tile_number' => 6,
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->assertSee('Create personal note')
+            ->assertSee('Camille Tremblay')
+            ->assertSee('Francais - Tile 6')
+            ->assertSee('https://moodle.example.test/course?table=14&amp;section=6', false)
+            ->assertSee('aria-label="Open the subject link"', false)
+            ->set('noteBodies.'.$supportRequest->id, 'Verifier le suivi demain.')
+            ->call('savePersonalNote', $supportRequest->id);
+
+        $this->assertDatabaseHas('personal_notes', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+            'body' => 'Verifier le suivi demain.',
+            'archived_at' => null,
+        ]);
+    }
+
+    public function test_teacher_cannot_create_personal_note_for_another_teacher_request(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $otherTeacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(MyRequests::class)
+            ->set('noteBodies.'.$supportRequest->id, 'Note impossible.')
+            ->call('savePersonalNote', $supportRequest->id);
+
+        $this->assertDatabaseMissing('personal_notes', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+        ]);
+    }
+
+    public function test_teacher_personal_notes_page_lists_only_own_unarchived_notes(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create(['name' => 'Local 305']);
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Mathematiques',
+            'url' => 'https://moodle.example.test/course?table=[table]&section=[section]',
+        ]);
+        $supportRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+            'table_number' => '12',
+            'moodle_tile_number' => 7,
+        ]);
+        $ownNote = PersonalNote::factory()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+            'body' => 'Relancer pour le laboratoire.',
+        ]);
+        PersonalNote::factory()->archived()->create([
+            'teacher_id' => $teacher->id,
+            'body' => 'Note archivee.',
+        ]);
+        PersonalNote::factory()->archived()->create([
+            'teacher_id' => $teacher->id,
+            'support_request_id' => $supportRequest->id,
+            'body' => 'Archive avec demande.',
+        ]);
+        PersonalNote::factory()->create([
+            'teacher_id' => $otherTeacher->id,
+            'body' => 'Note autre enseignant.',
+        ]);
+
+        $this
+            ->actingAs($teacher)
+            ->get(route('teacher.personal-notes.index'))
+            ->assertOk()
+            ->assertSee('Personal notes')
+            ->assertSee('teacher.personal-notes', false);
+
+        Livewire::actingAs($teacher)
+            ->test(PersonalNotes::class)
+            ->assertSee('Relancer pour le laboratoire.')
+            ->assertSee('Request linked to this note')
+            ->assertSee('Local 305')
+            ->assertSee('Mathematiques - Tile 7')
+            ->assertSee('https://moodle.example.test/course?table=12&amp;section=7', false)
+            ->assertSee('aria-label="Open the subject link"', false)
+            ->assertSee('Table')
+            ->assertSee('Archived notes')
+            ->assertSee('Note archivee.')
+            ->assertSee('Archive avec demande.')
+            ->assertDontSee('Note autre enseignant.')
+            ->call('archive', $ownNote->id);
+
+        $this->assertNotNull($ownNote->refresh()->archived_at);
+    }
+
+    public function test_teacher_can_create_standalone_personal_note(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        Livewire::actingAs($teacher)
+            ->test(PersonalNotes::class)
+            ->assertSee('Add note')
+            ->set('body', 'Preparer un rappel general.')
+            ->call('create')
+            ->assertSet('body', '')
+            ->assertDispatched('close-modal');
+
+        $this->assertDatabaseHas('personal_notes', [
+            'teacher_id' => $teacher->id,
+            'support_request_id' => null,
+            'body' => 'Preparer un rappel general.',
+            'archived_at' => null,
         ]);
     }
 

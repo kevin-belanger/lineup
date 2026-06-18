@@ -90,6 +90,8 @@ class NavigationTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertSeeText('Personal notes')
+            ->assertSee(route('teacher.personal-notes.index'), false)
             ->assertSeeText('Administration')
             ->assertSeeText('Users')
             ->assertSeeText('Rooms')
