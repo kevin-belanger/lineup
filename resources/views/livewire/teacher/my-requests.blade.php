@@ -281,10 +281,13 @@
                                             wire:click="pause({{ $supportRequest->id }})"
                                             wire:loading.attr="disabled"
                                             wire:target="pause({{ $supportRequest->id }})"
-                                            class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
+                                            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
                                             role="menuitem"
                                         >
-                                            {{ __('Pause') }}
+                                            <svg class="h-4 w-4 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 5.25v13.5m7.5-13.5v13.5" />
+                                            </svg>
+                                            <span>{{ __('Pause') }}</span>
                                         </button>
                                     @endif
 
@@ -293,20 +296,26 @@
                                         wire:click="unassign({{ $supportRequest->id }})"
                                         wire:loading.attr="disabled"
                                         wire:target="unassign({{ $supportRequest->id }})"
-                                        class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
+                                        class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none disabled:opacity-50"
                                         role="menuitem"
                                     >
-                                        {{ __('Return to queue') }}
+                                        <svg class="h-4 w-4 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3.75h10.5M6.75 20.25h10.5M8.25 3.75c0 4.5 7.5 4.5 7.5 8.25s-7.5 3.75-7.5 8.25m7.5-16.5c0 4.5-7.5 4.5-7.5 8.25s7.5 3.75 7.5 8.25" />
+                                        </svg>
+                                        <span>{{ __('Return to queue') }}</span>
                                     </button>
 
                                     <button
                                         type="button"
                                         x-data
                                         x-on:click="$dispatch('open-modal', 'personal-note-{{ $supportRequest->id }}'); $el.closest('details')?.removeAttribute('open')"
-                                        class="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                        class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
                                         role="menuitem"
                                     >
-                                        {{ __('Create personal note') }}
+                                        <svg class="h-4 w-4 shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487 18.55 2.8a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14.25v4.5A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H9" />
+                                        </svg>
+                                        <span>{{ __('Create personal note') }}</span>
                                     </button>
                                 </div>
                             </details>
