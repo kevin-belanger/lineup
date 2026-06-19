@@ -43,6 +43,7 @@
         wire:key="my-requests-list-{{ $refreshKey }}"
         wire:sort="moveRequestToPosition"
         wire:sort:config="{ animation: 150 }"
+        data-active-requests-list
         class="space-y-3"
     >
         @forelse ($requests as $supportRequest)
@@ -385,6 +386,80 @@
 
 @once
     <script>
+        (function () {
+            if (window.__lineupActiveRequestHighlightInstalled) {
+                return;
+            }
+
+            window.__lineupActiveRequestHighlightInstalled = true;
+            window.__lineupKnownActiveRequestIds = window.__lineupKnownActiveRequestIds || new Set();
+            window.__lineupActiveRequestIdsInitialized = window.__lineupActiveRequestIdsInitialized || false;
+            let scanScheduled = false;
+
+            function highlightActiveRequestCard(card) {
+                card.querySelectorAll(':scope > .lineup-active-request-highlight-overlay').forEach(function (overlay) {
+                    overlay.remove();
+                });
+
+                const overlay = document.createElement('span');
+
+                overlay.className = 'lineup-active-request-highlight-overlay';
+                overlay.setAttribute('aria-hidden', 'true');
+                card.classList.add('lineup-active-request-highlight');
+                card.appendChild(overlay);
+
+                overlay.addEventListener('animationend', function () {
+                    overlay.remove();
+                    card.classList.remove('lineup-active-request-highlight');
+                }, { once: true });
+            }
+
+            function scanActiveRequestCards() {
+                const cards = document.querySelectorAll('[data-active-requests-list] [data-active-request-card][data-request-id]');
+                const currentIds = new Set();
+
+                cards.forEach(function (card) {
+                    const requestId = card.dataset.requestId;
+
+                    if (!requestId) {
+                        return;
+                    }
+
+                    currentIds.add(requestId);
+
+                    if (window.__lineupActiveRequestIdsInitialized && !window.__lineupKnownActiveRequestIds.has(requestId)) {
+                        highlightActiveRequestCard(card);
+                    }
+                });
+
+                window.__lineupKnownActiveRequestIds = currentIds;
+                window.__lineupActiveRequestIdsInitialized = true;
+            }
+
+            function scheduleScan() {
+                if (scanScheduled) {
+                    return;
+                }
+
+                scanScheduled = true;
+                window.requestAnimationFrame(function () {
+                    scanScheduled = false;
+                    scanActiveRequestCards();
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', scanActiveRequestCards, { once: true });
+            } else {
+                scanActiveRequestCards();
+            }
+
+            new MutationObserver(scheduleScan).observe(document.body, {
+                childList: true,
+                subtree: true,
+            });
+        })();
+
         document.addEventListener('click', function (event) {
             document.querySelectorAll('.js-my-requests-action-menu[open], .js-my-requests-settings-menu[open]').forEach(function (menu) {
                 if (!menu.contains(event.target)) {
