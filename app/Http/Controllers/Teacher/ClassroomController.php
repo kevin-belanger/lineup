@@ -14,13 +14,20 @@ class ClassroomController extends Controller
 {
     public function edit(Request $request): View
     {
+        $activeRequests = $this->assignedActiveRequests($request)
+            ->with(['classroom:id,name', 'subject:id,name,url'])
+            ->get();
+
+        $request->session()->forget('current_classroom_id');
+
         return view('teacher.classroom', [
             'classrooms' => Classroom::query()
                 ->where('is_active', true)
+                ->with('openingHours')
                 ->orderBy('name')
-                ->get(),
-            'currentClassroomId' => $request->session()->get('current_classroom_id'),
-            'activeRequests' => $this->assignedActiveRequests($request)->with(['classroom:id,name', 'subject:id,name,url'])->get(),
+                ->get(['id', 'name', 'description']),
+            'currentClassroomId' => null,
+            'activeRequests' => $activeRequests,
         ]);
     }
 

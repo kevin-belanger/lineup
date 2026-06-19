@@ -3,26 +3,70 @@
         <x-teacher-breadcrumb />
     </x-slot>
 
-    <div class="py-12">
-        <div class="mx-auto max-w-3xl sm:px-6 lg:px-8">
-            <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                <div class="space-y-6 p-6 text-gray-900">
-                    <form method="POST" action="{{ route('teacher.classroom.update') }}" class="space-y-4">
+    <div class="py-8">
+        <div class="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
+            <section class="bg-white p-6 shadow-sm sm:rounded-lg">
+                <div class="space-y-6 text-gray-900">
+                    <form
+                        method="POST"
+                        action="{{ route('teacher.classroom.update') }}"
+                        class="space-y-4"
+                        x-data="{ selectedClassroomId: @js((string) old('classroom_id', $currentClassroomId)) }"
+                    >
                         @csrf
                         @method('PUT')
 
-                        <div>
-                            <x-input-label for="classroom_id" :value="__('Room')" />
-                            <select id="classroom_id" name="classroom_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                <option value="">{{ __('Select a room') }}</option>
-                                @foreach ($classrooms as $classroom)
-                                    <option value="{{ $classroom->id }}" @selected((int) old('classroom_id', $currentClassroomId) === $classroom->id)>
-                                        {{ $classroom->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
-                        </div>
+                        @if ($classrooms->isEmpty())
+                            <p class="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                                {{ __('No room is currently available.') }}
+                            </p>
+                        @else
+                            <div>
+                                <x-input-label :value="__('Choose a room')" />
+
+                                <div class="mt-2 space-y-2">
+                                    @foreach ($classrooms as $classroom)
+                                        @php
+                                            $selected = (int) old('classroom_id', $currentClassroomId) === $classroom->id;
+                                        @endphp
+
+                                        <div class="relative rounded-md border border-gray-200 bg-white shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/40 hover:shadow-sm">
+                                            <input
+                                                id="classroom_id_{{ $classroom->id }}"
+                                                type="radio"
+                                                name="classroom_id"
+                                                value="{{ $classroom->id }}"
+                                                class="peer sr-only"
+                                                required
+                                                @checked($selected)
+                                                x-model="selectedClassroomId"
+                                                x-on:change="$root.requestSubmit()"
+                                            >
+
+                                            <label
+                                                for="classroom_id_{{ $classroom->id }}"
+                                                class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-4 py-3 pr-12 ring-inset transition peer-checked:ring-2 peer-checked:ring-indigo-500"
+                                            >
+                                                <span class="min-w-0">
+                                                    <span class="block truncate text-sm font-medium text-gray-900">{{ $classroom->name }}</span>
+                                                    @if ($classroom->description)
+                                                        <span class="mt-0.5 block truncate text-xs text-gray-500">{{ $classroom->description }}</span>
+                                                    @endif
+                                                </span>
+
+                                                <span class="h-2 w-2 shrink-0 rounded-full bg-indigo-600 opacity-0 transition peer-checked:opacity-100"></span>
+                                            </label>
+
+                                            <span class="absolute right-3 top-1/2 z-10 -translate-y-1/2">
+                                                <x-classroom-opening-status :classroom="$classroom" />
+                                            </span>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
+                            </div>
+                        @endif
 
                         @if ($activeRequests->isNotEmpty())
                             <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -43,11 +87,9 @@
                                 </ul>
                             </div>
                         @endif
-
-                        <x-primary-button>{{ __('Continue') }}</x-primary-button>
                     </form>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 </x-app-layout>

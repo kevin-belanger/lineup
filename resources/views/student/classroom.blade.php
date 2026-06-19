@@ -21,7 +21,7 @@
                         </p>
                     @else
                         <div>
-                            <x-input-label :value="__('Room')" />
+                            <x-input-label :value="__('Choose a room')" />
 
                             <div class="mt-2 space-y-2">
                                 @foreach ($classrooms as $classroom)

@@ -47,6 +47,28 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('Teacher');
     }
 
+    public function test_teacher_classroom_choice_uses_clickable_room_cards(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create([
+            'name' => 'Local 203',
+            'description' => 'Aile B',
+        ]);
+
+        $this->actingAs($teacher)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('teacher.classroom.edit'))
+            ->assertOk()
+            ->assertSessionMissing('current_classroom_id')
+            ->assertSee('Choose a room')
+            ->assertSee('Local 203')
+            ->assertSee('Aile B')
+            ->assertSee('type="radio"', false)
+            ->assertSee('x-on:change="$root.requestSubmit()"', false)
+            ->assertDontSee('checked="checked"', false)
+            ->assertDontSee('Continue');
+    }
+
     public function test_teacher_can_choose_current_classroom(): void
     {
         $teacher = User::factory()->teacher()->create();
