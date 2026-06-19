@@ -13,6 +13,7 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:student'])
 
         Route::get('/classroom', [ClassroomController::class, 'edit'])->name('classroom.edit');
         Route::put('/classroom', [ClassroomController::class, 'update'])->name('classroom.update');
+        Route::post('/classroom/leave', [ClassroomController::class, 'leave'])->name('classroom.leave');
 
         Route::get('/requests/create', [SupportRequestController::class, 'create'])->name('requests.create');
         Route::post('/requests', [SupportRequestController::class, 'store'])->name('requests.store');

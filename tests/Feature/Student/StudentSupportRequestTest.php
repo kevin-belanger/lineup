@@ -4,12 +4,14 @@ namespace Tests\Feature\Student;
 
 use App\Livewire\Student\ActiveRequests;
 use App\Models\Classroom;
+use App\Models\ClassroomOpeningHour;
 use App\Models\RequestType;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\ApplicationSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -53,6 +55,24 @@ class StudentSupportRequestTest extends TestCase
             ->assertOk()
             ->assertSee('Breadcrumb')
             ->assertSee('Student');
+    }
+
+    public function test_student_classroom_choice_does_not_preselect_current_classroom(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'is_active' => true,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.classroom.edit'))
+            ->assertOk()
+            ->assertSee('name="classroom_id"', false)
+            ->assertDontSee('checked="checked"', false);
     }
 
     public function test_student_classroom_choice_shows_only_active_classrooms_with_active_subjects(): void
@@ -152,64 +172,80 @@ class StudentSupportRequestTest extends TestCase
             ->assertOk()
             ->assertSee('Student')
             ->assertSee($classroom->name)
-            ->assertSee(route('student.classroom.edit'), false);
+            ->assertSee(route('student.classroom.leave'), false);
     }
 
-    public function test_student_must_confirm_classroom_change_when_active_request_exists(): void
+    public function test_student_dashboard_shows_confirmation_before_leaving_room_with_waiting_request(): void
     {
         $student = User::factory()->create();
-        $currentClassroom = Classroom::factory()->create();
-        $newClassroom = Classroom::factory()->create();
-        Subject::factory()->create([
-            'classroom_id' => $newClassroom->id,
-        ]);
+        $classroom = Classroom::factory()->create();
         $supportRequest = SupportRequest::factory()->create([
             'student_id' => $student->id,
-            'classroom_id' => $currentClassroom->id,
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.dashboard'))
+            ->assertOk()
+            ->assertSeeText('Do you want to cancel your active request and change rooms?')
+            ->assertSee(route('student.classroom.leave'), false);
+
+        $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->refresh()->status);
+    }
+
+    public function test_student_leaving_room_cancels_waiting_requests_and_clears_current_classroom(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
             'status' => SupportRequest::STATUS_WAITING,
         ]);
 
         $response = $this
             ->actingAs($student)
-            ->withSession(['current_classroom_id' => $currentClassroom->id])
-            ->put(route('student.classroom.update'), [
-                'classroom_id' => $newClassroom->id,
-            ]);
-
-        $response->assertSessionHasErrors('confirm_cancel_active_requests');
-        $this->assertSame(SupportRequest::STATUS_WAITING, $supportRequest->refresh()->status);
-    }
-
-    public function test_confirmed_classroom_change_cancels_active_requests(): void
-    {
-        $student = User::factory()->create();
-        $currentClassroom = Classroom::factory()->create();
-        $newClassroom = Classroom::factory()->create();
-        Subject::factory()->create([
-            'classroom_id' => $newClassroom->id,
-        ]);
-        $supportRequest = SupportRequest::factory()->paused()->create([
-            'student_id' => $student->id,
-            'classroom_id' => $currentClassroom->id,
-        ]);
-
-        $response = $this
-            ->actingAs($student)
-            ->withSession(['current_classroom_id' => $currentClassroom->id])
-            ->put(route('student.classroom.update'), [
-                'classroom_id' => $newClassroom->id,
-                'confirm_cancel_active_requests' => '1',
-            ]);
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->post(route('student.classroom.leave'));
 
         $response
-            ->assertRedirect(route('student.dashboard'))
-            ->assertSessionHas('current_classroom_id', $newClassroom->id);
+            ->assertRedirect(route('student.classroom.edit'))
+            ->assertSessionMissing('current_classroom_id');
 
         $supportRequest->refresh();
 
         $this->assertSame(SupportRequest::STATUS_CANCELLED, $supportRequest->status);
         $this->assertNull($supportRequest->assigned_teacher_id);
         $this->assertNull($supportRequest->assigned_at);
+    }
+
+    public function test_student_cannot_leave_room_when_request_is_handled_by_teacher(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $supportRequest = SupportRequest::factory()->paused()->create([
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
+        ]);
+
+        $response = $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->from(route('student.dashboard'))
+            ->post(route('student.classroom.leave'));
+
+        $response
+            ->assertRedirect(route('student.dashboard'))
+            ->assertSessionHas('current_classroom_id', $classroom->id)
+            ->assertSessionHas('toast', [
+                'type' => 'warning',
+                'message' => 'You cannot leave this room because a request is being handled by a teacher.',
+            ]);
+
+        $this->assertSame(SupportRequest::STATUS_PAUSED, $supportRequest->refresh()->status);
     }
 
     public function test_student_can_create_support_request_with_current_classroom(): void
@@ -246,6 +282,53 @@ class StudentSupportRequestTest extends TestCase
             'request_type' => 'Validation',
             'status' => SupportRequest::STATUS_WAITING,
         ]);
+    }
+
+    public function test_student_cannot_create_request_when_current_classroom_is_closed(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-15 10:00:00', 'UTC'));
+
+        try {
+            $student = User::factory()->create();
+            $classroom = Classroom::factory()->create();
+            $subject = Subject::factory()->create([
+                'classroom_id' => $classroom->id,
+            ]);
+            ClassroomOpeningHour::factory()->create([
+                'classroom_id' => $classroom->id,
+                'days' => [1],
+                'opens_at' => '08:00',
+                'closes_at' => '09:00',
+            ]);
+
+            $this
+                ->actingAs($student)
+                ->withSession(['current_classroom_id' => $classroom->id])
+                ->get(route('student.requests.create'))
+                ->assertRedirect(route('student.dashboard'))
+                ->assertSessionHas('toast', [
+                    'type' => 'warning',
+                    'message' => 'Unable to create a request right now because the room is closed.',
+                ]);
+
+            $this
+                ->actingAs($student)
+                ->withSession(['current_classroom_id' => $classroom->id])
+                ->post(route('student.requests.store'), [
+                    'subject_id' => $subject->id,
+                    'moodle_tile_number' => 42,
+                    'table_number' => '8',
+                ])
+                ->assertRedirect(route('student.dashboard'))
+                ->assertSessionHas('toast', [
+                    'type' => 'warning',
+                    'message' => 'Unable to create a request right now because the room is closed.',
+                ]);
+
+            $this->assertDatabaseCount('support_requests', 0);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_student_subject_choices_use_selected_classroom_associations(): void

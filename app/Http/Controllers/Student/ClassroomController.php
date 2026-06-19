@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Classroom;
 use App\Models\SupportRequest;
 use App\Services\SupportRequestChangeMarker;
-use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,40 +17,25 @@ class ClassroomController extends Controller
     {
         return view('student.classroom', [
             'classrooms' => $this->availableClassrooms()
+                ->with('openingHours')
                 ->get(['id', 'name', 'description']),
-            'currentClassroomId' => $request->session()->get('current_classroom_id'),
-            'activeRequests' => $this->activeRequests($request)->with(['classroom:id,name', 'subject:id,name,url'])->get(),
+            'currentClassroomId' => null,
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function leave(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'classroom_id' => ['required', 'integer', Rule::exists('classrooms', 'id')->where('is_active', true)],
-            'confirm_cancel_active_requests' => ['nullable', 'boolean'],
-        ]);
-
-        $newClassroomId = (int) $validated['classroom_id'];
-
-        if (! $this->availableClassrooms()->whereKey($newClassroomId)->exists()) {
-            return back()->withErrors([
-                'classroom_id' => __('The selected room is not available.'),
-            ])->withInput();
-        }
-
         $activeRequests = $this->activeRequests($request)->get();
-        $hasActiveRequestsInAnotherClassroom = $activeRequests
-            ->contains(fn (SupportRequest $supportRequest) => $supportRequest->classroom_id !== $newClassroomId);
 
-        if ($hasActiveRequestsInAnotherClassroom && ! $request->boolean('confirm_cancel_active_requests')) {
-            return back()->withErrors([
-                'confirm_cancel_active_requests' => __('Please confirm the room change to cancel active requests.'),
-            ])->withInput();
+        if ($activeRequests->whereIn('status', SupportRequest::teacherActiveStatuses())->isNotEmpty()) {
+            return back()->with('toast', [
+                'type' => 'warning',
+                'message' => __('You cannot leave this room because a request is being handled by a teacher.'),
+            ]);
         }
 
-        if ($hasActiveRequestsInAnotherClassroom) {
+        if ($activeRequests->isNotEmpty()) {
             $changedClassroomIds = $activeRequests->pluck('classroom_id')->filter()->unique();
-            $changedRequestIds = $activeRequests->pluck('id');
 
             $this->activeRequests($request)->update([
                 'status' => SupportRequest::STATUS_CANCELLED,
@@ -61,10 +45,27 @@ class ClassroomController extends Controller
                 'cancel_reason' => SupportRequest::CANCEL_REASON_CHANGED_CLASSROOM,
             ]);
 
-            app(TeacherActiveRequestOrdering::class)->removeForRequests($changedRequestIds);
-
             $changeMarker = app(SupportRequestChangeMarker::class);
             $changedClassroomIds->each(fn (int $classroomId) => $changeMarker->touch($classroomId));
+        }
+
+        $request->session()->forget('current_classroom_id');
+
+        return redirect()->route('student.classroom.edit');
+    }
+
+    public function update(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'classroom_id' => ['required', 'integer', Rule::exists('classrooms', 'id')->where('is_active', true)],
+        ]);
+
+        $newClassroomId = (int) $validated['classroom_id'];
+
+        if (! $this->availableClassrooms()->whereKey($newClassroomId)->exists()) {
+            return back()->withErrors([
+                'classroom_id' => __('The selected room is not available.'),
+            ])->withInput();
         }
 
         $request->session()->put('current_classroom_id', $newClassroomId);

@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Livewire\Teacher\MyRequests;
 use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
+use App\Models\ClassroomOpeningHour;
 use App\Models\PublicDisplaySlug;
 use App\Models\Subject;
 use App\Models\SupportRequest;
@@ -45,6 +46,51 @@ class ReferenceDataManagementTest extends TestCase
 
         $this->assertSame('Local 302', $classroom->name);
         $this->assertFalse($classroom->is_active);
+    }
+
+    public function test_admin_can_manage_classroom_opening_hours(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create([
+            'name' => 'Local 305',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
+            'name' => $classroom->name,
+            'description' => $classroom->description,
+            'is_active' => '1',
+            'opening_hours_present' => '1',
+            'opening_hours' => [
+                [
+                    'days' => ['1', '2', '3', '4', '5'],
+                    'opens_at' => '08:00',
+                    'closes_at' => '11:00',
+                ],
+                [
+                    'days' => ['1', '3'],
+                    'opens_at' => '13:00',
+                    'closes_at' => '15:00',
+                ],
+            ],
+        ])->assertRedirect();
+
+        $openingHours = $classroom->refresh()->openingHours;
+
+        $this->assertCount(2, $openingHours);
+        $this->assertSame([1, 2, 3, 4, 5], $openingHours[0]->days);
+        $this->assertSame('08:00', substr((string) $openingHours[0]->opens_at, 0, 5));
+        $this->assertSame('11:00', substr((string) $openingHours[0]->closes_at, 0, 5));
+        $this->assertSame([1, 3], $openingHours[1]->days);
+
+        $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
+            'name' => $classroom->name,
+            'description' => $classroom->description,
+            'is_active' => '1',
+            'opening_hours_present' => '1',
+        ])->assertRedirect();
+
+        $this->assertSame(0, ClassroomOpeningHour::query()->where('classroom_id', $classroom->id)->count());
     }
 
     public function test_admin_can_enable_disable_and_regenerate_classroom_public_page(): void

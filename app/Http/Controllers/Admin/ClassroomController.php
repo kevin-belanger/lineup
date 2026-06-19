@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
+use App\Models\ClassroomOpeningHour;
 use App\Models\PublicDisplaySlug;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -29,6 +31,7 @@ class ClassroomController extends Controller
 
         return view('admin.classrooms.index', [
             'classrooms' => Classroom::query()
+                ->with('openingHours')
                 ->when($filters['search'] !== '', function ($query) use ($filters): void {
                     $query->where(function ($query) use ($filters): void {
                         $query
@@ -74,7 +77,10 @@ class ClassroomController extends Controller
     public function update(Request $request, Classroom $classroom): RedirectResponse
     {
         try {
-            $classroom->update($this->validatedData($request, $classroom));
+            DB::transaction(function () use ($request, $classroom): void {
+                $classroom->update($this->validatedData($request, $classroom));
+                $this->syncOpeningHours($request, $classroom);
+            });
         } catch (UniqueConstraintViolationException) {
             $this->validationToastResponse($request, __('A room with this name already exists.'));
         }
@@ -169,5 +175,59 @@ class ClassroomController extends Controller
         }
 
         $redirect->throwResponse();
+    }
+
+    private function syncOpeningHours(Request $request, Classroom $classroom): void
+    {
+        if (! $request->boolean('opening_hours_present')) {
+            return;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'opening_hours' => ['nullable', 'array'],
+            'opening_hours.*.days' => ['required', 'array', 'min:1'],
+            'opening_hours.*.days.*' => ['integer', Rule::in(array_keys(ClassroomOpeningHour::DAYS))],
+            'opening_hours.*.opens_at' => ['required', 'date_format:H:i'],
+            'opening_hours.*.closes_at' => ['required', 'date_format:H:i'],
+        ], [
+            'opening_hours.*.days.required' => __('Choose at least one day for each opening period.'),
+            'opening_hours.*.days.min' => __('Choose at least one day for each opening period.'),
+            'opening_hours.*.opens_at.required' => __('Choose an opening time for each opening period.'),
+            'opening_hours.*.closes_at.required' => __('Choose a closing time for each opening period.'),
+        ]);
+
+        $validator->after(function ($validator) use ($request): void {
+            foreach ($request->input('opening_hours', []) as $index => $openingHour) {
+                $opensAt = $openingHour['opens_at'] ?? null;
+                $closesAt = $openingHour['closes_at'] ?? null;
+
+                if (is_string($opensAt) && is_string($closesAt) && $opensAt >= $closesAt) {
+                    $validator->errors()->add(
+                        "opening_hours.$index.closes_at",
+                        __('The closing time must be after the opening time.'),
+                    );
+                }
+            }
+        });
+
+        if ($validator->fails()) {
+            $this->validationToastResponse($request, $validator->errors()->first());
+        }
+
+        $classroom->openingHours()->delete();
+
+        foreach (array_values($validator->validated()['opening_hours'] ?? []) as $index => $openingHour) {
+            $classroom->openingHours()->create([
+                'days' => collect($openingHour['days'])
+                    ->map(fn ($day): int => (int) $day)
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->all(),
+                'opens_at' => $openingHour['opens_at'],
+                'closes_at' => $openingHour['closes_at'],
+                'sort_order' => $index,
+            ]);
+        }
     }
 }

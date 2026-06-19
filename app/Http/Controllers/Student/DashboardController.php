@@ -16,7 +16,8 @@ class DashboardController extends Controller
         $activeRequestsQuery = SupportRequest::query()
             ->where('student_id', $request->user()->id)
             ->whereIn('status', SupportRequest::activeStatuses());
-        $activeRequest = (clone $activeRequestsQuery)->latest()->first();
+        $activeRequests = (clone $activeRequestsQuery)->latest()->get();
+        $activeRequest = $activeRequests->first();
 
         if ($activeRequest?->classroom_id !== null) {
             $request->session()->put('current_classroom_id', $activeRequest->classroom_id);
@@ -26,6 +27,7 @@ class DashboardController extends Controller
 
         if ($request->session()->has('current_classroom_id')) {
             $currentClassroom = Classroom::query()
+                ->with('openingHours')
                 ->whereKey($request->session()->get('current_classroom_id'))
                 ->where('is_active', true)
                 ->first();
@@ -41,6 +43,8 @@ class DashboardController extends Controller
 
         return view('student.dashboard', [
             'currentClassroom' => $currentClassroom,
+            'activeRequests' => $activeRequests,
+            'hasTeacherHandledRequest' => $activeRequests->whereIn('status', SupportRequest::teacherActiveStatuses())->isNotEmpty(),
         ]);
     }
 }

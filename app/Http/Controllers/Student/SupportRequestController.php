@@ -8,6 +8,7 @@ use App\Models\RequestType;
 use App\Models\Subject;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
+use App\Services\ClassroomOpeningHours;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,13 @@ class SupportRequestController extends Controller
             return redirect()->route('student.classroom.edit')->with('toast', [
                 'type' => 'info',
                 'message' => __('Please choose a room before creating a request.'),
+            ]);
+        }
+
+        if (! app(ClassroomOpeningHours::class)->isOpen($classroom)) {
+            return redirect()->route('student.dashboard')->with('toast', [
+                'type' => 'warning',
+                'message' => __('Unable to create a request right now because the room is closed.'),
             ]);
         }
 
@@ -63,6 +71,13 @@ class SupportRequestController extends Controller
             return redirect()->route('student.classroom.edit')->with('toast', [
                 'type' => 'info',
                 'message' => __('Please choose a room before creating a request.'),
+            ]);
+        }
+
+        if (! app(ClassroomOpeningHours::class)->isOpen($classroom)) {
+            return redirect()->route('student.dashboard')->with('toast', [
+                'type' => 'warning',
+                'message' => __('Unable to create a request right now because the room is closed.'),
             ]);
         }
 
@@ -230,6 +245,7 @@ class SupportRequestController extends Controller
         }
 
         return Classroom::query()
+            ->with('openingHours')
             ->whereKey($classroomId)
             ->where('is_active', true)
             ->first();

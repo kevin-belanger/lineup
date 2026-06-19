@@ -8,8 +8,9 @@
     <div class="py-8">
         <div class="max-w-3xl mx-auto space-y-6 sm:px-6 lg:px-8">
             <section class="bg-white p-6 shadow-sm sm:rounded-lg">
-                <div class="mb-6 text-sm text-gray-600">
-                    {{ __('Room :name', ['name' => $classroom->name]) }}
+                <div class="mb-6 flex items-center gap-1.5 text-sm text-gray-600">
+                    <span>{{ __('Room :name', ['name' => $classroom->name]) }}</span>
+                    <x-classroom-opening-status :classroom="$classroom" />
                 </div>
 
                 <form method="POST" action="{{ $action }}" class="space-y-5">

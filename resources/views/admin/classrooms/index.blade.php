@@ -336,6 +336,36 @@
                                                 publicSlugEndpoint: @js(route('admin.classrooms.public-slugs.store')),
                                                 publicSlugErrorMessage: @js(__('Unable to generate the public URL.')),
                                                 nameError: '',
+                                                openingHours: @js($classroom->openingHours->map(fn ($openingHour) => [
+                                                    'key' => $openingHour->id,
+                                                    'days' => collect($openingHour->days)->map(fn ($day) => (int) $day)->values()->all(),
+                                                    'opens_at' => substr((string) $openingHour->opens_at, 0, 5),
+                                                    'closes_at' => substr((string) $openingHour->closes_at, 0, 5),
+                                                ])->values()),
+                                                nextOpeningHourKey: 1,
+                                                dayOptions: [
+                                                    { value: 1, label: @js(__('Mon')) },
+                                                    { value: 2, label: @js(__('Tue')) },
+                                                    { value: 3, label: @js(__('Wed')) },
+                                                    { value: 4, label: @js(__('Thu')) },
+                                                    { value: 5, label: @js(__('Fri')) },
+                                                    { value: 6, label: @js(__('Sat')) },
+                                                    { value: 7, label: @js(__('Sun')) },
+                                                ],
+                                                addOpeningHour() {
+                                                    this.openingHours.push({
+                                                        key: `new-${this.nextOpeningHourKey++}`,
+                                                        days: [1, 2, 3, 4, 5],
+                                                        opens_at: '08:00',
+                                                        closes_at: '16:00',
+                                                    });
+                                                },
+                                                removeOpeningHour(index) {
+                                                    this.openingHours.splice(index, 1);
+                                                },
+                                                setOpeningHourDays(index, days) {
+                                                    this.openingHours[index].days = days;
+                                                },
                                                 async reservePublicSlug() {
                                                     this.publicSlugError = '';
                                                     this.reservingPublicSlug = true;
@@ -445,6 +475,99 @@
                                                     {{ __('Generating public URL...') }}
                                                 </p>
                                                 <p x-show="publicSlugError" x-text="publicSlugError" class="text-sm text-red-600" x-cloak></p>
+                                            </div>
+
+                                            <div class="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4">
+                                                <input type="hidden" name="opening_hours_present" value="1">
+
+                                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                    <div>
+                                                        <div class="text-sm font-medium text-gray-800">{{ __('Opening hours') }}</div>
+                                                        <p class="mt-1 text-sm text-gray-500">{{ __('If no opening hours are configured, the room is always open.') }}</p>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        x-on:click="addOpeningHour()"
+                                                        class="inline-flex w-fit items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                                    >
+                                                        {{ __('Add period') }}
+                                                    </button>
+                                                </div>
+
+                                                <div class="space-y-3" x-show="openingHours.length > 0" x-cloak>
+                                                    <template x-for="(openingHour, index) in openingHours" :key="openingHour.key">
+                                                        <div class="space-y-3 rounded-md border border-gray-200 bg-white p-3">
+                                                            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                                                <div class="min-w-0 flex-1 space-y-3">
+                                                                    <div class="flex flex-wrap gap-1.5">
+                                                                        <template x-for="day in dayOptions" :key="day.value">
+                                                                            <label class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-100">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                                                    x-bind:name="`opening_hours[${index}][days][]`"
+                                                                                    x-bind:value="day.value"
+                                                                                    x-model.number="openingHour.days"
+                                                                                >
+                                                                                <span x-text="day.label"></span>
+                                                                            </label>
+                                                                        </template>
+                                                                    </div>
+
+                                                                    <div class="flex flex-wrap gap-2">
+                                                                        <button type="button" class="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50" x-on:click="setOpeningHourDays(index, [1, 2, 3, 4, 5])">
+                                                                            {{ __('Monday to Friday') }}
+                                                                        </button>
+                                                                        <button type="button" class="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50" x-on:click="setOpeningHourDays(index, [1, 2, 3, 4, 5, 6, 7])">
+                                                                            {{ __('Every day') }}
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div class="grid gap-3 sm:grid-cols-2">
+                                                                        <label class="block text-sm text-gray-700">
+                                                                            <span class="font-medium">{{ __('Opens at') }}</span>
+                                                                            <input
+                                                                                type="time"
+                                                                                required
+                                                                                x-bind:name="`opening_hours[${index}][opens_at]`"
+                                                                                x-model="openingHour.opens_at"
+                                                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                                            >
+                                                                        </label>
+
+                                                                        <label class="block text-sm text-gray-700">
+                                                                            <span class="font-medium">{{ __('Closes at') }}</span>
+                                                                            <input
+                                                                                type="time"
+                                                                                required
+                                                                                x-bind:name="`opening_hours[${index}][closes_at]`"
+                                                                                x-model="openingHour.closes_at"
+                                                                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                                            >
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <button
+                                                                    type="button"
+                                                                    x-on:click="removeOpeningHour(index)"
+                                                                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                                                    title="{{ __('Delete') }}"
+                                                                    aria-label="{{ __('Delete') }}"
+                                                                >
+                                                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21H8.084a2.25 2.25 0 0 1-2.244-1.327L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+
+                                                <p class="rounded-md border border-dashed border-gray-300 bg-white px-3 py-2 text-sm text-gray-500" x-show="openingHours.length === 0">
+                                                    {{ __('No opening hours configured.') }}
+                                                </p>
                                             </div>
 
                                             <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
