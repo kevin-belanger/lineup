@@ -207,9 +207,10 @@ class TeacherSpaceTest extends TestCase
         $myRequests = Livewire::actingAs($teacher)
             ->test(MyRequests::class)
             ->assertSee($priorityRequest->comment)
-            ->assertSee('Since 20 min')
+            ->assertSee('Wait 10 min')
+            ->assertSee('Intervention 20 min')
             ->assertSee($existingRequest->student->fullName())
-            ->assertSee('Since 10 min')
+            ->assertSee('Intervention 10 min')
             ->assertDontSee('minutes')
             ->assertDontSee($waitingRequest->student->fullName());
 

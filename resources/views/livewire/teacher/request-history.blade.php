@@ -131,9 +131,9 @@
                                 <span class="font-medium text-gray-800">{{ __('Teacher') }}</span>
                                 <span>{{ $supportRequest->assignedTeacherDisplayName() }}</span>
                             </div>
-                            <div>{{ __('Waiting') }} {{ $waitDuration }}</div>
+                            <div>{{ __('Wait') }} {{ $waitDuration }}</div>
                             @if ($serviceDuration)
-                                <div>{{ __('Duration') }} {{ $serviceDuration }}</div>
+                                <div>{{ __('Intervention') }} {{ $serviceDuration }}</div>
                             @endif
                         </div>
 

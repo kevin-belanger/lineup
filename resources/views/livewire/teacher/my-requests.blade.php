@@ -76,6 +76,10 @@
                 $durationMinutes = $classroom
                     ? $openingHours->openMinutesBetween($classroom, $durationStartedAt, now())
                     : intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
+                $waitEndedAt = $supportRequest->assigned_at ?? now();
+                $waitMinutes = $classroom
+                    ? $openingHours->openMinutesBetween($classroom, $supportRequest->created_at, $waitEndedAt)
+                    : intdiv((int) $supportRequest->created_at->diffInSeconds($waitEndedAt, true), 60);
             @endphp
 
             @if ($supportRequest->is_priority)
@@ -121,13 +125,16 @@
                                 @if ($supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED)
                                     <span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">{{ __('Paused') }}</span>
                                 @endif
+                                <span class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100">
+                                    {{ __('Wait') }} {{ $waitMinutes }} min
+                                </span>
                                 <span
                                     class="rounded-full bg-white px-3 py-1 font-medium text-rose-700 ring-1 ring-rose-100"
                                     data-live-duration
-                                    data-live-duration-prefix="{{ __('Since') }}"
+                                    data-live-duration-prefix="{{ __('Intervention') }}"
                                     data-started-at="{{ $durationStartedAt->toIso8601String() }}"
                                     data-opening-hours='@json($liveDurationSchedule)'
-                                >{{ __('Since') }} {{ $durationMinutes }} min</span>
+                                >{{ __('Intervention') }} {{ $durationMinutes }} min</span>
                             </div>
                         </div>
                     </div>
@@ -195,6 +202,10 @@
                 $durationMinutes = $classroom
                     ? $openingHours->openMinutesBetween($classroom, $durationStartedAt, now())
                     : intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
+                $waitEndedAt = $supportRequest->assigned_at ?? now();
+                $waitMinutes = $classroom
+                    ? $openingHours->openMinutesBetween($classroom, $supportRequest->created_at, $waitEndedAt)
+                    : intdiv((int) $supportRequest->created_at->diffInSeconds($waitEndedAt, true), 60);
             @endphp
 
             @php
@@ -342,13 +353,16 @@
                         @if ($supportRequest->typeLabel() !== '')
                             <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-indigo-700 ring-1 ring-indigo-100">{{ $supportRequest->typeLabel() }}</span>
                         @endif
+                        <span class="rounded-full bg-white px-2.5 py-0.5 font-medium text-gray-700 ring-1 ring-gray-200">
+                            {{ __('Wait') }} {{ $waitMinutes }} min
+                        </span>
                         <span
                             class="rounded-full bg-white px-2.5 py-0.5 font-medium text-gray-700 ring-1 ring-gray-200"
                             data-live-duration
-                            data-live-duration-prefix="{{ __('Since') }}"
+                            data-live-duration-prefix="{{ __('Intervention') }}"
                             data-started-at="{{ $durationStartedAt->toIso8601String() }}"
                             data-opening-hours='@json($liveDurationSchedule)'
-                        >{{ __('Since') }} {{ $durationMinutes }} min</span>
+                        >{{ __('Intervention') }} {{ $durationMinutes }} min</span>
                     </div>
 
                     @if ($supportRequest->comment)
