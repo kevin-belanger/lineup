@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Classroom;
+use App\Models\PersonalNote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -85,12 +86,21 @@ class NavigationTest extends TestCase
             'is_student' => false,
             'is_admin' => false,
         ]);
+        PersonalNote::factory()->count(2)->create([
+            'teacher_id' => $teacher->id,
+        ]);
+        PersonalNote::factory()->archived()->create([
+            'teacher_id' => $teacher->id,
+        ]);
+        PersonalNote::factory()->create();
 
         $response = $this->actingAs($teacher)->get(route('admin.users.index'));
 
         $response
             ->assertOk()
             ->assertSeeText('Personal notes')
+            ->assertSee('data-personal-notes-count', false)
+            ->assertSee('>2</span>', false)
             ->assertSee(route('teacher.personal-notes.index'), false)
             ->assertSeeText('Administration')
             ->assertSeeText('Users')
@@ -98,6 +108,22 @@ class NavigationTest extends TestCase
             ->assertSeeText('Subjects')
             ->assertDontSeeText('Settings')
             ->assertDontSee(route('admin.settings.edit'), false);
+    }
+
+    public function test_teacher_personal_notes_badge_is_hidden_when_count_is_zero(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => false,
+            'is_admin' => false,
+        ]);
+
+        $response = $this->actingAs($teacher)->get(route('admin.users.index'));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Personal notes')
+            ->assertSee('data-personal-notes-count', false)
+            ->assertSee('style="display: none;"', false);
     }
 
     public function test_user_menu_keeps_language_choice_out_of_navigation(): void

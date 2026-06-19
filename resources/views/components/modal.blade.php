@@ -30,15 +30,41 @@ $maxWidth = [
         prevFocusable() { return this.focusables()[this.prevFocusableIndex()] || this.lastFocusable() },
         nextFocusableIndex() { return (this.focusables().indexOf(document.activeElement) + 1) % (this.focusables().length + 1) },
         prevFocusableIndex() { return Math.max(0, this.focusables().indexOf(document.activeElement)) -1 },
+        scrollLocked: false,
+        lockScroll() {
+            if (this.scrollLocked) {
+                return;
+            }
+
+            window.lineupOpenModals = (window.lineupOpenModals || 0) + 1;
+            document.body.classList.add('overflow-y-hidden');
+            this.scrollLocked = true;
+        },
+        unlockScroll() {
+            if (! this.scrollLocked) {
+                return;
+            }
+
+            window.lineupOpenModals = Math.max((window.lineupOpenModals || 1) - 1, 0);
+
+            if (window.lineupOpenModals === 0) {
+                document.body.classList.remove('overflow-y-hidden');
+            }
+
+            this.scrollLocked = false;
+        },
+        destroy() {
+            this.unlockScroll();
+        },
     }"
     x-init="$watch('show', value => {
         if (value) {
-            document.body.classList.add('overflow-y-hidden');
+            lockScroll();
             {{ $attributes->has('focusable') ? 'setTimeout(() => firstFocusable().focus(), 100)' : '' }}
         } else {
-            document.body.classList.remove('overflow-y-hidden');
+            unlockScroll();
         }
-    })"
+    }); if (show) lockScroll()"
     x-on:open-modal.window="$event.detail == '{{ $name }}' ? show = true : null"
     x-on:close-modal.window="$event.detail == '{{ $name }}' ? show = false : null"
     x-on:close.stop="show = false"

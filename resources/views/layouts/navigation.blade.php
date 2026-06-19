@@ -1,4 +1,14 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+@php
+    $personalNotesCount = Auth::user()->is_teacher
+        ? Auth::user()->personalNotes()->whereNull('archived_at')->count()
+        : 0;
+@endphp
+
+<nav
+    x-data="{ open: false, personalNotesCount: {{ $personalNotesCount }} }"
+    x-on:personal-notes-count-updated.window="personalNotesCount = $event.detail.count"
+    class="bg-white border-b border-gray-100"
+>
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -31,7 +41,16 @@
                             {{ __('Priority requests') }}
                         </x-nav-link>
                         <x-nav-link :href="route('teacher.personal-notes.index')" :active="request()->routeIs('teacher.personal-notes.*')">
-                            {{ __('Personal notes') }}
+                            <span class="inline-flex items-start gap-0.5">
+                                <span>{{ __('Personal notes') }}</span>
+                                <span
+                                    data-personal-notes-count
+                                    x-show="personalNotesCount > 0"
+                                    x-text="personalNotesCount"
+                                    class="-mt-0.5 ml-[3px] inline-flex h-3 min-w-3 translate-y-[-0.1rem] items-center justify-center rounded-full bg-gray-100 px-0.5 text-[10px] font-semibold leading-none text-gray-600 ring-1 ring-gray-200"
+                                    style="{{ $personalNotesCount > 0 ? '' : 'display: none;' }}"
+                                >{{ $personalNotesCount }}</span>
+                            </span>
                         </x-nav-link>
                     @endif
                 </div>
@@ -132,7 +151,16 @@
                     {{ __('Priority requests') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('teacher.personal-notes.index')" :active="request()->routeIs('teacher.personal-notes.*')">
-                    {{ __('Personal notes') }}
+                    <span class="inline-flex items-start gap-0.5">
+                        <span>{{ __('Personal notes') }}</span>
+                        <span
+                            data-personal-notes-count
+                            x-show="personalNotesCount > 0"
+                            x-text="personalNotesCount"
+                            class="-mt-0.5 ml-[3px] inline-flex h-3 min-w-3 translate-y-[-0.1rem] items-center justify-center rounded-full bg-gray-100 px-0.5 text-[10px] font-semibold leading-none text-gray-600 ring-1 ring-gray-200"
+                            style="{{ $personalNotesCount > 0 ? '' : 'display: none;' }}"
+                        >{{ $personalNotesCount }}</span>
+                    </span>
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->canManageAdministration())

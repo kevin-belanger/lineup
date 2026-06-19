@@ -124,6 +124,10 @@ class MyRequests extends Component
         unset($this->noteBodies[$supportRequestId]);
 
         $this->dispatch('close-modal', 'personal-note-'.$supportRequestId);
+        $this->dispatch(
+            'personal-notes-count-updated',
+            count: auth()->user()->personalNotes()->whereNull('archived_at')->count(),
+        );
         $this->toast('success', __('Personal note saved.'));
     }
 

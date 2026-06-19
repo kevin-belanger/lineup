@@ -1039,7 +1039,8 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('https://moodle.example.test/course?table=14&amp;section=6', false)
             ->assertSee('aria-label="Open the subject link"', false)
             ->set('noteBodies.'.$supportRequest->id, 'Verifier le suivi demain.')
-            ->call('savePersonalNote', $supportRequest->id);
+            ->call('savePersonalNote', $supportRequest->id)
+            ->assertDispatched('personal-notes-count-updated');
 
         $this->assertDatabaseHas('personal_notes', [
             'teacher_id' => $teacher->id,
@@ -1098,18 +1099,22 @@ class TeacherSpaceTest extends TestCase
             'support_request_id' => $supportRequest->id,
             'body' => 'Relancer pour le laboratoire.',
         ]);
-        PersonalNote::factory()->archived()->create([
+        $archivedNote = PersonalNote::factory()->archived()->create([
             'teacher_id' => $teacher->id,
             'body' => 'Note archivee.',
         ]);
-        PersonalNote::factory()->archived()->create([
+        $archivedLinkedNote = PersonalNote::factory()->archived()->create([
             'teacher_id' => $teacher->id,
             'support_request_id' => $supportRequest->id,
             'body' => 'Archive avec demande.',
         ]);
-        PersonalNote::factory()->create([
+        $otherTeacherNote = PersonalNote::factory()->create([
             'teacher_id' => $otherTeacher->id,
             'body' => 'Note autre enseignant.',
+        ]);
+        $otherTeacherArchivedNote = PersonalNote::factory()->archived()->create([
+            'teacher_id' => $otherTeacher->id,
+            'body' => 'Archive autre enseignant.',
         ]);
 
         $this
@@ -1131,10 +1136,44 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('Archived notes')
             ->assertSee('Note archivee.')
             ->assertSee('Archive avec demande.')
+            ->assertSee('Delete permanently')
+            ->assertSee('Delete all archived notes')
             ->assertDontSee('Note autre enseignant.')
             ->call('archive', $ownNote->id);
 
         $this->assertNotNull($ownNote->refresh()->archived_at);
+
+        Livewire::actingAs($teacher)
+            ->test(PersonalNotes::class)
+            ->call('confirmDeleteArchived', $archivedNote->id)
+            ->assertSet('archivedNotePendingDeletionId', $archivedNote->id)
+            ->assertDispatched('open-modal')
+            ->call('deleteArchived')
+            ->assertDispatched('close-modal')
+            ->assertDispatched('toast');
+
+        $this->assertDatabaseMissing('personal_notes', [
+            'id' => $archivedNote->id,
+        ]);
+
+        Livewire::actingAs($teacher)
+            ->test(PersonalNotes::class)
+            ->call('deleteAllArchived')
+            ->assertDispatched('close-modal')
+            ->assertDispatched('toast');
+
+        $this->assertDatabaseMissing('personal_notes', [
+            'id' => $archivedLinkedNote->id,
+        ]);
+        $this->assertDatabaseMissing('personal_notes', [
+            'id' => $ownNote->id,
+        ]);
+        $this->assertDatabaseHas('personal_notes', [
+            'id' => $otherTeacherNote->id,
+        ]);
+        $this->assertDatabaseHas('personal_notes', [
+            'id' => $otherTeacherArchivedNote->id,
+        ]);
     }
 
     public function test_teacher_can_create_standalone_personal_note(): void
@@ -1147,7 +1186,8 @@ class TeacherSpaceTest extends TestCase
             ->set('body', 'Preparer un rappel general.')
             ->call('create')
             ->assertSet('body', '')
-            ->assertDispatched('close-modal');
+            ->assertDispatched('close-modal')
+            ->assertDispatched('personal-notes-count-updated');
 
         $this->assertDatabaseHas('personal_notes', [
             'teacher_id' => $teacher->id,
