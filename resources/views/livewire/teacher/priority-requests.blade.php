@@ -41,7 +41,13 @@
         <div class="space-y-3">
             @forelse ($requests as $supportRequest)
                 @php
-                    $durationMinutes = intdiv((int) $supportRequest->created_at->diffInSeconds(now(), true), 60);
+                    $openingHours = app(\App\Services\ClassroomOpeningHours::class);
+                    $durationSchedule = $supportRequest->classroom
+                        ? $openingHours->liveDurationSchedule($supportRequest->classroom)
+                        : ['timezone' => app(\App\Services\ApplicationSettings::class)->timezone(), 'periods' => []];
+                    $durationMinutes = $supportRequest->classroom
+                        ? $openingHours->openMinutesBetween($supportRequest->classroom, $supportRequest->created_at, now())
+                        : intdiv((int) $supportRequest->created_at->diffInSeconds(now(), true), 60);
                 @endphp
 
                 <article wire:key="sent-priority-request-{{ $supportRequest->id }}" wire:transition="teacher-sent-priority-request-{{ $supportRequest->id }}" class="rounded-lg border border-rose-200 bg-rose-50/70 p-4 shadow-sm">
@@ -61,6 +67,7 @@
                                     data-live-duration
                                     data-live-duration-prefix="{{ __('Since') }}"
                                     data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
+                                    data-opening-hours='@json($durationSchedule)'
                                 >{{ __('Since') }} {{ $durationMinutes }} min</span>
                                 @if ($supportRequest->assignedTeacher)
                                     <span class="rounded-full bg-white px-2.5 py-1 text-gray-700 ring-1 ring-rose-100">{{ __('Taken by') }} {{ $supportRequest->assignedTeacherDisplayName() }}</span>

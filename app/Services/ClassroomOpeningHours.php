@@ -6,6 +6,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomOpeningHour;
 use Carbon\CarbonInterface;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 
 class ClassroomOpeningHours
 {
@@ -44,6 +45,58 @@ class ClassroomOpeningHours
         return $classroom->openingHours->isNotEmpty();
     }
 
+    public function openMinutesBetween(Classroom $classroom, CarbonInterface $start, CarbonInterface $end): int
+    {
+        if ($end->lessThanOrEqualTo($start)) {
+            return 0;
+        }
+
+        $classroom->loadMissing('openingHours');
+
+        if ($classroom->openingHours->isEmpty()) {
+            return intdiv((int) $start->diffInSeconds($end, true), 60);
+        }
+
+        $timezone = $this->settings->timezone();
+        $start = CarbonImmutable::instance($start)->timezone($timezone);
+        $end = CarbonImmutable::instance($end)->timezone($timezone);
+        $seconds = 0;
+
+        for ($date = $start->startOfDay(); $date->lessThanOrEqualTo($end); $date = $date->addDay()) {
+            $day = $date->dayOfWeekIso;
+
+            foreach ($this->periodsForDay($classroom->openingHours, $day) as $period) {
+                $opensAt = CarbonImmutable::parse($date->toDateString().' '.$period['opens_at'], $timezone);
+                $closesAt = CarbonImmutable::parse($date->toDateString().' '.$period['closes_at'], $timezone);
+                $overlapStart = $opensAt->greaterThan($start) ? $opensAt : $start;
+                $overlapEnd = $closesAt->lessThan($end) ? $closesAt : $end;
+
+                if ($overlapEnd->greaterThan($overlapStart)) {
+                    $seconds += (int) $overlapStart->diffInSeconds($overlapEnd, false);
+                }
+            }
+        }
+
+        return intdiv($seconds, 60);
+    }
+
+    public function liveDurationSchedule(Classroom $classroom): array
+    {
+        $classroom->loadMissing('openingHours');
+
+        return [
+            'timezone' => $this->settings->timezone(),
+            'periods' => $classroom->openingHours
+                ->map(fn (ClassroomOpeningHour $openingHour): array => [
+                    'days' => collect($openingHour->days ?? [])->map(fn ($day): int => (int) $day)->values()->all(),
+                    'opens_at' => substr((string) $openingHour->opens_at, 0, 5),
+                    'closes_at' => substr((string) $openingHour->closes_at, 0, 5),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
     public function dayLabels(array $days): string
     {
         $dayNumbers = collect($days)
@@ -64,5 +117,19 @@ class ClassroomOpeningHours
         return $dayNumbers
             ->map(fn (int $day): string => __(ClassroomOpeningHour::DAYS[$day]))
             ->implode(', ');
+    }
+
+    private function periodsForDay(Collection $openingHours, int $day): array
+    {
+        return $openingHours
+            ->filter(fn (ClassroomOpeningHour $openingHour): bool => collect($openingHour->days ?? [])
+                ->map(fn ($value): int => (int) $value)
+                ->contains($day))
+            ->map(fn (ClassroomOpeningHour $openingHour): array => [
+                'opens_at' => substr((string) $openingHour->opens_at, 0, 5),
+                'closes_at' => substr((string) $openingHour->closes_at, 0, 5),
+            ])
+            ->values()
+            ->all();
     }
 }

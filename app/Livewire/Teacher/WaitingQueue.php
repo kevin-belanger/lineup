@@ -3,6 +3,8 @@
 namespace App\Livewire\Teacher;
 
 use App\Models\SupportRequest;
+use App\Models\Classroom;
+use App\Services\SupportRequestDurationCalculator;
 use App\Services\SupportRequestChangeMarker;
 use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
@@ -55,6 +57,21 @@ class WaitingQueue extends Component
     {
         $classroomId = $this->currentClassroomId();
         $completedAt = now();
+        $supportRequest = SupportRequest::query()
+            ->with('classroom.openingHours')
+            ->whereKey($supportRequestId)
+            ->where('classroom_id', $classroomId)
+            ->where('status', SupportRequest::STATUS_WAITING)
+            ->whereNull('assigned_teacher_id')
+            ->where('is_priority', false)
+            ->first();
+
+        if ($supportRequest === null) {
+            $this->toast('warning', __('This request can no longer be taken and completed.'));
+            $this->dispatchRefresh();
+
+            return;
+        }
 
         $updated = SupportRequest::query()
             ->whereKey($supportRequestId)
@@ -67,6 +84,8 @@ class WaitingQueue extends Component
                 'assigned_at' => $completedAt,
                 'status' => SupportRequest::STATUS_COMPLETED,
                 'completed_at' => $completedAt,
+                ...app(SupportRequestDurationCalculator::class)->completionDurations($supportRequest, $completedAt),
+                'calculated_response_time_minutes' => 0,
                 'updated_at' => $completedAt,
             ]);
 
@@ -133,6 +152,9 @@ class WaitingQueue extends Component
     public function render(): View
     {
         return view('livewire.teacher.waiting-queue', [
+            'classroom' => Classroom::query()
+                ->with('openingHours')
+                ->find($this->currentClassroomId()),
             'requests' => SupportRequest::query()
                 ->with(['student:id,first_name,last_name,deleted_at', 'subject:id,name,url', 'priorityRequester:id,first_name,last_name,deleted_at'])
                 ->where('classroom_id', $this->currentClassroomId())

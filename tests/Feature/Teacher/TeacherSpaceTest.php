@@ -10,6 +10,7 @@ use App\Livewire\Teacher\RequestChangeWatcher;
 use App\Livewire\Teacher\RequestHistory;
 use App\Livewire\Teacher\WaitingQueue;
 use App\Models\Classroom;
+use App\Models\ClassroomOpeningHour;
 use App\Models\PersonalNote;
 use App\Models\Subject;
 use App\Models\SupportRequest;
@@ -18,6 +19,7 @@ use App\Models\User;
 use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -316,6 +318,54 @@ class TeacherSpaceTest extends TestCase
         $this->assertNotNull($supportRequest->assigned_at);
         $this->assertNotNull($supportRequest->completed_at);
         $this->assertSame(1, app(SupportRequestChangeMarker::class)->current($classroom->id));
+    }
+
+    public function test_teacher_completion_stores_calculated_durations_using_opening_hours(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-15 12:30:00', 'UTC'));
+
+        try {
+            $teacher = User::factory()->teacher()->create();
+            $classroom = Classroom::factory()->create();
+            ClassroomOpeningHour::factory()->create([
+                'classroom_id' => $classroom->id,
+                'days' => [1],
+                'opens_at' => '10:00',
+                'closes_at' => '11:00',
+                'sort_order' => 0,
+            ]);
+            ClassroomOpeningHour::factory()->create([
+                'classroom_id' => $classroom->id,
+                'days' => [1],
+                'opens_at' => '12:00',
+                'closes_at' => '13:00',
+                'sort_order' => 1,
+            ]);
+            $supportRequest = SupportRequest::factory()->create([
+                'classroom_id' => $classroom->id,
+                'assigned_teacher_id' => $teacher->id,
+                'status' => SupportRequest::STATUS_ASSIGNED,
+                'created_at' => Carbon::parse('2026-06-15 10:55:00', 'UTC'),
+                'assigned_at' => Carbon::parse('2026-06-15 12:15:00', 'UTC'),
+                'completed_at' => null,
+            ]);
+
+            session(['current_classroom_id' => $classroom->id]);
+
+            Livewire::actingAs($teacher)
+                ->test(MyRequests::class)
+                ->call('complete', $supportRequest->id)
+                ->assertDispatched('toast')
+                ->assertDispatched('teacher-requests-updated');
+
+            $supportRequest->refresh();
+
+            $this->assertSame(SupportRequest::STATUS_COMPLETED, $supportRequest->status);
+            $this->assertSame(20, $supportRequest->calculated_wait_time_minutes);
+            $this->assertSame(15, $supportRequest->calculated_response_time_minutes);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_teacher_can_not_assign_and_complete_priority_request_from_waiting_queue_menu_action(): void

@@ -3,6 +3,10 @@
         $courseUrlSettings = app(\App\Services\ApplicationSettings::class);
         $courseUrlTarget = $courseUrlSettings->courseUrlTarget();
         $courseUrlRel = $courseUrlSettings->courseUrlRel();
+        $openingHours = app(\App\Services\ClassroomOpeningHours::class);
+        $liveDurationSchedule = $classroom
+            ? $openingHours->liveDurationSchedule($classroom)
+            : ['timezone' => $courseUrlSettings->timezone(), 'periods' => []];
     @endphp
 
     <div class="mb-4 flex items-start justify-between gap-3">
@@ -69,7 +73,9 @@
                 $pausedCardClass = $supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED ? 'opacity-60' : '';
 
                 $durationStartedAt = $supportRequest->assigned_at ?? $supportRequest->created_at;
-                $durationMinutes = intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
+                $durationMinutes = $classroom
+                    ? $openingHours->openMinutesBetween($classroom, $durationStartedAt, now())
+                    : intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
             @endphp
 
             @if ($supportRequest->is_priority)
@@ -120,6 +126,7 @@
                                     data-live-duration
                                     data-live-duration-prefix="{{ __('Since') }}"
                                     data-started-at="{{ $durationStartedAt->toIso8601String() }}"
+                                    data-opening-hours='@json($liveDurationSchedule)'
                                 >{{ __('Since') }} {{ $durationMinutes }} min</span>
                             </div>
                         </div>
@@ -185,7 +192,9 @@
                 $pausedCardClass = $supportRequest->status === \App\Models\SupportRequest::STATUS_PAUSED ? 'opacity-60' : '';
 
                 $durationStartedAt = $supportRequest->assigned_at ?? $supportRequest->created_at;
-                $durationMinutes = intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
+                $durationMinutes = $classroom
+                    ? $openingHours->openMinutesBetween($classroom, $durationStartedAt, now())
+                    : intdiv((int) $durationStartedAt->diffInSeconds(now(), true), 60);
             @endphp
 
             @php
@@ -338,6 +347,7 @@
                             data-live-duration
                             data-live-duration-prefix="{{ __('Since') }}"
                             data-started-at="{{ $durationStartedAt->toIso8601String() }}"
+                            data-opening-hours='@json($liveDurationSchedule)'
                         >{{ __('Since') }} {{ $durationMinutes }} min</span>
                     </div>
 

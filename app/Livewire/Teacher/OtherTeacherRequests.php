@@ -3,6 +3,7 @@
 namespace App\Livewire\Teacher;
 
 use App\Models\SupportRequest;
+use App\Services\SupportRequestDurationCalculator;
 use App\Services\SupportRequestChangeMarker;
 use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
@@ -43,10 +44,12 @@ class OtherTeacherRequests extends Component
 
     public function complete(): void
     {
+        $completedAt = now();
+
         $this->updateManagedRequest([
             'status' => SupportRequest::STATUS_COMPLETED,
-            'completed_at' => now(),
-            'updated_at' => now(),
+            'completed_at' => $completedAt,
+            'updated_at' => $completedAt,
         ], __('Request completed.'));
     }
 
@@ -94,7 +97,15 @@ class OtherTeacherRequests extends Component
 
         $classroomId = $this->currentClassroomId();
         $managedRequest = $this->manageableRequestQuery($supportRequestId)
-            ->first(['id', 'assigned_teacher_id']);
+            ->with('classroom.openingHours')
+            ->first();
+
+        if (($values['status'] ?? null) === SupportRequest::STATUS_COMPLETED && isset($values['completed_at']) && $managedRequest !== null) {
+            $values = [
+                ...$values,
+                ...app(SupportRequestDurationCalculator::class)->completionDurations($managedRequest, $values['completed_at']),
+            ];
+        }
 
         $updated = $this->manageableRequestQuery($supportRequestId)->update($values);
 

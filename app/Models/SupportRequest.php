@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'comment',
     'assigned_at',
     'completed_at',
+    'calculated_wait_time_minutes',
+    'calculated_response_time_minutes',
     'cancelled_by',
     'cancel_reason',
 ])]
@@ -103,6 +105,8 @@ class SupportRequest extends Model
             'is_priority' => 'boolean',
             'assigned_at' => 'datetime',
             'completed_at' => 'datetime',
+            'calculated_wait_time_minutes' => 'integer',
+            'calculated_response_time_minutes' => 'integer',
         ];
     }
 

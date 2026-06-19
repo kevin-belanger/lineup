@@ -5,6 +5,7 @@ namespace App\Livewire\Teacher;
 use App\Models\Classroom;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
+use App\Services\SupportRequestDurationCalculator;
 use App\Services\SupportRequestChangeMarker;
 use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
@@ -85,10 +86,12 @@ class PriorityRequests extends Component
 
     public function complete(int $supportRequestId): void
     {
+        $completedAt = now();
+
         $this->updateOwnPriorityRequest($supportRequestId, [
             'status' => SupportRequest::STATUS_COMPLETED,
-            'completed_at' => now(),
-            'updated_at' => now(),
+            'completed_at' => $completedAt,
+            'updated_at' => $completedAt,
         ], __('Priority request completed.'));
     }
 
@@ -117,7 +120,7 @@ class PriorityRequests extends Component
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'requests' => SupportRequest::query()
-                ->with(['classroom:id,name', 'assignedTeacher:id,first_name,last_name,deleted_at'])
+                ->with(['classroom.openingHours', 'assignedTeacher:id,first_name,last_name,deleted_at'])
                 ->where('is_priority', true)
                 ->where('priority_requested_by_teacher_id', auth()->id())
                 ->whereIn('status', SupportRequest::activeStatuses())
@@ -130,17 +133,25 @@ class PriorityRequests extends Component
     private function updateOwnPriorityRequest(int $supportRequestId, array $values, string $successMessage): void
     {
         $supportRequest = SupportRequest::query()
+            ->with('classroom.openingHours')
             ->whereKey($supportRequestId)
             ->where('is_priority', true)
             ->where('priority_requested_by_teacher_id', auth()->id())
             ->whereIn('status', SupportRequest::activeStatuses())
-            ->first(['id', 'classroom_id', 'assigned_teacher_id']);
+            ->first();
 
         if ($supportRequest === null) {
             $this->toast('info', __('This priority request can no longer be changed.'));
             DB::afterCommit(fn () => $this->dispatch('teacher-requests-updated'));
 
             return;
+        }
+
+        if (($values['status'] ?? null) === SupportRequest::STATUS_COMPLETED && isset($values['completed_at'])) {
+            $values = [
+                ...$values,
+                ...app(SupportRequestDurationCalculator::class)->completionDurations($supportRequest, $values['completed_at']),
+            ];
         }
 
         $updated = SupportRequest::query()

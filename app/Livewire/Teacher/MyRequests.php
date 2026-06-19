@@ -3,8 +3,10 @@
 namespace App\Livewire\Teacher;
 
 use App\Models\PersonalNote;
+use App\Models\Classroom;
 use App\Models\SupportRequest;
 use App\Services\CompletedSupportRequestRestorer;
+use App\Services\SupportRequestDurationCalculator;
 use App\Services\SupportRequestChangeMarker;
 use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
@@ -38,10 +40,12 @@ class MyRequests extends Component
 
     public function complete(int $supportRequestId): void
     {
+        $completedAt = now();
+
         $this->updateAssignedRequest($supportRequestId, [
             'status' => SupportRequest::STATUS_COMPLETED,
-            'completed_at' => now(),
-            'updated_at' => now(),
+            'completed_at' => $completedAt,
+            'updated_at' => $completedAt,
         ], __('Request completed.'), true, [
             'label' => __('Cancel'),
             'event' => 'undo-completed-request',
@@ -169,6 +173,9 @@ class MyRequests extends Component
     public function render(): View
     {
         return view('livewire.teacher.my-requests', [
+            'classroom' => Classroom::query()
+                ->with('openingHours')
+                ->find($this->currentClassroomId()),
             'requests' => SupportRequest::query()
                 ->with(['student:id,first_name,last_name,deleted_at', 'subject:id,name,url', 'priorityRequester:id,first_name,last_name,deleted_at'])
                 ->leftJoin('teacher_active_request_orders as active_request_orders', function ($join): void {
@@ -202,6 +209,19 @@ class MyRequests extends Component
 
         if (! $allowPriority) {
             $query->where('is_priority', false);
+        }
+
+        if (($values['status'] ?? null) === SupportRequest::STATUS_COMPLETED && isset($values['completed_at'])) {
+            $supportRequest = (clone $query)
+                ->with('classroom.openingHours')
+                ->first();
+
+            if ($supportRequest !== null) {
+                $values = [
+                    ...$values,
+                    ...app(SupportRequestDurationCalculator::class)->completionDurations($supportRequest, $values['completed_at']),
+                ];
+            }
         }
 
         $updated = $query->update($values);

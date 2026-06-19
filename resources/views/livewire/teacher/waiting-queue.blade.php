@@ -3,6 +3,10 @@
         $courseUrlSettings = app(\App\Services\ApplicationSettings::class);
         $courseUrlTarget = $courseUrlSettings->courseUrlTarget();
         $courseUrlRel = $courseUrlSettings->courseUrlRel();
+        $openingHours = app(\App\Services\ClassroomOpeningHours::class);
+        $liveDurationSchedule = $classroom
+            ? $openingHours->liveDurationSchedule($classroom)
+            : ['timezone' => $courseUrlSettings->timezone(), 'periods' => []];
     @endphp
 
     <div class="flex items-center justify-between">
@@ -16,7 +20,9 @@
     <div class="space-y-4">
         @forelse ($requests as $supportRequest)
             @php
-                $waitMinutes = intdiv((int) $supportRequest->created_at->diffInSeconds(now(), true), 60);
+                $waitMinutes = $classroom
+                    ? $openingHours->openMinutesBetween($classroom, $supportRequest->created_at, now())
+                    : intdiv((int) $supportRequest->created_at->diffInSeconds(now(), true), 60);
             @endphp
 
             @if ($supportRequest->is_priority)
@@ -36,6 +42,7 @@
                                     data-live-duration
                                     data-live-duration-prefix="{{ __('Waiting') }}"
                                     data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
+                                    data-opening-hours='@json($liveDurationSchedule)'
                                 >{{ __('Waiting') }} {{ $waitMinutes }} min</span>
                             </div>
                         </div>
@@ -160,6 +167,7 @@
                                 data-live-duration
                                 data-live-duration-prefix="{{ __('Waiting') }}"
                                 data-started-at="{{ $supportRequest->created_at->toIso8601String() }}"
+                                data-opening-hours='@json($liveDurationSchedule)'
                             >{{ __('Waiting') }} {{ $waitMinutes }} min</span>
                         </div>
 

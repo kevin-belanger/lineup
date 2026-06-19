@@ -62,12 +62,16 @@
                 $createdAt = $supportRequest->created_at->timezone($timezone);
                 $assignedAt = $supportRequest->assigned_at?->timezone($timezone);
                 $completedAt = $supportRequest->completed_at?->timezone($timezone);
-                $waitDuration = $supportRequest->assigned_at
-                    ? $supportRequest->created_at->diffForHumans($supportRequest->assigned_at, true)
-                    : $supportRequest->created_at->diffForHumans(null, true);
-                $serviceDuration = $supportRequest->assigned_at && $supportRequest->completed_at
-                    ? $supportRequest->assigned_at->diffForHumans($supportRequest->completed_at, true)
-                    : null;
+                $waitDuration = $supportRequest->calculated_wait_time_minutes !== null
+                    ? $supportRequest->calculated_wait_time_minutes.' min'
+                    : ($supportRequest->assigned_at
+                        ? $supportRequest->created_at->diffForHumans($supportRequest->assigned_at, true)
+                        : $supportRequest->created_at->diffForHumans(null, true));
+                $serviceDuration = $supportRequest->calculated_response_time_minutes !== null
+                    ? $supportRequest->calculated_response_time_minutes.' min'
+                    : ($supportRequest->assigned_at && $supportRequest->completed_at
+                        ? $supportRequest->assigned_at->diffForHumans($supportRequest->completed_at, true)
+                        : null);
             @endphp
 
             <article wire:key="teacher-history-request-{{ $supportRequest->id }}" wire:transition="teacher-history-request-{{ $supportRequest->id }}" class="py-4">
