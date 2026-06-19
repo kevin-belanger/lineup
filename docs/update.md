@@ -89,6 +89,28 @@ Before switching versions, the script compares the currently installed commit wi
 
 You can verify the installed application version from the admin settings page.
 
+## Fast code deploy
+
+For small application code changes that do not require database migrations, `.env` changes, Dockerfile changes, Compose changes, or new system-level dependencies, the running containers can be updated without rebuilding the image:
+
+```bash
+cd /opt/lineup
+sudo ./scripts/deploy-code.sh
+```
+
+The fast deploy script will:
+
+- pull the current Git branch from `origin`;
+- rebuild `public/build` with a temporary `node:22-alpine` container, without requiring `npm` on the host;
+- copy only the runtime application paths into the running `app` and `scheduler` containers: `app`, `artisan`, `bootstrap`, `composer.json`, `composer.lock`, `config`, `lang`, `public`, `resources`, and `routes`;
+- keep `.env`, `storage`, `vendor`, and `node_modules` out of the copied payload;
+- refresh Composer dependencies and Laravel caches inside the containers;
+- restart the scheduler container.
+
+When `SKIP_ASSETS=1` is used, the script does not rebuild or replace the `public` directory, so the already deployed `public/build` assets remain in place.
+
+Use the full `update.sh` flow instead when an update includes migrations, PHP or Node dependency changes that need a fresh image, `.env` changes, Dockerfile changes, Compose changes, or any change where rebuilding the container is safer.
+
 ## Important warnings
 
 Do not use these commands during an update:
