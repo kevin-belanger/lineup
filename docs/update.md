@@ -38,6 +38,7 @@ The update script will:
 - retrieve the latest published GitHub Release from the GitHub API;
 - validate the release `tag_name`;
 - fetch Git tags;
+- verify that the currently installed commit is an ancestor of the target commit;
 - switch the project to that version;
 - update the installed version in `.env`;
 - rebuild and recreate the Docker containers so `.env` changes are loaded;
@@ -75,7 +76,8 @@ The script verifies that:
 - the branch exists exactly on `origin`;
 - branch name casing matches exactly;
 - the commit exists when one is provided;
-- the commit belongs to the requested branch.
+- the commit belongs to the requested branch;
+- the currently installed commit is an ancestor of the target commit.
 
 In branch modes, `APP_VERSION` is set to the branch name and the installed short commit hash, for example:
 
@@ -85,7 +87,7 @@ APP_VERSION=MAIN abc1234
 
 The script does not delete Docker volumes. Application data, uploaded files, Redis data, Caddy data, and the MySQL database are preserved.
 
-Before switching versions, the script compares the currently installed commit with the target commit. If the target is not a descendant of the current commit, the script warns that the change may be a downgrade, branch switch, or rewritten history, and asks for confirmation before continuing. Database migrations are not rolled back automatically.
+Before switching versions, the script compares the currently installed commit with the target commit. If the target is not a descendant of the current commit, the script refuses to continue. This prevents accidental downgrades, unrelated branch switches, and updates across rewritten Git history. Database migrations are not rolled back automatically.
 
 You can verify the installed application version from the admin settings page.
 

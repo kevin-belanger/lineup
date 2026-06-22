@@ -97,10 +97,9 @@ require_docker_compose_service() {
     fi
 }
 
-confirm_non_forward_update_if_needed() {
+require_forward_update() {
     local target_commit="$1"
     local current_commit
-    local confirmation
 
     current_commit="$(git rev-parse HEAD)"
 
@@ -109,18 +108,15 @@ confirm_non_forward_update_if_needed() {
     fi
 
     echo
-    echo "Warning: the target commit is not a descendant of the currently installed commit."
-    echo "This may be a downgrade, branch switch, or rewritten Git history."
+    echo "Error: the target commit is not a descendant of the currently installed commit."
+    echo "The update script refuses to move to an older version, unrelated branch, or rewritten Git history."
     echo "Database migrations are not rolled back automatically."
     echo "The database may not be compatible with the target version."
-    echo "Create a backup before continuing."
+    echo "Current commit: $current_commit"
+    echo "Target commit:  $target_commit"
     echo
-    read -r -p "Type CONTINUE to proceed: " confirmation
-
-    if [ "$confirmation" != "CONTINUE" ]; then
-        echo "Update cancelled."
-        exit 0
-    fi
+    echo "Update cancelled."
+    exit 1
 }
 
 escape_sed_replacement() {
@@ -222,7 +218,7 @@ run_stable_update() {
         exit 0
     fi
 
-    confirm_non_forward_update_if_needed "$target_commit"
+    require_forward_update "$target_commit"
 
     echo "Updating to $latest_tag..."
     git checkout "$latest_tag"
@@ -296,7 +292,7 @@ run_branch_update() {
         target_commit="$(git rev-parse "$remote_ref^{commit}")"
     fi
 
-    confirm_non_forward_update_if_needed "$target_commit"
+    require_forward_update "$target_commit"
 
     if [ -n "$requested_commit" ]; then
         echo "Updating to commit $target_commit from origin/$branch..."
