@@ -1438,7 +1438,7 @@ class TeacherSpaceTest extends TestCase
             ->assertSet('pageTitle', '(0) - Second Student - LineUp');
     }
 
-    public function test_teacher_lists_no_longer_poll_independently(): void
+    public function test_teacher_dashboard_uses_keep_alive_polling_for_request_changes(): void
     {
         $teacher = User::factory()->teacher()->create();
         $classroom = Classroom::factory()->create();
@@ -1450,10 +1450,11 @@ class TeacherSpaceTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('wire:poll.2s="check"', false)
+            ->assertSee('wire:poll.2s.keep-alive="check"', false)
             ->assertSee('wire:init="updatePageTitle"', false)
             ->assertDontSee('wire:poll.8s.visible', false)
             ->assertDontSee('wire:poll.10s.visible', false)
+            ->assertDontSee('wire:poll.2s="check"', false)
             ->assertDontSee('wire:poll.2s.keep-alive="updatePageTitle"', false);
     }
 
