@@ -56,6 +56,8 @@ class NavigationTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('History')
+            ->assertSee('Main menu')
+            ->assertSee('ms-3 space-y-1', false)
             ->assertSee(route('student.history'), false);
 
         $this->assertSame(2, substr_count($response->getContent(), route('student.history')));
@@ -78,7 +80,10 @@ class NavigationTest extends TestCase
             ->assertSee('Users')
             ->assertSee('Rooms')
             ->assertSee('Subjects')
-            ->assertSee('Settings');
+            ->assertSee('Settings')
+            ->assertSeeInOrder(['Users', 'Rooms', 'Subjects', 'Statistics', 'Settings'])
+            ->assertSee('border-t border-gray-100', false)
+            ->assertSee('border-t border-gray-200', false);
     }
 
     public function test_teacher_navigation_shows_administration_links_without_settings(): void
@@ -104,10 +109,13 @@ class NavigationTest extends TestCase
             ->assertSee('>2</span>', false)
             ->assertSee(route('teacher.personal-notes.index'), false)
             ->assertSeeText('Administration')
+            ->assertSeeText('Main menu')
+            ->assertSee('ms-3 space-y-1', false)
             ->assertSeeText('Statistics')
             ->assertSeeText('Users')
             ->assertSeeText('Rooms')
             ->assertSeeText('Subjects')
+            ->assertSeeInOrder(['Users', 'Rooms', 'Subjects', 'Statistics'])
             ->assertDontSeeText('Settings')
             ->assertDontSee(route('admin.settings.edit'), false);
     }

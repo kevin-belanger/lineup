@@ -70,9 +70,6 @@
                         </x-slot>
 
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('admin.statistics.index')">
-                                {{ __('Statistics') }}
-                            </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.users.index')">
                                 {{ __('Users') }}
                             </x-dropdown-link>
@@ -82,7 +79,11 @@
                             <x-dropdown-link :href="route('admin.subjects.index')">
                                 {{ __('Subjects') }}
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.statistics.index')">
+                                {{ __('Statistics') }}
+                            </x-dropdown-link>
                             @if (Auth::user()->canManageSettings())
+                                <div class="my-1 border-t border-gray-100"></div>
                                 <x-dropdown-link :href="route('admin.settings.edit')">
                                     {{ __('Settings') }}
                                 </x-dropdown-link>
@@ -138,55 +139,65 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            @if (Auth::user()->is_student)
-                <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')">
-                    {{ __('Student') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('student.history')" :active="request()->routeIs('student.history')">
-                    {{ __('History') }}
-                </x-responsive-nav-link>
-            @endif
-            @if (Auth::user()->is_teacher)
-                <x-responsive-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
-                    {{ __('Teacher') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
-                    {{ __('Priority requests') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('teacher.personal-notes.index')" :active="request()->routeIs('teacher.personal-notes.*')">
-                    <span class="inline-flex items-start gap-0.5">
-                        <span>{{ __('Personal notes') }}</span>
-                        <span
-                            data-personal-notes-count
-                            x-show="personalNotesCount > 0"
-                            x-text="personalNotesCount"
-                            class="-mt-0.5 ml-[3px] inline-flex h-3 min-w-3 translate-y-[-0.1rem] items-center justify-center rounded-full bg-gray-100 px-0.5 text-[10px] font-semibold leading-none text-gray-600 ring-1 ring-gray-200"
-                            style="{{ $personalNotesCount > 0 ? '' : 'display: none;' }}"
-                        >{{ $personalNotesCount }}</span>
-                    </span>
-                </x-responsive-nav-link>
+            @if (Auth::user()->is_student || Auth::user()->is_teacher)
+                <div class="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    {{ __('Main menu') }}
+                </div>
+                <div class="ms-3 space-y-1">
+                    @if (Auth::user()->is_student)
+                        <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')">
+                            {{ __('Student') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('student.history')" :active="request()->routeIs('student.history')">
+                            {{ __('History') }}
+                        </x-responsive-nav-link>
+                    @endif
+                    @if (Auth::user()->is_teacher)
+                        <x-responsive-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
+                            {{ __('Teacher') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
+                            {{ __('Priority requests') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('teacher.personal-notes.index')" :active="request()->routeIs('teacher.personal-notes.*')">
+                            <span class="inline-flex items-start gap-0.5">
+                                <span>{{ __('Personal notes') }}</span>
+                                <span
+                                    data-personal-notes-count
+                                    x-show="personalNotesCount > 0"
+                                    x-text="personalNotesCount"
+                                    class="-mt-0.5 ml-[3px] inline-flex h-3 min-w-3 translate-y-[-0.1rem] items-center justify-center rounded-full bg-gray-100 px-0.5 text-[10px] font-semibold leading-none text-gray-600 ring-1 ring-gray-200"
+                                    style="{{ $personalNotesCount > 0 ? '' : 'display: none;' }}"
+                                >{{ $personalNotesCount }}</span>
+                            </span>
+                        </x-responsive-nav-link>
+                    @endif
+                </div>
             @endif
             @if (Auth::user()->canManageAdministration())
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
                     {{ __('Administration') }}
                 </div>
-                <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')">
-                    {{ __('Statistics') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                    {{ __('Users') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.classrooms.index')" :active="request()->routeIs('admin.classrooms.*')">
-                    {{ __('Rooms') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">
-                    {{ __('Subjects') }}
-                </x-responsive-nav-link>
-                @if (Auth::user()->canManageSettings())
-                    <x-responsive-nav-link :href="route('admin.settings.edit')" :active="request()->routeIs('admin.settings.*')">
-                        {{ __('Settings') }}
+                <div class="ms-3 space-y-1">
+                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('Users') }}
                     </x-responsive-nav-link>
-                @endif
+                    <x-responsive-nav-link :href="route('admin.classrooms.index')" :active="request()->routeIs('admin.classrooms.*')">
+                        {{ __('Rooms') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">
+                        {{ __('Subjects') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')">
+                        {{ __('Statistics') }}
+                    </x-responsive-nav-link>
+                    @if (Auth::user()->canManageSettings())
+                        <div class="mx-4 my-1 border-t border-gray-200"></div>
+                        <x-responsive-nav-link :href="route('admin.settings.edit')" :active="request()->routeIs('admin.settings.*')">
+                            {{ __('Settings') }}
+                        </x-responsive-nav-link>
+                    @endif
+                </div>
             @endif
         </div>
 
