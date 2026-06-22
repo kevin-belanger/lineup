@@ -1474,6 +1474,54 @@ class TeacherSpaceTest extends TestCase
             ->assertDontSee('teacher.request-history', false);
     }
 
+    public function test_teacher_dashboard_shows_current_classroom_with_live_opening_status(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create(['name' => 'Local 203']);
+        ClassroomOpeningHour::factory()->create([
+            'classroom_id' => $classroom->id,
+            'days' => [1, 2, 3, 4, 5],
+            'opens_at' => '08:00',
+            'closes_at' => '16:00',
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(DashboardView::class)
+            ->assertDontSee('Current room')
+            ->assertSee('Local 203')
+            ->assertSee('View history')
+            ->assertSee('data-classroom-opening-status', false)
+            ->assertSee('data-classroom-opening-status-dot', false)
+            ->assertSee('data-opening-hours', false)
+            ->assertSee('08:00 - 16:00')
+            ->assertSee(route('teacher.history'), false);
+    }
+
+    public function test_teacher_dashboard_shows_when_current_classroom_opens_next(): void
+    {
+        Carbon::setTestNow('2026-06-22 07:30:00');
+
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create(['name' => 'Local 203']);
+        ClassroomOpeningHour::factory()->create([
+            'classroom_id' => $classroom->id,
+            'days' => [1],
+            'opens_at' => '08:00',
+            'closes_at' => '16:00',
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(DashboardView::class)
+            ->assertSee('Local 203')
+            ->assertSee('Room closed until 08:00')
+            ->assertSee('data-closed-until-template', false)
+            ->assertSee('data-classroom-opening-status-text', false);
+    }
+
     public function test_teacher_history_is_a_distinct_page_for_current_classroom(): void
     {
         $teacher = User::factory()->teacher()->create();

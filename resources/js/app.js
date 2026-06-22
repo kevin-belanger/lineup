@@ -4,6 +4,8 @@ import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
 const liveDurationSelector = '[data-live-duration][data-started-at]';
+const classroomOpeningStatusSelector = '[data-classroom-opening-status]';
+const classroomOpeningStatusRefreshMs = 5000;
 const weekdayByName = {
     Mon: 1,
     Tue: 2,
@@ -14,6 +16,9 @@ const weekdayByName = {
     Sun: 7,
 };
 const dateTimeFormatters = new Map();
+const dateKeyFormatters = new Map();
+const timeFormatters = new Map();
+const dateTimeLabelFormatters = new Map();
 const statisticsCharts = new WeakMap();
 
 function formatterForTimezone(timezone) {
@@ -39,6 +44,23 @@ function localMinuteParts(date, timezone) {
         day: weekdayByName[parts.weekday] ?? null,
         minute: (Number(parts.hour) * 60) + Number(parts.minute),
     };
+}
+
+function localDateKey(date, timezone) {
+    if (!dateKeyFormatters.has(timezone)) {
+        dateKeyFormatters.set(timezone, new Intl.DateTimeFormat('en-CA', {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }));
+    }
+
+    const parts = Object.fromEntries(dateKeyFormatters.get(timezone)
+        .formatToParts(date)
+        .map((part) => [part.type, part.value]));
+
+    return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 function openingScheduleForElement(element) {
@@ -81,6 +103,56 @@ function isOpenMinute(date, schedule) {
             && local.minute >= opensAtMinute
             && local.minute < closesAtMinute;
     });
+}
+
+function nextOpeningAt(date, schedule) {
+    const startMs = date.getTime();
+
+    for (let offsetMinutes = 1; offsetMinutes <= 10080; offsetMinutes++) {
+        const candidate = new Date(startMs + (offsetMinutes * 60000));
+
+        if (isOpenMinute(candidate, schedule)) {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
+function closedUntilLabel(date, schedule) {
+    const opensAt = nextOpeningAt(date, schedule);
+
+    if (opensAt === null) {
+        return null;
+    }
+
+    const timezone = schedule.timezone || 'UTC';
+    const locale = document.documentElement.lang || undefined;
+
+    if (!timeFormatters.has(`${locale}|${timezone}`)) {
+        timeFormatters.set(`${locale}|${timezone}`, new Intl.DateTimeFormat(locale, {
+            timeZone: timezone,
+            hour: '2-digit',
+            minute: '2-digit',
+            hourCycle: 'h23',
+        }));
+    }
+
+    if (localDateKey(date, timezone) === localDateKey(opensAt, timezone)) {
+        return timeFormatters.get(`${locale}|${timezone}`).format(opensAt);
+    }
+
+    if (!dateTimeLabelFormatters.has(`${locale}|${timezone}`)) {
+        dateTimeLabelFormatters.set(`${locale}|${timezone}`, new Intl.DateTimeFormat(locale, {
+            timeZone: timezone,
+            weekday: 'long',
+            hour: '2-digit',
+            minute: '2-digit',
+            hourCycle: 'h23',
+        }));
+    }
+
+    return dateTimeLabelFormatters.get(`${locale}|${timezone}`).format(opensAt);
 }
 
 function openElapsedMinutes(startedAtMs, nowMs, schedule) {
@@ -129,15 +201,54 @@ function updateLiveDurations() {
     });
 }
 
+function updateClassroomOpeningStatuses() {
+    document.querySelectorAll(classroomOpeningStatusSelector).forEach((element) => {
+        const schedule = openingScheduleForElement(element);
+        const now = new Date();
+        const isOpen = schedule === null || isOpenMinute(now, schedule);
+        const label = isOpen
+            ? (element.dataset.openLabel || 'Room open')
+            : (element.dataset.closedLabel || 'Room closed');
+        const dot = element.querySelector('[data-classroom-opening-status-dot]');
+        const text = element.parentElement?.querySelector('[data-classroom-opening-status-text]');
+
+        element.setAttribute('aria-label', label);
+        element.setAttribute('title', label);
+
+        if (!dot) {
+            return;
+        }
+
+        dot.classList.toggle('bg-emerald-500', isOpen);
+        dot.classList.toggle('ring-emerald-100', isOpen);
+        dot.classList.toggle('bg-rose-500', !isOpen);
+        dot.classList.toggle('ring-rose-100', !isOpen);
+
+        if (!text) {
+            return;
+        }
+
+        const until = schedule === null || isOpen ? null : closedUntilLabel(now, schedule);
+
+        text.textContent = until
+            ? (element.dataset.closedUntilTemplate || 'Room closed until :time').replace(':time', until)
+            : '';
+        text.classList.toggle('hidden', until === null);
+    });
+}
+
 function startLiveDurations() {
     if (window.__lineupLiveDurationTimer) {
         updateLiveDurations();
+        updateClassroomOpeningStatuses();
 
         return;
     }
 
     updateLiveDurations();
+    updateClassroomOpeningStatuses();
     window.__lineupLiveDurationTimer = window.setInterval(updateLiveDurations, 30000);
+    window.__lineupClassroomOpeningStatusTimer = window.setInterval(updateClassroomOpeningStatuses, classroomOpeningStatusRefreshMs);
 }
 
 function updatePageTitle(event) {

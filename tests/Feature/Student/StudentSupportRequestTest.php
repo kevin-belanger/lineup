@@ -175,6 +175,30 @@ class StudentSupportRequestTest extends TestCase
             ->assertSee(route('student.classroom.leave'), false);
     }
 
+    public function test_student_dashboard_shows_when_current_classroom_opens_next(): void
+    {
+        Carbon::setTestNow('2026-06-22 07:30:00');
+
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create(['name' => 'Local 203']);
+        ClassroomOpeningHour::factory()->create([
+            'classroom_id' => $classroom->id,
+            'days' => [1],
+            'opens_at' => '08:00',
+            'closes_at' => '16:00',
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.dashboard'))
+            ->assertOk()
+            ->assertSee('Local 203')
+            ->assertSee('Room closed until 08:00')
+            ->assertSee('data-closed-until-template', false)
+            ->assertSee('data-classroom-opening-status-text', false);
+    }
+
     public function test_student_dashboard_shows_confirmation_before_leaving_room_with_waiting_request(): void
     {
         $student = User::factory()->create();

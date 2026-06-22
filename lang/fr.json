@@ -338,6 +338,7 @@
     "Roles updated.": "Rôles mis à jour.",
     "Room": "Local",
     "Room closed": "Local fermé",
+    "Room closed until :time": "Local fermé jusqu’à :time",
     "Room open": "Local ouvert",
     "Room :name": "Local :name",
     "Room activated.": "Local activé.",
@@ -431,6 +432,7 @@
     "This time zone is used for scheduled tasks, such as automatically cancelling requests at the end of the day.": "Ce fuseau horaire est utilisé pour les tâches planifiées, comme l’annulation automatique des demandes à la fin de la journée.",
     "Tile": "Tuile",
     "Today": "Aujourd’hui",
+    "Tomorrow at :time": "demain à :time",
     "Thursday": "Jeudi",
     "Thu": "Jeu",
     "Tuesday": "Mardi",
@@ -477,6 +479,7 @@
     "Year": "Année",
     "Yes": "Oui",
     ":name (deleted user)": ":name (utilisateur supprimé)",
+    ":day at :time": ":day à :time",
     "auth.password": "Le mot de passe fourni est incorrect.",
     "Use application default": "Utiliser la valeur par défaut"
 }

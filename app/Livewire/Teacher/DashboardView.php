@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Teacher;
 
+use App\Models\Classroom;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
 use Illuminate\Contracts\View\View;
@@ -27,7 +28,9 @@ class DashboardView extends Component
 
     public function render(): View
     {
-        return view('livewire.teacher.dashboard-view');
+        return view('livewire.teacher.dashboard-view', [
+            'currentClassroom' => $this->currentClassroom(),
+        ]);
     }
 
     private function buildPageTitle(ApplicationSettings $settings): string
@@ -75,5 +78,18 @@ class DashboardView extends Component
     private function currentClassroomId(): ?int
     {
         return session('current_classroom_id');
+    }
+
+    private function currentClassroom(): ?Classroom
+    {
+        $classroomId = $this->currentClassroomId();
+
+        if ($classroomId === null) {
+            return null;
+        }
+
+        return Classroom::query()
+            ->with('openingHours')
+            ->find($classroomId);
     }
 }

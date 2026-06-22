@@ -12,7 +12,7 @@
                         <div class="mt-1 flex items-center gap-1.5 text-lg font-semibold text-gray-900">
                             <span>{{ $currentClassroom?->name ?? __('No room selected') }}</span>
                             @if ($currentClassroom)
-                                <x-classroom-opening-status :classroom="$currentClassroom" />
+                                <x-classroom-opening-status :classroom="$currentClassroom" live show-closed-until />
                             @endif
                         </div>
                     </div>

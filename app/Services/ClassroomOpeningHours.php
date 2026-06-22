@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Classroom;
 use App\Models\ClassroomOpeningHour;
-use Carbon\CarbonInterface;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class ClassroomOpeningHours
@@ -43,6 +43,60 @@ class ClassroomOpeningHours
         $classroom->loadMissing('openingHours');
 
         return $classroom->openingHours->isNotEmpty();
+    }
+
+    public function nextOpeningAt(Classroom $classroom, ?CarbonInterface $at = null): ?CarbonImmutable
+    {
+        $classroom->loadMissing('openingHours');
+
+        if ($classroom->openingHours->isEmpty()) {
+            return null;
+        }
+
+        $timezone = $this->settings->timezone();
+        $at = $at
+            ? CarbonImmutable::instance($at)->timezone($timezone)
+            : CarbonImmutable::now($timezone);
+
+        for ($date = $at->startOfDay(); $date->lessThanOrEqualTo($at->addDays(7)->startOfDay()); $date = $date->addDay()) {
+            foreach ($this->periodsForDay($classroom->openingHours, $date->dayOfWeekIso) as $period) {
+                $opensAt = CarbonImmutable::parse($date->toDateString().' '.$period['opens_at'], $timezone);
+
+                if ($opensAt->greaterThan($at)) {
+                    return $opensAt;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public function closedUntilLabel(Classroom $classroom, ?CarbonInterface $at = null): ?string
+    {
+        $nextOpeningAt = $this->nextOpeningAt($classroom, $at);
+
+        if ($nextOpeningAt === null) {
+            return null;
+        }
+
+        $timezone = $this->settings->timezone();
+        $at = $at
+            ? CarbonImmutable::instance($at)->timezone($timezone)
+            : CarbonImmutable::now($timezone);
+        $time = $nextOpeningAt->format('H:i');
+
+        if ($nextOpeningAt->isSameDay($at)) {
+            return $time;
+        }
+
+        if ($nextOpeningAt->isSameDay($at->addDay())) {
+            return __('Tomorrow at :time', ['time' => $time]);
+        }
+
+        return __(':day at :time', [
+            'day' => __(ClassroomOpeningHour::DAYS[$nextOpeningAt->dayOfWeekIso] ?? $nextOpeningAt->isoFormat('dddd')),
+            'time' => $time,
+        ]);
     }
 
     public function openMinutesBetween(Classroom $classroom, CarbonInterface $start, CarbonInterface $end): int
@@ -129,6 +183,7 @@ class ClassroomOpeningHours
                 'opens_at' => substr((string) $openingHour->opens_at, 0, 5),
                 'closes_at' => substr((string) $openingHour->closes_at, 0, 5),
             ])
+            ->sortBy('opens_at')
             ->values()
             ->all();
     }

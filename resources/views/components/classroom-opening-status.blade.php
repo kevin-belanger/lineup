@@ -1,10 +1,12 @@
-@props(['classroom'])
+@props(['classroom', 'live' => false, 'showClosedUntil' => false])
 
 @php
     $openingHours = app(\App\Services\ClassroomOpeningHours::class);
     $classroom->loadMissing('openingHours');
     $isOpen = $openingHours->isOpen($classroom);
     $hasSchedule = $openingHours->hasSchedule($classroom);
+    $liveSchedule = $live ? $openingHours->liveDurationSchedule($classroom) : null;
+    $closedUntilLabel = $showClosedUntil && ! $isOpen ? $openingHours->closedUntilLabel($classroom) : null;
     $modalName = 'classroom-opening-hours-'.$classroom->id;
 @endphp
 
@@ -15,9 +17,33 @@
         class="inline-flex h-5 w-5 items-center justify-center rounded-full transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         aria-label="{{ $isOpen ? __('Room open') : __('Room closed') }}"
         title="{{ $isOpen ? __('Room open') : __('Room closed') }}"
+        @if ($live)
+            data-classroom-opening-status
+            data-opening-hours='@json($liveSchedule)'
+            data-open-label="{{ __('Room open') }}"
+            data-closed-label="{{ __('Room closed') }}"
+            data-closed-until-template="{{ __('Room closed until :time') }}"
+        @endif
     >
-        <span class="h-2.5 w-2.5 rounded-full {{ $isOpen ? 'bg-emerald-500 ring-2 ring-emerald-100' : 'bg-rose-500 ring-2 ring-rose-100' }}"></span>
+        <span
+            @if ($live) data-classroom-opening-status-dot @endif
+            class="h-2.5 w-2.5 rounded-full {{ $isOpen ? 'bg-emerald-500 ring-2 ring-emerald-100' : 'bg-rose-500 ring-2 ring-rose-100' }}"
+        ></span>
     </button>
+
+    @if ($showClosedUntil)
+        <span
+            @if ($live) data-classroom-opening-status-text @endif
+            @class([
+                'ml-1 text-xs font-medium text-rose-600',
+                'hidden' => $isOpen || $closedUntilLabel === null,
+            ])
+        >
+            @if (! $isOpen && $closedUntilLabel !== null)
+                {{ __('Room closed until :time', ['time' => $closedUntilLabel]) }}
+            @endif
+        </span>
+    @endif
 
     <template x-teleport="body">
         <x-modal :name="$modalName" maxWidth="md" focusable>

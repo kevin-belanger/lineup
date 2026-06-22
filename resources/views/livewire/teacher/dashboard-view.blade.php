@@ -1,7 +1,16 @@
 <div wire:init="updatePageTitle">
     <livewire:teacher.request-change-watcher />
 
-    <div class="mx-auto mb-6 flex max-w-7xl justify-end px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto mb-6 flex max-w-7xl flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div>
+            <div class="flex items-center gap-1.5 text-sm font-medium text-gray-500">
+                <span>{{ $currentClassroom?->name ?? __('No room selected') }}</span>
+                @if ($currentClassroom)
+                    <x-classroom-opening-status :classroom="$currentClassroom" live show-closed-until />
+                @endif
+            </div>
+        </div>
+
         <a href="{{ route('teacher.history') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">
             {{ __('View history') }}
         </a>
