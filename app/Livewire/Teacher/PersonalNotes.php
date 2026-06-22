@@ -3,6 +3,7 @@
 namespace App\Livewire\Teacher;
 
 use App\Models\PersonalNote;
+use App\Services\ApplicationSettings;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -125,6 +126,7 @@ class PersonalNotes extends Component
 
     public function render(): View
     {
+        $timezone = app(ApplicationSettings::class)->timezone();
         $noteRelations = [
             'supportRequest.classroom:id,name',
             'supportRequest.subject:id,name,url',
@@ -145,6 +147,7 @@ class PersonalNotes extends Component
                 ->whereNotNull('archived_at')
                 ->latest('archived_at')
                 ->get(),
+            'timezone' => $timezone,
         ]);
     }
 }

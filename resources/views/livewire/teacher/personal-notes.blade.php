@@ -55,11 +55,12 @@
         @forelse ($notes as $note)
             @php
                 $supportRequest = $note->supportRequest;
+                $createdAt = $note->created_at->timezone($timezone);
             @endphp
 
             <article class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <div class="mb-3 flex items-start justify-between gap-3">
-                    <div class="min-w-0 text-xs font-medium text-gray-500">{{ $note->created_at->format('Y-m-d H:i') }}</div>
+                    <div class="min-w-0 text-xs font-medium text-gray-500">{{ $createdAt->format('Y-m-d H:i') }}</div>
 
                     <button
                         type="button"
@@ -107,13 +108,14 @@
                 @forelse ($archivedNotes as $note)
                     @php
                         $supportRequest = $note->supportRequest;
+                        $archivedAt = $note->archived_at?->timezone($timezone);
                     @endphp
 
                     <article class="rounded-md border border-gray-200 bg-white/80 p-3">
                         <div class="flex items-start gap-3">
                             <div class="min-w-0 flex-1">
                                 <div class="mb-2 text-xs font-medium text-gray-500">
-                                    {{ __('Archived') }} {{ $note->archived_at?->format('Y-m-d H:i') }}
+                                    {{ __('Archived') }} {{ $archivedAt?->format('Y-m-d H:i') }}
                                 </div>
 
                                 <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">

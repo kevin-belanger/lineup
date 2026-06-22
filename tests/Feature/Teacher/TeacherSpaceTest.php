@@ -1150,6 +1150,8 @@ class TeacherSpaceTest extends TestCase
 
     public function test_teacher_personal_notes_page_lists_only_own_unarchived_notes(): void
     {
+        app(ApplicationSettings::class)->updateTimezone('America/Toronto');
+
         $teacher = User::factory()->teacher()->create();
         $otherTeacher = User::factory()->teacher()->create();
         $classroom = Classroom::factory()->create(['name' => 'Local 305']);
@@ -1171,10 +1173,12 @@ class TeacherSpaceTest extends TestCase
             'teacher_id' => $teacher->id,
             'support_request_id' => $supportRequest->id,
             'body' => 'Relancer pour le laboratoire.',
+            'created_at' => Carbon::parse('2026-06-22 14:30:00', 'UTC'),
         ]);
         $archivedNote = PersonalNote::factory()->archived()->create([
             'teacher_id' => $teacher->id,
             'body' => 'Note archivee.',
+            'archived_at' => Carbon::parse('2026-01-15 20:45:00', 'UTC'),
         ]);
         $archivedLinkedNote = PersonalNote::factory()->archived()->create([
             'teacher_id' => $teacher->id,
@@ -1200,6 +1204,8 @@ class TeacherSpaceTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(PersonalNotes::class)
             ->assertSee('Relancer pour le laboratoire.')
+            ->assertSee('2026-06-22 10:30')
+            ->assertDontSee('2026-06-22 14:30')
             ->assertSee('Request linked to this note')
             ->assertSee('Local 305')
             ->assertSee('Mathematiques - Tile 7')
@@ -1208,6 +1214,8 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('Table')
             ->assertSee('Archived notes')
             ->assertSee('Note archivee.')
+            ->assertSee('Archived 2026-01-15 15:45')
+            ->assertDontSee('Archived 2026-01-15 20:45')
             ->assertSee('Archive avec demande.')
             ->assertSee('Delete permanently')
             ->assertSee('Delete all archived notes')
