@@ -11,38 +11,50 @@
 @endphp
 
 <span class="inline-flex items-center" x-data>
-    <button
-        type="button"
-        x-on:click="$dispatch('open-modal', '{{ $modalName }}')"
-        class="inline-flex h-5 w-5 items-center justify-center rounded-full transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        aria-label="{{ $isOpen ? __('Room open') : __('Room closed') }}"
-        title="{{ $isOpen ? __('Room open') : __('Room closed') }}"
-        @if ($live)
-            data-classroom-opening-status
-            data-opening-hours='@json($liveSchedule)'
-            data-open-label="{{ __('Room open') }}"
-            data-closed-label="{{ __('Room closed') }}"
-            data-closed-until-template="{{ __('Room closed until :time') }}"
-        @endif
-    >
-        <span
-            @if ($live) data-classroom-opening-status-dot @endif
-            class="h-2.5 w-2.5 rounded-full {{ $isOpen ? 'bg-emerald-500 ring-2 ring-emerald-100' : 'bg-rose-500 ring-2 ring-rose-100' }}"
-        ></span>
-    </button>
-
     @if ($showClosedUntil)
-        <span
-            @if ($live) data-classroom-opening-status-text @endif
+        <button
+            type="button"
+            x-on:click="$dispatch('open-modal', '{{ $modalName }}')"
             @class([
-                'ml-1 text-xs font-medium text-rose-600',
+                'ml-1 text-xs font-medium text-rose-600 underline-offset-2 transition hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
                 'hidden' => $isOpen || $closedUntilLabel === null,
             ])
-        >
-            @if (! $isOpen && $closedUntilLabel !== null)
-                {{ __('Room closed until :time', ['time' => $closedUntilLabel]) }}
+            aria-label="{{ __('Room closed') }}"
+            title="{{ __('Room closed') }}"
+            @if ($live)
+                data-classroom-opening-status
+                data-opening-hours='@json($liveSchedule)'
+                data-open-label="{{ __('Room open') }}"
+                data-closed-label="{{ __('Room closed') }}"
+                data-closed-until-template="{{ __('Room closed until :time') }}"
             @endif
-        </span>
+        >
+            <span @if ($live) data-classroom-opening-status-text @endif>
+                @if (! $isOpen && $closedUntilLabel !== null)
+                    {{ __('Room closed until :time', ['time' => $closedUntilLabel]) }}
+                @endif
+            </span>
+        </button>
+    @else
+        <button
+            type="button"
+            x-on:click="$dispatch('open-modal', '{{ $modalName }}')"
+            class="inline-flex h-5 w-5 items-center justify-center rounded-full transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            aria-label="{{ $isOpen ? __('Room open') : __('Room closed') }}"
+            title="{{ $isOpen ? __('Room open') : __('Room closed') }}"
+            @if ($live)
+                data-classroom-opening-status
+                data-opening-hours='@json($liveSchedule)'
+                data-open-label="{{ __('Room open') }}"
+                data-closed-label="{{ __('Room closed') }}"
+                data-closed-until-template="{{ __('Room closed until :time') }}"
+            @endif
+        >
+            <span
+                @if ($live) data-classroom-opening-status-dot @endif
+                class="h-2.5 w-2.5 rounded-full {{ $isOpen ? 'bg-emerald-500 ring-2 ring-emerald-100' : 'bg-rose-500 ring-2 ring-rose-100' }}"
+            ></span>
+        </button>
     @endif
 
     <template x-teleport="body">

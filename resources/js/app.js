@@ -210,19 +210,18 @@ function updateClassroomOpeningStatuses() {
             ? (element.dataset.openLabel || 'Room open')
             : (element.dataset.closedLabel || 'Room closed');
         const dot = element.querySelector('[data-classroom-opening-status-dot]');
-        const text = element.parentElement?.querySelector('[data-classroom-opening-status-text]');
+        const text = element.querySelector('[data-classroom-opening-status-text]')
+            || element.parentElement?.querySelector('[data-classroom-opening-status-text]');
 
         element.setAttribute('aria-label', label);
         element.setAttribute('title', label);
 
-        if (!dot) {
-            return;
+        if (dot) {
+            dot.classList.toggle('bg-emerald-500', isOpen);
+            dot.classList.toggle('ring-emerald-100', isOpen);
+            dot.classList.toggle('bg-rose-500', !isOpen);
+            dot.classList.toggle('ring-rose-100', !isOpen);
         }
-
-        dot.classList.toggle('bg-emerald-500', isOpen);
-        dot.classList.toggle('ring-emerald-100', isOpen);
-        dot.classList.toggle('bg-rose-500', !isOpen);
-        dot.classList.toggle('ring-rose-100', !isOpen);
 
         if (!text) {
             return;
@@ -233,7 +232,7 @@ function updateClassroomOpeningStatuses() {
         text.textContent = until
             ? (element.dataset.closedUntilTemplate || 'Room closed until :time').replace(':time', until)
             : '';
-        text.classList.toggle('hidden', until === null);
+        element.classList.toggle('hidden', until === null);
     });
 }
 

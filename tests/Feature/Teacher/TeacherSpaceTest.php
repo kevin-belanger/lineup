@@ -1493,7 +1493,7 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('Local 203')
             ->assertSee('View history')
             ->assertSee('data-classroom-opening-status', false)
-            ->assertSee('data-classroom-opening-status-dot', false)
+            ->assertDontSee('data-classroom-opening-status-dot', false)
             ->assertSee('data-opening-hours', false)
             ->assertSee('08:00 - 16:00')
             ->assertSee(route('teacher.history'), false);
@@ -1519,7 +1519,8 @@ class TeacherSpaceTest extends TestCase
             ->assertSee('Local 203')
             ->assertSee('Room closed until 08:00')
             ->assertSee('data-closed-until-template', false)
-            ->assertSee('data-classroom-opening-status-text', false);
+            ->assertSee('data-classroom-opening-status-text', false)
+            ->assertDontSee('data-classroom-opening-status-dot', false);
     }
 
     public function test_teacher_history_is_a_distinct_page_for_current_classroom(): void

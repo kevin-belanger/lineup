@@ -196,7 +196,8 @@ class StudentSupportRequestTest extends TestCase
             ->assertSee('Local 203')
             ->assertSee('Room closed until 08:00')
             ->assertSee('data-closed-until-template', false)
-            ->assertSee('data-classroom-opening-status-text', false);
+            ->assertSee('data-classroom-opening-status-text', false)
+            ->assertDontSee('data-classroom-opening-status-dot', false);
     }
 
     public function test_student_dashboard_shows_confirmation_before_leaving_room_with_waiting_request(): void
