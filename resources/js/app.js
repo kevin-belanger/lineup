@@ -136,7 +136,7 @@ function startLiveDurations() {
     window.__lineupLiveDurationTimer = window.setInterval(updateLiveDurations, 30000);
 }
 
-function updateTeacherPageTitle(event) {
+function updatePageTitle(event) {
     const title = event.detail?.title;
 
     if (typeof title !== 'string' || title.length === 0) {
@@ -148,4 +148,5 @@ function updateTeacherPageTitle(event) {
 
 document.addEventListener('DOMContentLoaded', startLiveDurations);
 document.addEventListener('livewire:init', startLiveDurations);
-document.addEventListener('teacher-page-title-updated', updateTeacherPageTitle);
+document.addEventListener('page-title-updated', updatePageTitle);
+document.addEventListener('teacher-page-title-updated', updatePageTitle);

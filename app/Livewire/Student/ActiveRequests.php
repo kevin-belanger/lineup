@@ -3,6 +3,7 @@
 namespace App\Livewire\Student;
 
 use App\Models\SupportRequest;
+use App\Services\ApplicationSettings;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -48,6 +49,14 @@ class ActiveRequests extends Component
             : __('The request has been updated.'));
     }
 
+    public function refreshPageTitle(ApplicationSettings $settings): void
+    {
+        $title = $this->buildPageTitle($settings);
+
+        $this->dispatch('page-title-updated', title: $title);
+        $this->dispatch('teacher-page-title-updated', title: $title);
+    }
+
     public function render(): View
     {
         return view('livewire.student.active-requests', [
@@ -64,5 +73,27 @@ class ActiveRequests extends Component
     private function toast(string $type, string $message): void
     {
         $this->dispatch('toast', type: $type, message: $message);
+    }
+
+    private function buildPageTitle(ApplicationSettings $settings): string
+    {
+        $baseTitle = $settings->displayName();
+        $supportRequest = SupportRequest::query()
+            ->with('assignedTeacher:id,first_name,last_name,deleted_at')
+            ->where('student_id', auth()->id())
+            ->whereIn('status', SupportRequest::activeStatuses())
+            ->orderByRaw('CASE WHEN assigned_teacher_id IS NOT NULL THEN 0 ELSE 1 END')
+            ->latest()
+            ->first();
+
+        if ($supportRequest === null) {
+            return $baseTitle;
+        }
+
+        if ($supportRequest->assigned_teacher_id !== null) {
+            return __('Taken by :name', ['name' => $supportRequest->assignedTeacherDisplayName()]).' - '.$baseTitle;
+        }
+
+        return (SupportRequest::statusLabels()[$supportRequest->status] ?? $supportRequest->status).' - '.$baseTitle;
     }
 }

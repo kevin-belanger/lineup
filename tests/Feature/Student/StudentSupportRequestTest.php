@@ -704,12 +704,14 @@ class StudentSupportRequestTest extends TestCase
             ->assertDontSee('Cancel my request');
     }
 
-    public function test_student_active_requests_component_polls_only_when_active_request_exists(): void
+    public function test_student_active_requests_component_uses_keep_alive_polling_when_active_request_exists(): void
     {
         $student = User::factory()->create();
 
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
+            ->assertSee('wire:init="refreshPageTitle"', false)
+            ->assertDontSee('wire:poll.3s.keep-alive="refreshPageTitle"', false)
             ->assertDontSee('wire:poll.3s.visible', false);
 
         SupportRequest::factory()->create([
@@ -719,8 +721,75 @@ class StudentSupportRequestTest extends TestCase
 
         Livewire::actingAs($student)
             ->test(ActiveRequests::class)
-            ->assertSee('wire:poll.3s.visible', false)
+            ->assertSee('wire:init="refreshPageTitle"', false)
+            ->assertSee('wire:poll.3s.keep-alive="refreshPageTitle"', false)
+            ->assertDontSee('wire:poll.3s.visible', false)
             ->assertDontSee('Active requests');
+    }
+
+    public function test_student_active_requests_updates_page_title_from_request_status(): void
+    {
+        $student = User::factory()->create();
+
+        SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'status' => SupportRequest::STATUS_WAITING,
+        ]);
+
+        Livewire::actingAs($student)
+            ->test(ActiveRequests::class)
+            ->call('refreshPageTitle')
+            ->assertDispatched('page-title-updated', function (string $event, array $params): bool {
+                return $params['title'] === 'Waiting - LineUp';
+            })
+            ->assertDispatched('teacher-page-title-updated', function (string $event, array $params): bool {
+                return $params['title'] === 'Waiting - LineUp';
+            });
+    }
+
+    public function test_student_active_requests_page_title_prioritizes_taken_requests(): void
+    {
+        $student = User::factory()->create();
+        $teacher = User::factory()->teacher()->create([
+            'first_name' => 'Marie',
+            'last_name' => 'Gagnon',
+        ]);
+
+        SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'created_at' => now(),
+        ]);
+        SupportRequest::factory()->create([
+            'student_id' => $student->id,
+            'assigned_teacher_id' => $teacher->id,
+            'assigned_at' => now(),
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'created_at' => now()->subMinute(),
+        ]);
+
+        Livewire::actingAs($student)
+            ->test(ActiveRequests::class)
+            ->call('refreshPageTitle')
+            ->assertDispatched('page-title-updated', function (string $event, array $params): bool {
+                return $params['title'] === 'Taken by Marie Gagnon - LineUp';
+            });
+    }
+
+    public function test_student_active_requests_page_title_resets_when_no_request_is_active(): void
+    {
+        $student = User::factory()->create();
+
+        SupportRequest::factory()->completed()->create([
+            'student_id' => $student->id,
+        ]);
+
+        Livewire::actingAs($student)
+            ->test(ActiveRequests::class)
+            ->call('refreshPageTitle')
+            ->assertDispatched('page-title-updated', function (string $event, array $params): bool {
+                return $params['title'] === 'LineUp';
+            });
     }
 
     public function test_student_livewire_cancel_uses_conditional_update(): void

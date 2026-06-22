@@ -1,4 +1,4 @@
-<section @if ($requests->isNotEmpty()) wire:poll.3s.visible @endif class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+<section wire:init="refreshPageTitle" @if ($requests->isNotEmpty()) wire:poll.3s.keep-alive="refreshPageTitle" @endif class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
     <div class="divide-y divide-gray-200">
         @forelse ($requests as $supportRequest)
             <article wire:key="student-active-request-{{ $supportRequest->id }}" class="relative p-6">
