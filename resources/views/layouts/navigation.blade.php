@@ -70,6 +70,9 @@
                         </x-slot>
 
                         <x-slot name="content">
+                            <x-dropdown-link :href="route('admin.statistics.index')">
+                                {{ __('Statistics') }}
+                            </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.users.index')">
                                 {{ __('Users') }}
                             </x-dropdown-link>
@@ -167,6 +170,9 @@
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
                     {{ __('Administration') }}
                 </div>
+                <x-responsive-nav-link :href="route('admin.statistics.index')" :active="request()->routeIs('admin.statistics.*')">
+                    {{ __('Statistics') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                     {{ __('Users') }}
                 </x-responsive-nav-link>

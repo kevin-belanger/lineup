@@ -1,4 +1,7 @@
 import './bootstrap';
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 const liveDurationSelector = '[data-live-duration][data-started-at]';
 const weekdayByName = {
@@ -11,6 +14,7 @@ const weekdayByName = {
     Sun: 7,
 };
 const dateTimeFormatters = new Map();
+const statisticsCharts = new WeakMap();
 
 function formatterForTimezone(timezone) {
     if (!dateTimeFormatters.has(timezone)) {
@@ -150,3 +154,104 @@ document.addEventListener('DOMContentLoaded', startLiveDurations);
 document.addEventListener('livewire:init', startLiveDurations);
 document.addEventListener('page-title-updated', updatePageTitle);
 document.addEventListener('teacher-page-title-updated', updatePageTitle);
+
+function renderRequestStatisticsCharts(root) {
+    const container = root?.matches?.('[data-statistics-charts]')
+        ? root
+        : root?.querySelector?.('[data-statistics-charts]');
+
+    if (!container) {
+        return;
+    }
+
+    const chartData = JSON.parse(container.dataset.chart || '{}');
+    const labels = chartData.labels || [];
+    const text = container.dataset;
+
+    statisticsCharts.get(container)?.forEach((chart) => chart.destroy());
+
+    const charts = [];
+    const countCanvas = container.querySelector('[data-statistics-chart="counts"]');
+    const durationCanvas = container.querySelector('[data-statistics-chart="durations"]');
+
+    if (countCanvas) {
+        charts.push(new Chart(countCanvas, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: text.requestsLabel || 'Requests',
+                        data: chartData.requestCounts || [],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.12)',
+                        tension: 0.25,
+                    },
+                    {
+                        label: text.studentsLabel || 'Distinct students',
+                        data: chartData.studentCounts || [],
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.12)',
+                        tension: 0.25,
+                    },
+                ],
+            },
+            options: statisticsChartOptions(text.countAxisLabel || 'Count'),
+        }));
+    }
+
+    if (durationCanvas) {
+        charts.push(new Chart(durationCanvas, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: text.waitLabel || 'Average wait',
+                        data: chartData.waitAverages || [],
+                        borderColor: '#d97706',
+                        backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                        tension: 0.25,
+                    },
+                    {
+                        label: text.interventionLabel || 'Average intervention',
+                        data: chartData.interventionAverages || [],
+                        borderColor: '#dc2626',
+                        backgroundColor: 'rgba(220, 38, 38, 0.12)',
+                        tension: 0.25,
+                    },
+                ],
+            },
+            options: statisticsChartOptions(text.minutesAxisLabel || 'Minutes'),
+        }));
+    }
+
+    statisticsCharts.set(container, charts);
+}
+
+function statisticsChartOptions(yAxisTitle) {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        plugins: {
+            legend: {
+                position: 'bottom',
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: yAxisTitle,
+                },
+            },
+        },
+    };
+}
+
+window.renderRequestStatisticsCharts = renderRequestStatisticsCharts;

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\StatisticController;
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +12,7 @@ Route::middleware(['auth', 'active', 'approved', 'verified', 'role:admin,teacher
     ->name('admin.')
     ->group(function (): void {
         Route::view('/', 'admin.dashboard')->name('dashboard');
+        Route::get('/statistics', StatisticController::class)->name('statistics.index');
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
