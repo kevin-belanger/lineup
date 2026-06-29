@@ -657,7 +657,7 @@ class TeacherSpaceTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
             'name' => 'Matiere avec un tres long nom qui doit revenir naturellement a la ligne',
-            'url' => 'https://moodle.example.test/course?table=[table]&section=[section]',
+            'url' => 'https://moodle.example.test/course?table=[table]&section=[tuile moodle]',
         ]);
 
         app(ApplicationSettings::class)->updateReuseCourseUrlTab(true);
@@ -676,13 +676,13 @@ class TeacherSpaceTest extends TestCase
 
         Livewire::actingAs($teacher)
             ->test(OtherTeacherRequests::class)
-            ->assertSee('Matiere avec un tres long nom qui doit revenir naturellement a la ligne - Tile 12')
+            ->assertSee('Matiere avec un tres long nom qui doit revenir naturellement a la ligne - Tuile Moodle 12')
             ->assertSee('https://moodle.example.test/course?table=7&amp;section=12', false)
             ->assertSee('target="lineup_course_url"', false)
             ->assertSee('aria-label="Open the subject link"', false)
             ->assertSee('whitespace-normal break-words', false)
             ->call('openManagementModal', $supportRequest->id)
-            ->assertSee('Matiere avec un tres long nom qui doit revenir naturellement a la ligne - Tile 12')
+            ->assertSee('Matiere avec un tres long nom qui doit revenir naturellement a la ligne - Tuile Moodle 12')
             ->assertSee('target="lineup_course_url"', false);
     }
 
@@ -1090,7 +1090,7 @@ class TeacherSpaceTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
             'name' => 'Francais',
-            'url' => 'https://moodle.example.test/course?table=[table]&section=[section]',
+            'url' => 'https://moodle.example.test/course?table=[table]&section=[tuile moodle]',
         ]);
         $supportRequest = SupportRequest::factory()->create([
             'student_id' => $student->id,
@@ -1109,7 +1109,7 @@ class TeacherSpaceTest extends TestCase
             ->test(MyRequests::class)
             ->assertSee('Create personal note')
             ->assertSee('Camille Tremblay')
-            ->assertSee('Francais - Tile 6')
+            ->assertSee('Francais - Tuile Moodle 6')
             ->assertSee('https://moodle.example.test/course?table=14&amp;section=6', false)
             ->assertSee('aria-label="Open the subject link"', false)
             ->set('noteBodies.'.$supportRequest->id, 'Verifier le suivi demain.')
@@ -1159,7 +1159,7 @@ class TeacherSpaceTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
             'name' => 'Mathematiques',
-            'url' => 'https://moodle.example.test/course?table=[table]&section=[section]',
+            'url' => 'https://moodle.example.test/course?table=[table]&section=[tuile moodle]',
         ]);
         $supportRequest = SupportRequest::factory()->create([
             'classroom_id' => $classroom->id,
@@ -1209,7 +1209,7 @@ class TeacherSpaceTest extends TestCase
             ->assertDontSee('2026-06-22 14:30')
             ->assertSee('Request linked to this note')
             ->assertSee('Local 305')
-            ->assertSee('Mathematiques - Tile 7')
+            ->assertSee('Mathematiques - Tuile Moodle 7')
             ->assertSee('https://moodle.example.test/course?table=12&amp;section=7', false)
             ->assertSee('aria-label="Open the subject link"', false)
             ->assertSee('Table')

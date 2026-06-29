@@ -51,7 +51,7 @@
                                                 aria-label="{{ __('Open the subject link') }}"
                                             >
                                                 <span class="whitespace-normal break-words">
-                                                    {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
+                                                    <x-support-request-subject-summary :support-request="$supportRequest" />
                                                     <svg class="ml-1 inline-block h-3.5 w-3.5 shrink-0 align-[-2px] text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
                                                     </svg>
@@ -59,7 +59,7 @@
                                             </a>
                                         @else
                                             <div class="whitespace-normal break-words px-2 py-1.5 text-sm font-medium leading-snug text-gray-700">
-                                                {{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}
+                                                <x-support-request-subject-summary :support-request="$supportRequest" />
                                             </div>
                                         @endif
                                     @endif
@@ -139,7 +139,7 @@
                                 aria-label="{{ __('Open the subject link') }}"
                             >
                                 <span class="whitespace-normal break-words">
-                                    {{ $managedRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $managedRequest->moodle_tile_number }}
+                                    <x-support-request-subject-summary :support-request="$managedRequest" />
                                     <svg class="ml-1 inline-block h-3.5 w-3.5 shrink-0 align-[-2px] text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 6.364 6.364l-1.768 1.768a4.5 4.5 0 0 1-6.364 0m1.768-8.132-1.768-1.768a4.5 4.5 0 0 0-6.364 0L3.29 8.688a4.5 4.5 0 0 0 6.364 6.364l1.768-1.768" />
                                     </svg>
@@ -147,7 +147,7 @@
                             </a>
                         @else
                             <div class="mt-1 whitespace-normal break-words py-1.5 text-sm font-medium leading-snug text-gray-800">
-                                {{ $managedRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $managedRequest->moodle_tile_number }}
+                                <x-support-request-subject-summary :support-request="$managedRequest" />
                             </div>
                         @endif
                     </div>

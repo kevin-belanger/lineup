@@ -140,11 +140,11 @@ class RequestStatistics extends Component
                 'student_id',
                 'classroom_id',
                 'subject_id',
-                'moodle_tile_number',
                 'completed_at',
                 'calculated_wait_time_minutes',
                 'calculated_response_time_minutes',
-            ]);
+            ])
+            ->load('fieldAnswers');
     }
 
     /**

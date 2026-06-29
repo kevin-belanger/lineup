@@ -130,6 +130,7 @@ class PersonalNotes extends Component
         $noteRelations = [
             'supportRequest.classroom:id,name',
             'supportRequest.subject:id,name,url',
+            'supportRequest.fieldAnswers',
             'supportRequest.student:id,first_name,last_name,deleted_at',
             'supportRequest.priorityRequester:id,first_name,last_name,deleted_at',
         ];

@@ -66,8 +66,28 @@
                         x-data="{
                             name: @js($shouldRestoreSubjectCreateInput ? old('name', '') : ''),
                             url: @js($shouldRestoreSubjectCreateInput ? old('url', '') : ''),
+                            requestFields: @js(collect($shouldRestoreSubjectCreateInput ? old('request_fields', []) : [])->values()->map(fn ($field, $index) => [
+                                'key' => 'new-'.$index,
+                                'id' => $field['id'] ?? '',
+                                'name' => $field['name'] ?? '',
+                                'type' => $field['type'] ?? \App\Models\SubjectRequestField::TYPE_TEXT,
+                                'is_required' => (bool) ($field['is_required'] ?? false),
+                            ])->all()),
+                            fieldTypes: @js(\App\Models\SubjectRequestField::typeLabels()),
                             nameError: '',
                             urlError: '',
+                            addRequestField() {
+                                this.requestFields.push({
+                                    key: `new-${Date.now()}-${this.requestFields.length}`,
+                                    id: '',
+                                    name: '',
+                                    type: @js(\App\Models\SubjectRequestField::TYPE_TEXT),
+                                    is_required: false,
+                                });
+                            },
+                            removeRequestField(index) {
+                                this.requestFields.splice(index, 1);
+                            },
                             validateName() {
                                 this.nameError = this.subjectNameExists(this.name)
                                     ? this.duplicateSubjectMessage
@@ -83,7 +103,7 @@
                                 }
 
                                 try {
-                                    const candidate = this.url.replaceAll('[table]', '1').replaceAll('[section]', '1');
+                                    const candidate = this.url.replace(/\[[^\]]+\]/g, '1');
                                     new URL(candidate);
 
                                     return true;
@@ -127,10 +147,64 @@
                             <x-input-label for="url" :value="__('URL')" />
                             <x-text-input id="url" name="url" type="text" x-model="url" x-on:input="validateUrl()" class="mt-1 block w-full" />
                             <p class="mt-1 text-xs text-gray-500">
-                                {{ __('You can use [table] to insert the table number and [section] to insert the Moodle tile number in the URL.') }}
+                                {{ __('You can use [table] and request field names in brackets in the URL.') }}
                             </p>
                             <p x-show="urlError" x-text="urlError" class="mt-2 text-sm text-red-600"></p>
                             <x-input-error :messages="$errors->get('url')" class="mt-2" />
+                        </div>
+
+                        <div class="rounded-md border border-gray-100 bg-gray-50 p-4">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ __('Request fields') }}</div>
+                                <p class="text-sm text-gray-500">{{ __('These questions are shown to students when this subject is selected.') }}</p>
+                            </div>
+
+                            <div class="mt-3 space-y-3">
+                                <template x-for="(field, index) in requestFields" :key="field.key">
+                                    <div class="rounded-md border border-gray-200 bg-white p-3">
+                                        <input type="hidden" x-bind:name="`request_fields[${index}][id]`" x-model="field.id">
+
+                                        <div class="grid grid-cols-[minmax(0,1fr)_8.5rem] items-end gap-3">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-create-${index}-name`">{{ __('Name') }}</label>
+                                                <input x-bind:id="`request-field-create-${index}-name`" x-bind:name="`request_fields[${index}][name]`" x-model="field.name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-create-${index}-type`">{{ __('Type') }}</label>
+                                                <select x-bind:id="`request-field-create-${index}-type`" x-bind:name="`request_fields[${index}][type]`" x-model="field.type" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                    <template x-for="(label, value) in fieldTypes" :key="value">
+                                                        <option x-bind:value="value" x-text="label"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                                <input type="checkbox" x-bind:name="`request_fields[${index}][is_required]`" value="1" x-model="field.is_required" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                {{ __('Required') }}
+                                            </label>
+
+                                            <button type="button" x-on:click="removeRequestField(index)" class="inline-flex w-auto items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                                {{ __('Remove') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <div x-show="requestFields.length === 0" class="rounded-md border border-dashed border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
+                                    {{ __('No request fields.') }}
+                                </div>
+
+                                <button type="button" x-on:click="addRequestField()" class="flex w-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    {{ __('Add field') }}
+                                </button>
+                            </div>
+
+                            <x-input-error :messages="$errors->get('request_fields')" class="mt-2" />
+                            <x-input-error :messages="$errors->get('request_fields.*.name')" class="mt-2" />
+                            <x-input-error :messages="$errors->get('request_fields.*.type')" class="mt-2" />
                         </div>
 
                         @php
@@ -316,6 +390,19 @@
                                             @if ($subject->url)
                                                 <div class="break-all text-sm text-indigo-700">{{ $subject->url }}</div>
                                             @endif
+
+                                            @php
+                                                $activeRequestFields = $subject->requestFields->whereNull('archived_at');
+                                            @endphp
+                                            @if ($activeRequestFields->isNotEmpty())
+                                                <div class="flex flex-wrap gap-1.5">
+                                                    @foreach ($activeRequestFields as $field)
+                                                        <span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                                                            {{ $field->name }} · {{ \App\Models\SubjectRequestField::typeLabels()[$field->type] ?? $field->type }}@if ($field->is_required) · {{ __('Required') }}@endif
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm">
@@ -352,8 +439,28 @@
                                             x-data="{
                                                 name: @js($subject->name),
                                                 url: @js($subject->url ?? ''),
+                                                requestFields: @js($subject->requestFields->whereNull('archived_at')->values()->map(fn ($field) => [
+                                                    'key' => 'existing-'.$field->id,
+                                                    'id' => $field->id,
+                                                    'name' => $field->name,
+                                                    'type' => $field->type,
+                                                    'is_required' => $field->is_required,
+                                                ])->all()),
+                                                fieldTypes: @js(\App\Models\SubjectRequestField::typeLabels()),
                                                 nameError: '',
                                                 urlError: '',
+                                                addRequestField() {
+                                                    this.requestFields.push({
+                                                        key: `new-${Date.now()}-${this.requestFields.length}`,
+                                                        id: '',
+                                                        name: '',
+                                                        type: @js(\App\Models\SubjectRequestField::TYPE_TEXT),
+                                                        is_required: false,
+                                                    });
+                                                },
+                                                removeRequestField(index) {
+                                                    this.requestFields.splice(index, 1);
+                                                },
                                                 validateName() {
                                                     this.nameError = this.subjectNameExists(this.name, {{ $subject->id }})
                                                         ? this.duplicateSubjectMessage
@@ -369,7 +476,7 @@
                                                     }
 
                                                     try {
-                                                        const candidate = this.url.replaceAll('[table]', '1').replaceAll('[section]', '1');
+                                                        const candidate = this.url.replace(/\[[^\]]+\]/g, '1');
                                                         new URL(candidate);
 
                                                         return true;
@@ -413,10 +520,64 @@
                                                 <x-input-label for="subject-{{ $subject->id }}-url" :value="__('URL')" />
                                                 <x-text-input id="subject-{{ $subject->id }}-url" name="url" type="text" x-model="url" x-on:input="validateUrl()" class="mt-1 block w-full" />
                                                 <p class="mt-1 text-xs text-gray-500">
-                                                    {{ __('You can use [table] to insert the table number and [section] to insert the Moodle tile number in the URL.') }}
+                                                    {{ __('You can use [table] and request field names in brackets in the URL.') }}
                                                 </p>
                                                 <p x-show="urlError" x-text="urlError" class="mt-2 text-sm text-red-600"></p>
                                                 <x-input-error :messages="$errors->get('url')" class="mt-2" />
+                                            </div>
+
+                                            <div class="rounded-md border border-gray-100 bg-gray-50 p-4">
+                                                <div>
+                                                    <div class="text-sm font-medium text-gray-900">{{ __('Request fields') }}</div>
+                                                    <p class="text-sm text-gray-500">{{ __('These questions are shown to students when this subject is selected.') }}</p>
+                                                </div>
+
+                                                <div class="mt-3 space-y-3">
+                                                    <template x-for="(field, index) in requestFields" :key="field.key">
+                                                        <div class="rounded-md border border-gray-200 bg-white p-3">
+                                                            <input type="hidden" x-bind:name="`request_fields[${index}][id]`" x-model="field.id">
+
+                                                            <div class="grid grid-cols-[minmax(0,1fr)_8.5rem] items-end gap-3">
+                                                                <div>
+                                                                    <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-edit-{{ $subject->id }}-${index}-name`">{{ __('Name') }}</label>
+                                                                    <input x-bind:id="`request-field-edit-{{ $subject->id }}-${index}-name`" x-bind:name="`request_fields[${index}][name]`" x-model="field.name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                                </div>
+
+                                                                <div>
+                                                                    <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-edit-{{ $subject->id }}-${index}-type`">{{ __('Type') }}</label>
+                                                                    <select x-bind:id="`request-field-edit-{{ $subject->id }}-${index}-type`" x-bind:name="`request_fields[${index}][type]`" x-model="field.type" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                                        <template x-for="(label, value) in fieldTypes" :key="value">
+                                                                            <option x-bind:value="value" x-text="label"></option>
+                                                                        </template>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                                                    <input type="checkbox" x-bind:name="`request_fields[${index}][is_required]`" value="1" x-model="field.is_required" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                                    {{ __('Required') }}
+                                                                </label>
+
+                                                                <button type="button" x-on:click="removeRequestField(index)" class="inline-flex w-auto items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                                                    {{ __('Remove') }}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+
+                                                    <div x-show="requestFields.length === 0" class="rounded-md border border-dashed border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
+                                                        {{ __('No request fields.') }}
+                                                    </div>
+
+                                                    <button type="button" x-on:click="addRequestField()" class="flex w-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                                        {{ __('Add field') }}
+                                                    </button>
+                                                </div>
+
+                                                <x-input-error :messages="$errors->get('request_fields')" class="mt-2" />
+                                                <x-input-error :messages="$errors->get('request_fields.*.name')" class="mt-2" />
+                                                <x-input-error :messages="$errors->get('request_fields.*.type')" class="mt-2" />
                                             </div>
 
                                             @php

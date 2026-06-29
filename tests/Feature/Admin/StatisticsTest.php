@@ -6,6 +6,7 @@ use App\Livewire\Admin\RequestStatistics;
 use App\Livewire\Admin\RequestTileStatistics;
 use App\Models\Classroom;
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use App\Models\SupportRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -135,7 +136,7 @@ class StatisticsTest extends TestCase
             ->assertDontSee('10 min');
     }
 
-    public function test_statistics_show_subject_and_tile_breakdowns(): void
+    public function test_statistics_show_subject_and_request_field_breakdowns(): void
     {
         Carbon::setTestNow('2026-06-22 12:00:00');
 
@@ -180,12 +181,19 @@ class StatisticsTest extends TestCase
             ->assertSee('Requests by subject')
             ->assertSee('Mathematiques')
             ->assertSee('Sciences')
-            ->assertSee('Requests by Moodle tile');
+            ->assertSee('Requests by request field');
+
+        $moodleTileField = SubjectRequestField::query()
+            ->where('subject_id', $math->id)
+            ->where('key', SubjectRequestField::keyForName('Tuile Moodle'))
+            ->firstOrFail();
 
         Livewire::actingAs($teacher)
             ->test(RequestTileStatistics::class)
             ->set('selectedSubjectId', (string) $math->id)
+            ->set('selectedRequestFieldId', (string) $moodleTileField->id)
             ->assertSee('Subject: Mathematiques')
+            ->assertSee('Request field: Tuile Moodle')
             ->assertSee('>3</td>', false)
             ->assertSee('20 min')
             ->assertSee('30 min')

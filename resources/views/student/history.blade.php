@@ -33,8 +33,10 @@
                                         <div class="mt-1 text-sm text-gray-600">
                                             {{ $supportRequest->classroom?->name ?? 'N/A' }}
                                             ·
-                                            {{ __('Moodle tile :tile', ['tile' => $supportRequest->moodle_tile_number]) }}
-                                            ·
+                                            @if ($supportRequest->fieldAnswerSummary() !== '')
+                                                {{ $supportRequest->fieldAnswerSummary() }}
+                                                ·
+                                            @endif
                                             {{ __('Table :table', ['table' => $supportRequest->table_number]) }}
                                         </div>
                                     </td>

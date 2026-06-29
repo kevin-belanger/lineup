@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['classroom_id', 'name', 'description', 'url', 'is_active'])]
 class Subject extends Model
@@ -31,5 +32,18 @@ class Subject extends Model
     {
         return $this->belongsToMany(Classroom::class, 'local_subject', 'subject_id', 'local_id')
             ->withTimestamps();
+    }
+
+    public function requestFields(): HasMany
+    {
+        return $this->hasMany(SubjectRequestField::class)
+            ->orderBy('sort_order')
+            ->orderBy('name');
+    }
+
+    public function activeRequestFields(): HasMany
+    {
+        return $this->requestFields()
+            ->whereNull('archived_at');
     }
 }

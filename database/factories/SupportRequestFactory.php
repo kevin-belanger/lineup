@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Classroom;
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use App\Models\SupportRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -13,6 +14,42 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SupportRequestFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterCreating(function (SupportRequest $supportRequest): void {
+            if ($supportRequest->subject_id === null || $supportRequest->moodle_tile_number === null) {
+                return;
+            }
+
+            $field = SubjectRequestField::query()->firstOrCreate(
+                [
+                    'subject_id' => $supportRequest->subject_id,
+                    'key' => SubjectRequestField::keyForName('Tuile Moodle'),
+                ],
+                [
+                    'name' => 'Tuile Moodle',
+                    'type' => SubjectRequestField::TYPE_INTEGER,
+                    'is_required' => true,
+                    'sort_order' => 0,
+                    'archived_at' => null,
+                ],
+            );
+
+            $supportRequest->fieldAnswers()->firstOrCreate(
+                [
+                    'subject_request_field_id' => $field->id,
+                ],
+                [
+                    'field_name' => $field->name,
+                    'field_key' => $field->key,
+                    'field_type' => $field->type,
+                    'value' => (string) $supportRequest->moodle_tile_number,
+                    'sort_order' => $field->sort_order,
+                ],
+            );
+        });
+    }
+
     /**
      * Define the model's default state.
      *

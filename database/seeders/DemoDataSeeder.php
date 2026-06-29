@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Classroom;
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use App\Models\SupportRequest;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -183,16 +184,34 @@ class DemoDataSeeder extends Seeder
                     [
                         'classroom_id' => $classroom->id,
                         'description' => null,
-                        'url' => 'https://moodle.example.test/course?table=[table]&section=[section]',
+                        'url' => 'https://moodle.example.test/course?table=[table]&section=[tuile moodle]',
                         'is_active' => true,
                     ],
                 );
 
                 $subject->locals()->sync([$classroom->id]);
+                $this->ensureMoodleTileField($subject);
 
                 return $subject;
             })->values();
         })->values();
+    }
+
+    private function ensureMoodleTileField(Subject $subject): SubjectRequestField
+    {
+        return SubjectRequestField::query()->updateOrCreate(
+            [
+                'subject_id' => $subject->id,
+                'key' => SubjectRequestField::keyForName('Tuile Moodle'),
+            ],
+            [
+                'name' => 'Tuile Moodle',
+                'type' => SubjectRequestField::TYPE_INTEGER,
+                'is_required' => true,
+                'sort_order' => 0,
+                'archived_at' => null,
+            ],
+        );
     }
 
     /**
@@ -259,6 +278,38 @@ class DemoDataSeeder extends Seeder
         foreach (array_chunk($rows, 1000) as $chunk) {
             SupportRequest::query()->insert($chunk);
         }
+
+        $this->seedMoodleTileAnswers();
+    }
+
+    private function seedMoodleTileAnswers(): void
+    {
+        $fieldIds = SubjectRequestField::query()
+            ->where('key', SubjectRequestField::keyForName('Tuile Moodle'))
+            ->pluck('id', 'subject_id');
+
+        SupportRequest::query()
+            ->whereNotNull('subject_id')
+            ->whereNotNull('moodle_tile_number')
+            ->whereDoesntHave('fieldAnswers')
+            ->orderBy('id')
+            ->get(['id', 'subject_id', 'moodle_tile_number'])
+            ->each(function (SupportRequest $supportRequest) use ($fieldIds): void {
+                $fieldId = $fieldIds[$supportRequest->subject_id] ?? null;
+
+                if ($fieldId === null) {
+                    return;
+                }
+
+                $supportRequest->fieldAnswers()->create([
+                    'subject_request_field_id' => $fieldId,
+                    'field_name' => 'Tuile Moodle',
+                    'field_key' => SubjectRequestField::keyForName('Tuile Moodle'),
+                    'field_type' => SubjectRequestField::TYPE_INTEGER,
+                    'value' => (string) $supportRequest->moodle_tile_number,
+                    'sort_order' => 0,
+                ]);
+            });
     }
 
     /**

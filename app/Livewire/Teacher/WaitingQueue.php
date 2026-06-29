@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Teacher;
 
-use App\Models\SupportRequest;
 use App\Models\Classroom;
-use App\Services\SupportRequestDurationCalculator;
+use App\Models\SupportRequest;
 use App\Services\SupportRequestChangeMarker;
+use App\Services\SupportRequestDurationCalculator;
 use App\Services\TeacherActiveRequestOrdering;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
@@ -156,7 +156,7 @@ class WaitingQueue extends Component
                 ->with('openingHours')
                 ->find($this->currentClassroomId()),
             'requests' => SupportRequest::query()
-                ->with(['student:id,first_name,last_name,deleted_at', 'subject:id,name,url', 'priorityRequester:id,first_name,last_name,deleted_at'])
+                ->with(['student:id,first_name,last_name,deleted_at', 'subject:id,name,url', 'fieldAnswers', 'priorityRequester:id,first_name,last_name,deleted_at'])
                 ->where('classroom_id', $this->currentClassroomId())
                 ->where('status', SupportRequest::STATUS_WAITING)
                 ->orderByDesc('is_priority')

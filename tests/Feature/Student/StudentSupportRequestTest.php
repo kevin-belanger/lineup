@@ -7,6 +7,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomOpeningHour;
 use App\Models\RequestType;
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\ApplicationSettings;
@@ -280,6 +281,11 @@ class StudentSupportRequestTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
         ]);
+        $moodleTileField = SubjectRequestField::factory()->required()->integer()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Tuile Moodle',
+            'key' => SubjectRequestField::keyForName('Tuile Moodle'),
+        ]);
         $requestType = RequestType::factory()->create([
             'name' => 'Validation',
             'sort_order' => 1,
@@ -290,7 +296,9 @@ class StudentSupportRequestTest extends TestCase
             ->withSession(['current_classroom_id' => $classroom->id])
             ->post(route('student.requests.store'), [
                 'subject_id' => $subject->id,
-                'moodle_tile_number' => 42,
+                'request_fields' => [
+                    $moodleTileField->id => 42,
+                ],
                 'table_number' => '8',
                 'request_type_id' => $requestType->id,
                 'comment' => 'Je veux valider mon exercice.',
@@ -306,6 +314,90 @@ class StudentSupportRequestTest extends TestCase
             'table_number' => '8',
             'request_type' => 'Validation',
             'status' => SupportRequest::STATUS_WAITING,
+        ]);
+        $this->assertDatabaseHas('support_request_field_answers', [
+            'subject_request_field_id' => $moodleTileField->id,
+            'field_name' => 'Tuile Moodle',
+            'value' => '42',
+        ]);
+    }
+
+    public function test_student_dynamic_request_fields_are_validated_and_saved(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+        $chapterField = SubjectRequestField::factory()->required()->integer()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Chapitre',
+            'key' => SubjectRequestField::keyForName('Chapitre'),
+        ]);
+        $durationField = SubjectRequestField::factory()->required()->decimal()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Duree',
+            'key' => SubjectRequestField::keyForName('Duree'),
+        ]);
+        $topicField = SubjectRequestField::factory()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Sujet',
+            'key' => SubjectRequestField::keyForName('Sujet'),
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->post(route('student.requests.store'), [
+                'subject_id' => $subject->id,
+                'request_fields' => [
+                    $chapterField->id => '2.5',
+                    $durationField->id => 'abc',
+                ],
+                'table_number' => '8',
+            ])
+            ->assertSessionHasErrors([
+                "request_fields.{$chapterField->id}",
+                "request_fields.{$durationField->id}",
+            ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->post(route('student.requests.store'), [
+                'subject_id' => $subject->id,
+                'request_fields' => [
+                    $chapterField->id => '2',
+                    $durationField->id => '1.5',
+                    $topicField->id => 'Equations',
+                ],
+                'table_number' => '8',
+            ])
+            ->assertRedirect(route('student.dashboard'));
+
+        $supportRequest = SupportRequest::query()->where('student_id', $student->id)->firstOrFail();
+
+        $this->assertNull($supportRequest->moodle_tile_number);
+        $this->assertDatabaseHas('support_request_field_answers', [
+            'support_request_id' => $supportRequest->id,
+            'subject_request_field_id' => $chapterField->id,
+            'field_name' => 'Chapitre',
+            'field_type' => SubjectRequestField::TYPE_INTEGER,
+            'value' => '2',
+        ]);
+        $this->assertDatabaseHas('support_request_field_answers', [
+            'support_request_id' => $supportRequest->id,
+            'subject_request_field_id' => $durationField->id,
+            'field_name' => 'Duree',
+            'field_type' => SubjectRequestField::TYPE_DECIMAL,
+            'value' => '1.5',
+        ]);
+        $this->assertDatabaseHas('support_request_field_answers', [
+            'support_request_id' => $supportRequest->id,
+            'subject_request_field_id' => $topicField->id,
+            'field_name' => 'Sujet',
+            'field_type' => SubjectRequestField::TYPE_TEXT,
+            'value' => 'Equations',
         ]);
     }
 
@@ -437,6 +529,11 @@ class StudentSupportRequestTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
         ]);
+        $moodleTileField = SubjectRequestField::factory()->required()->integer()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Tuile Moodle',
+            'key' => SubjectRequestField::keyForName('Tuile Moodle'),
+        ]);
 
         RequestType::factory()->create([
             'name' => 'Correction',
@@ -555,6 +652,11 @@ class StudentSupportRequestTest extends TestCase
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
         ]);
+        $moodleTileField = SubjectRequestField::factory()->required()->integer()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Tuile Moodle',
+            'key' => SubjectRequestField::keyForName('Tuile Moodle'),
+        ]);
         $requestType = RequestType::factory()->create([
             'name' => 'Correction',
             'sort_order' => 1,
@@ -562,7 +664,9 @@ class StudentSupportRequestTest extends TestCase
 
         $response = $this->actingAs($student)->patch(route('student.requests.update', $supportRequest), [
             'subject_id' => $subject->id,
-            'moodle_tile_number' => 7,
+            'request_fields' => [
+                $moodleTileField->id => 7,
+            ],
             'table_number' => '12',
             'request_type_id' => $requestType->id,
             'comment' => 'Correction svp.',
@@ -576,6 +680,12 @@ class StudentSupportRequestTest extends TestCase
         $this->assertSame(7, $supportRequest->moodle_tile_number);
         $this->assertSame('12', $supportRequest->table_number);
         $this->assertSame('Correction', $supportRequest->request_type);
+        $this->assertDatabaseHas('support_request_field_answers', [
+            'support_request_id' => $supportRequest->id,
+            'subject_request_field_id' => $moodleTileField->id,
+            'field_name' => 'Tuile Moodle',
+            'value' => '7',
+        ]);
     }
 
     public function test_student_request_type_is_required_when_editing_if_setting_is_enabled(): void

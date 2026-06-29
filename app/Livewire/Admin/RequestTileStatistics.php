@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
 use Carbon\CarbonImmutable;
@@ -25,6 +26,13 @@ class RequestTileStatistics extends Component
 
     public string $selectedSubjectId = '';
 
+    public string $selectedRequestFieldId = '';
+
+    public function updatedSelectedSubjectId(): void
+    {
+        $this->selectedRequestFieldId = '';
+    }
+
     public function render(ApplicationSettings $settings): View
     {
         [$start, $end] = $this->dateRange($settings->timezone());
@@ -33,8 +41,10 @@ class RequestTileStatistics extends Component
 
         return view('livewire.admin.request-tile-statistics', [
             'subjectOptions' => $subjectOptions,
-            'tileRows' => $this->tileRows($requests),
+            'requestFieldOptions' => $this->requestFieldOptions(),
+            'fieldValueRows' => $this->fieldValueRows($requests),
             'selectedSubjectName' => $this->selectedSubjectName($subjectOptions),
+            'selectedRequestFieldName' => $this->selectedRequestFieldName(),
         ]);
     }
 
@@ -106,11 +116,11 @@ class RequestTileStatistics extends Component
                 'student_id',
                 'classroom_id',
                 'subject_id',
-                'moodle_tile_number',
                 'completed_at',
                 'calculated_wait_time_minutes',
                 'calculated_response_time_minutes',
-            ]);
+            ])
+            ->load('fieldAnswers');
     }
 
     /**
@@ -156,30 +166,57 @@ class RequestTileStatistics extends Component
 
     /**
      * @param  Collection<int, SupportRequest>  $requests
-     * @return Collection<int, array{tile: string, requests: int, distinct_students: int, percent: float, wait_average: float|null, intervention_average: float|null}>
+     * @return Collection<int, array{field_id: int, field_name: string}>
      */
-    private function tileRows(Collection $requests): Collection
+    private function requestFieldOptions(): Collection
     {
         if (! ctype_digit($this->selectedSubjectId)) {
             return collect();
         }
 
+        return SubjectRequestField::query()
+            ->where('subject_id', (int) $this->selectedSubjectId)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (SubjectRequestField $field): array => [
+                'field_id' => $field->id,
+                'field_name' => $field->name,
+            ]);
+    }
+
+    /**
+     * @param  Collection<int, SupportRequest>  $requests
+     * @return Collection<int, array{value: string, requests: int, distinct_students: int, percent: float, wait_average: float|null, intervention_average: float|null}>
+     */
+    private function fieldValueRows(Collection $requests): Collection
+    {
+        if (! ctype_digit($this->selectedSubjectId) || ! ctype_digit($this->selectedRequestFieldId)) {
+            return collect();
+        }
+
+        $fieldId = (int) $this->selectedRequestFieldId;
         $subjectRequests = $requests->where('subject_id', (int) $this->selectedSubjectId);
         $totalRequests = max($subjectRequests->count(), 1);
 
         return $subjectRequests
-            ->groupBy(fn (SupportRequest $request): string => $request->moodle_tile_number === null ? 'none' : (string) $request->moodle_tile_number)
-            ->map(fn (Collection $tileRequests, string $tile): array => [
-                'tile' => $tile === 'none' ? __('N/A') : $tile,
-                'requests' => $tileRequests->count(),
-                'distinct_students' => $tileRequests->pluck('student_id')->filter()->unique()->count(),
-                'percent' => round(($tileRequests->count() / $totalRequests) * 100, 1),
-                'wait_average' => $this->averageOrNull($tileRequests->pluck('calculated_wait_time_minutes')->filter(fn ($value): bool => $value !== null)),
-                'intervention_average' => $this->averageOrNull($tileRequests->pluck('calculated_response_time_minutes')->filter(fn ($value): bool => $value !== null)),
+            ->groupBy(function (SupportRequest $request) use ($fieldId): string {
+                $value = $request->fieldAnswers->firstWhere('subject_request_field_id', $fieldId)?->value;
+                $value = trim((string) $value);
+
+                return $value === '' ? 'none' : $value;
+            })
+            ->map(fn (Collection $fieldRequests, string $value): array => [
+                'value' => $value === 'none' ? __('N/A') : $value,
+                'requests' => $fieldRequests->count(),
+                'distinct_students' => $fieldRequests->pluck('student_id')->filter()->unique()->count(),
+                'percent' => round(($fieldRequests->count() / $totalRequests) * 100, 1),
+                'wait_average' => $this->averageOrNull($fieldRequests->pluck('calculated_wait_time_minutes')->filter(fn ($value): bool => $value !== null)),
+                'intervention_average' => $this->averageOrNull($fieldRequests->pluck('calculated_response_time_minutes')->filter(fn ($value): bool => $value !== null)),
             ])
             ->sortBy([
                 ['requests', 'desc'],
-                ['tile', 'asc'],
+                ['value', 'asc'],
             ])
             ->values();
     }
@@ -206,5 +243,16 @@ class RequestTileStatistics extends Component
         }
 
         return $subjectOptions->firstWhere('subject_id', (int) $this->selectedSubjectId)['subject_name'] ?? null;
+    }
+
+    private function selectedRequestFieldName(): ?string
+    {
+        if (! ctype_digit($this->selectedRequestFieldId)) {
+            return null;
+        }
+
+        return SubjectRequestField::query()
+            ->whereKey((int) $this->selectedRequestFieldId)
+            ->value('name');
     }
 }

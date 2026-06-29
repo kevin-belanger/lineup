@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Classroom;
 use App\Models\RequestType;
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use App\Models\SupportRequest;
 use App\Services\ApplicationSettings;
 use App\Services\ClassroomOpeningHours;
 use App\Services\SupportRequestChangeMarker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -49,6 +52,7 @@ class SupportRequestController extends Controller
             ]),
             'classroom' => $classroom,
             'subjects' => $this->activeSubjects($classroom),
+            'requestFieldValues' => old('request_fields', []),
             'requestTypes' => $this->requestTypes(),
             'requestTypeRequired' => $this->requestTypeRequired(),
             'action' => route('student.requests.store'),
@@ -81,8 +85,10 @@ class SupportRequestController extends Controller
             ]);
         }
 
-        SupportRequest::query()->create([
-            ...$this->validatedData($request, $classroom),
+        [$data, $fieldAnswers] = $this->validatedData($request, $classroom);
+
+        $supportRequest = SupportRequest::query()->create([
+            ...$data,
             'student_id' => $request->user()->id,
             'classroom_id' => $classroom->id,
             'assigned_teacher_id' => null,
@@ -90,6 +96,8 @@ class SupportRequestController extends Controller
             'assigned_at' => null,
             'completed_at' => null,
         ]);
+
+        $this->syncFieldAnswers($supportRequest, $fieldAnswers);
 
         app(SupportRequestChangeMarker::class)->touch($classroom->id);
 
@@ -109,6 +117,9 @@ class SupportRequestController extends Controller
             'supportRequest' => $supportRequest,
             'classroom' => $supportRequest->classroom,
             'subjects' => $this->activeSubjects($supportRequest->classroom),
+            'requestFieldValues' => old('request_fields', $supportRequest->fieldAnswers->mapWithKeys(fn ($answer): array => [
+                $answer->subject_request_field_id => $answer->value,
+            ])->all()),
             'requestTypes' => $this->requestTypes(),
             'requestTypeRequired' => $this->requestTypeRequired(),
             'action' => route('student.requests.update', $supportRequest),
@@ -121,7 +132,10 @@ class SupportRequestController extends Controller
         $this->authorizeStudentRequest($request, $supportRequest);
         abort_unless($supportRequest->status === SupportRequest::STATUS_WAITING, 403);
 
-        $supportRequest->update($this->validatedData($request, $supportRequest->classroom, $supportRequest));
+        [$data, $fieldAnswers] = $this->validatedData($request, $supportRequest->classroom, $supportRequest);
+
+        $supportRequest->update($data);
+        $this->syncFieldAnswers($supportRequest, $fieldAnswers);
         app(SupportRequestChangeMarker::class)->touch($supportRequest->classroom_id);
 
         return redirect()->route('student.dashboard')->with('status', __('Request updated.'));
@@ -171,7 +185,7 @@ class SupportRequestController extends Controller
     {
         return view('student.history', [
             'requests' => SupportRequest::query()
-                ->with(['classroom:id,name', 'subject:id,name,url', 'assignedTeacher:id,first_name,last_name,deleted_at'])
+                ->with(['classroom:id,name', 'subject:id,name,url', 'fieldAnswers', 'assignedTeacher:id,first_name,last_name,deleted_at'])
                 ->where('student_id', $request->user()->id)
                 ->whereIn('status', SupportRequest::historyStatuses())
                 ->latest()
@@ -181,7 +195,7 @@ class SupportRequestController extends Controller
     }
 
     /**
-     * @return array{subject_id: int, moodle_tile_number: int, table_number: string, type: string, request_type: ?string, comment: ?string}
+     * @return array{0: array{subject_id: int, moodle_tile_number: ?int, table_number: string, type: string, request_type: ?string, comment: ?string}, 1: array<int, array{field: SubjectRequestField, value: string}>}
      */
     private function validatedData(Request $request, Classroom $classroom, ?SupportRequest $supportRequest = null): array
     {
@@ -194,7 +208,6 @@ class SupportRequestController extends Controller
                 'integer',
                 Rule::exists('subjects', 'id')->where('is_active', true),
             ],
-            'moodle_tile_number' => ['required', 'integer', 'min:1', 'max:9999'],
             'table_number' => ['required', 'string', 'max:50'],
             'request_type_id' => [
                 $requestTypeRequired ? 'required' : 'nullable',
@@ -204,17 +217,20 @@ class SupportRequestController extends Controller
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $subjectIsAvailable = Subject::query()
+        $subject = Subject::query()
+            ->with('activeRequestFields')
             ->whereKey((int) $validated['subject_id'])
             ->where('is_active', true)
             ->whereHas('locals', fn ($query) => $query->whereKey($classroom->id))
-            ->exists();
+            ->first();
 
-        if (! $subjectIsAvailable) {
+        if ($subject === null) {
             throw ValidationException::withMessages([
                 'subject_id' => __('The selected subject is not available in this room.'),
             ]);
         }
+
+        $fieldAnswers = $this->validatedFieldAnswers($request, $subject);
 
         $requestType = null;
 
@@ -226,14 +242,93 @@ class SupportRequestController extends Controller
             $requestType = $supportRequest->request_type;
         }
 
-        return [
+        return [[
             'subject_id' => (int) $validated['subject_id'],
-            'moodle_tile_number' => (int) $validated['moodle_tile_number'],
+            'moodle_tile_number' => $this->legacyMoodleTileNumber($fieldAnswers),
             'table_number' => $validated['table_number'],
             'type' => $requestType ?? '',
             'request_type' => $requestType,
             'comment' => $validated['comment'] ?? null,
-        ];
+        ], $fieldAnswers->all()];
+    }
+
+    /**
+     * @return Collection<int, array{field: SubjectRequestField, value: string}>
+     */
+    private function validatedFieldAnswers(Request $request, Subject $subject)
+    {
+        $rules = [];
+        $attributes = [];
+
+        foreach ($subject->activeRequestFields as $field) {
+            $fieldRules = [$field->is_required ? 'required' : 'nullable'];
+
+            if ($field->type === SubjectRequestField::TYPE_INTEGER) {
+                $fieldRules[] = 'integer';
+            } elseif ($field->type === SubjectRequestField::TYPE_DECIMAL) {
+                $fieldRules[] = 'numeric';
+            } else {
+                $fieldRules[] = 'string';
+                $fieldRules[] = 'max:1000';
+            }
+
+            $rules["request_fields.{$field->id}"] = $fieldRules;
+            $attributes["request_fields.{$field->id}"] = $field->name;
+        }
+
+        $validated = Validator::make($request->all(), $rules, [], $attributes)->validate();
+        $values = $validated['request_fields'] ?? [];
+
+        return $subject->activeRequestFields
+            ->map(function (SubjectRequestField $field) use ($values): ?array {
+                $value = trim((string) ($values[$field->id] ?? ''));
+
+                if ($value === '') {
+                    return null;
+                }
+
+                return [
+                    'field' => $field,
+                    'value' => $value,
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, array{field: SubjectRequestField, value: string}>  $fieldAnswers
+     */
+    private function legacyMoodleTileNumber($fieldAnswers): ?int
+    {
+        $answer = $fieldAnswers->first(fn (array $answer): bool => $answer['field']->key === SubjectRequestField::keyForName('Tuile Moodle'));
+
+        if ($answer === null || ! ctype_digit((string) $answer['value'])) {
+            return null;
+        }
+
+        return (int) $answer['value'];
+    }
+
+    /**
+     * @param  array<int, array{field: SubjectRequestField, value: string}>  $fieldAnswers
+     */
+    private function syncFieldAnswers(SupportRequest $supportRequest, array $fieldAnswers): void
+    {
+        $supportRequest->fieldAnswers()->delete();
+
+        foreach ($fieldAnswers as $answer) {
+            $field = $answer['field'];
+
+            $supportRequest->fieldAnswers()->create([
+                'subject_request_field_id' => $field->id,
+                'field_name' => $field->name,
+                'field_key' => $field->key,
+                'field_type' => $field->type,
+                'value' => $answer['value'],
+                'sort_order' => $field->sort_order,
+            ]);
+        }
     }
 
     private function currentClassroom(Request $request): ?Classroom
@@ -255,6 +350,7 @@ class SupportRequestController extends Controller
     {
         return $classroom->subjects()
             ->where('subjects.is_active', true)
+            ->with('activeRequestFields')
             ->orderBy('subjects.name')
             ->get(['subjects.id', 'subjects.name']);
     }

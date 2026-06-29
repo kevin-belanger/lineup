@@ -140,6 +140,13 @@ class SupportRequest extends Model
         return $this->hasMany(PersonalNote::class);
     }
 
+    public function fieldAnswers(): HasMany
+    {
+        return $this->hasMany(SupportRequestFieldAnswer::class)
+            ->orderBy('sort_order')
+            ->orderBy('field_name');
+    }
+
     public function typeLabel(): string
     {
         if (is_string($this->request_type) && trim($this->request_type) !== '') {
@@ -177,14 +184,41 @@ class SupportRequest extends Model
             return null;
         }
 
+        $values = $this->fieldPlaceholderValues();
+
         if ($this->table_number !== null) {
-            $url = str_replace('[table]', (string) $this->table_number, $url);
+            $values['table'] = (string) $this->table_number;
         }
 
-        if ($this->moodle_tile_number !== null) {
-            $url = str_replace('[section]', (string) $this->moodle_tile_number, $url);
-        }
+        return preg_replace_callback('/\[([^\]]+)\]/u', function (array $matches) use ($values): string {
+            $key = SubjectRequestField::keyForName($matches[1]);
 
-        return $url;
+            if (! array_key_exists($key, $values)) {
+                return $matches[0];
+            }
+
+            return rawurlencode($values[$key]);
+        }, $url) ?? $url;
+    }
+
+    public function fieldAnswerSummary(): string
+    {
+        return $this->fieldAnswers
+            ->filter(fn (SupportRequestFieldAnswer $answer): bool => trim((string) $answer->value) !== '')
+            ->map(fn (SupportRequestFieldAnswer $answer): string => "{$answer->field_name} {$answer->value}")
+            ->implode(' · ');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function fieldPlaceholderValues(): array
+    {
+        return $this->fieldAnswers
+            ->filter(fn (SupportRequestFieldAnswer $answer): bool => trim((string) $answer->value) !== '')
+            ->mapWithKeys(fn (SupportRequestFieldAnswer $answer): array => [
+                $answer->field_key => (string) $answer->value,
+            ])
+            ->all();
     }
 }

@@ -61,7 +61,7 @@ class ActiveRequests extends Component
     {
         return view('livewire.student.active-requests', [
             'requests' => SupportRequest::query()
-                ->with(['classroom:id,name', 'subject:id,name,url', 'assignedTeacher:id,first_name,last_name,deleted_at'])
+                ->with(['classroom:id,name', 'subject:id,name,url', 'fieldAnswers', 'assignedTeacher:id,first_name,last_name,deleted_at'])
                 ->where('student_id', auth()->id())
                 ->whereIn('status', SupportRequest::activeStatuses())
                 ->latest()

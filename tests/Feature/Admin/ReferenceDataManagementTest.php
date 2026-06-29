@@ -8,6 +8,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomOpeningHour;
 use App\Models\PublicDisplaySlug;
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use App\Models\SupportRequest;
 use App\Models\User;
 use App\Services\ApplicationSettings;
@@ -309,7 +310,7 @@ class ReferenceDataManagementTest extends TestCase
             'local_ids' => [$classroom->id],
             'name' => 'Sciences',
             'description' => 'Cours de sciences',
-            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
+            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[tuile moodle]&table=[table]',
             'is_active' => '1',
         ])
             ->assertRedirect()
@@ -335,6 +336,91 @@ class ReferenceDataManagementTest extends TestCase
         $this->assertSame('Science', $subject->name);
         $this->assertSame('https://moodle.example.com/course/view.php?id=13', $subject->url);
         $this->assertFalse($subject->is_active);
+    }
+
+    public function test_admin_can_manage_dynamic_subject_request_fields(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create(['name' => 'Local 401']);
+
+        $this->actingAs($admin)->post(route('admin.subjects.store'), [
+            'local_ids' => [$classroom->id],
+            'name' => 'Mathematiques',
+            'description' => null,
+            'url' => 'https://example.test/course?table=[table]&chapter=[chapitre]',
+            'is_active' => '1',
+            'request_fields' => [
+                [
+                    'name' => 'Chapitre',
+                    'type' => SubjectRequestField::TYPE_INTEGER,
+                    'is_required' => '1',
+                ],
+                [
+                    'name' => 'Note finale',
+                    'type' => SubjectRequestField::TYPE_DECIMAL,
+                ],
+            ],
+        ])->assertRedirect();
+
+        $subject = Subject::query()->where('name', 'Mathematiques')->firstOrFail();
+        $chapterField = $subject->requestFields()->where('key', SubjectRequestField::keyForName('Chapitre'))->firstOrFail();
+        $gradeField = $subject->requestFields()->where('key', SubjectRequestField::keyForName('Note finale'))->firstOrFail();
+
+        $this->assertSame(SubjectRequestField::TYPE_INTEGER, $chapterField->type);
+        $this->assertTrue($chapterField->is_required);
+        $this->assertSame(SubjectRequestField::TYPE_DECIMAL, $gradeField->type);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.subjects.index'))
+            ->assertOk()
+            ->assertSee('Chapitre')
+            ->assertSee('Whole number')
+            ->assertSee('Required')
+            ->assertDontSee('@foreach', false)
+            ->assertDontSee('{{ $subject->is_active', false)
+            ->assertDontSee('requestFields->whereNull', false);
+
+        $this->actingAs($admin)->patch(route('admin.subjects.update', $subject), [
+            'local_ids' => [$classroom->id],
+            'name' => 'Mathematiques',
+            'description' => null,
+            'url' => 'https://example.test/course?table=[table]&chapter=[chapitre]',
+            'is_active' => '1',
+            'request_fields' => [
+                [
+                    'id' => $gradeField->id,
+                    'name' => 'Note finale',
+                    'type' => SubjectRequestField::TYPE_TEXT,
+                ],
+            ],
+        ])->assertRedirect();
+
+        $this->assertNotNull($chapterField->fresh()->archived_at);
+        $this->assertSame(SubjectRequestField::TYPE_TEXT, $gradeField->fresh()->type);
+
+        $this->actingAs($admin)->patch(route('admin.subjects.update', $subject), [
+            'local_ids' => [$classroom->id],
+            'name' => 'Mathematiques',
+            'description' => null,
+            'url' => 'https://example.test/course?table=[table]&chapter=[chapitre]',
+            'is_active' => '1',
+            'request_fields' => [
+                [
+                    'id' => $gradeField->id,
+                    'name' => 'Note finale',
+                    'type' => SubjectRequestField::TYPE_TEXT,
+                ],
+                [
+                    'name' => 'Chapitre',
+                    'type' => SubjectRequestField::TYPE_INTEGER,
+                    'is_required' => '1',
+                ],
+            ],
+        ])->assertRedirect();
+
+        $this->assertNull($chapterField->fresh()->archived_at);
+        $this->assertSame(1, $subject->requestFields()->where('key', SubjectRequestField::keyForName('Chapitre'))->count());
     }
 
     public function test_admin_can_create_subject_with_no_classroom(): void
@@ -381,7 +467,7 @@ class ReferenceDataManagementTest extends TestCase
         $this->actingAs($admin)->post(route('admin.subjects.store'), [
             'local_ids' => [$classroom->id],
             'name' => 'Informatique',
-            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
+            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[tuile moodle]&table=[table]',
             'is_active' => '1',
         ])->assertSessionHasNoErrors();
 
@@ -532,7 +618,7 @@ class ReferenceDataManagementTest extends TestCase
         $classroom = Classroom::factory()->create();
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
-            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
+            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[tuile moodle]&table=[table]',
         ]);
         SupportRequest::factory()->create([
             'classroom_id' => $classroom->id,
@@ -552,6 +638,53 @@ class ReferenceDataManagementTest extends TestCase
             ->assertSee('rel="noopener noreferrer"', false);
     }
 
+    public function test_subject_url_placeholders_are_case_insensitive(): void
+    {
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'url' => 'https://example.test/course?table=[TABLE]&chapter=[CHAPITRE]&grade=[note finale]',
+        ]);
+        $chapterField = SubjectRequestField::factory()->integer()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Chapitre',
+            'key' => SubjectRequestField::keyForName('Chapitre'),
+        ]);
+        $gradeField = SubjectRequestField::factory()->decimal()->create([
+            'subject_id' => $subject->id,
+            'name' => 'Note Finale',
+            'key' => SubjectRequestField::keyForName('Note Finale'),
+        ]);
+        $supportRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'moodle_tile_number' => null,
+            'table_number' => '12',
+        ]);
+
+        $supportRequest->fieldAnswers()->create([
+            'subject_request_field_id' => $chapterField->id,
+            'field_name' => $chapterField->name,
+            'field_key' => $chapterField->key,
+            'field_type' => $chapterField->type,
+            'value' => '4',
+            'sort_order' => 0,
+        ]);
+        $supportRequest->fieldAnswers()->create([
+            'subject_request_field_id' => $gradeField->id,
+            'field_name' => $gradeField->name,
+            'field_key' => $gradeField->key,
+            'field_type' => $gradeField->type,
+            'value' => '92.5',
+            'sort_order' => 1,
+        ]);
+
+        $this->assertSame(
+            'https://example.test/course?table=12&chapter=4&grade=92.5',
+            $supportRequest->fresh(['subject', 'fieldAnswers'])->subjectUrl(),
+        );
+    }
+
     public function test_course_url_links_can_reuse_a_named_browser_tab_on_teacher_request_cards(): void
     {
         app(ApplicationSettings::class)->updateReuseCourseUrlTab(true);
@@ -560,7 +693,7 @@ class ReferenceDataManagementTest extends TestCase
         $classroom = Classroom::factory()->create();
         $subject = Subject::factory()->create([
             'classroom_id' => $classroom->id,
-            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[section]&table=[table]',
+            'url' => 'https://moodle.example.com/course/view.php?id=12&section=[tuile moodle]&table=[table]',
         ]);
 
         SupportRequest::factory()->create([

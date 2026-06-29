@@ -100,7 +100,7 @@
                                 <span>{{ __('Sent by') }} {{ $supportRequest->priorityRequesterDisplayName() }}</span>
                             @else
                                 <span class="inline-flex items-center gap-1">
-                                    <span>{{ $supportRequest->subject?->name ?? 'N/A' }} - {{ __('Tile') }} {{ $supportRequest->moodle_tile_number }}</span>
+                                    <span><x-support-request-subject-summary :support-request="$supportRequest" /></span>
                                     <x-subject-request-link :support-request="$supportRequest" />
                                 </span>
                                 <span>{{ __('Table') }} {{ $supportRequest->table_number }}</span>

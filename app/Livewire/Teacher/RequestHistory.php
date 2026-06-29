@@ -80,6 +80,7 @@ class RequestHistory extends Component
             ->with([
                 'student:id,first_name,last_name,deleted_at',
                 'subject:id,name,url',
+                'fieldAnswers',
                 'assignedTeacher:id,first_name,last_name,deleted_at',
                 'priorityRequester:id,first_name,last_name,deleted_at',
             ])

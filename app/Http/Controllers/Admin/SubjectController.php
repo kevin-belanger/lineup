@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
 use App\Models\Subject;
+use App\Models\SubjectRequestField;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,7 +36,7 @@ class SubjectController extends Controller
 
         return view('admin.subjects.index', [
             'subjects' => Subject::query()
-                ->with('locals:id,name,is_active')
+                ->with(['locals:id,name,is_active', 'requestFields'])
                 ->when($filters['search'] !== '', function ($query) use ($filters): void {
                     $query->where(function ($query) use ($filters): void {
                         $query
@@ -70,11 +71,12 @@ class SubjectController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        [$data, $localIds] = $this->validatedData($request);
+        [$data, $localIds, $requestFields] = $this->validatedData($request);
 
         try {
             $subject = Subject::query()->create($data);
             $subject->locals()->sync($localIds);
+            $this->syncRequestFields($subject, $requestFields);
         } catch (UniqueConstraintViolationException) {
             $this->duplicateNameResponse($request);
         }
@@ -86,11 +88,12 @@ class SubjectController extends Controller
 
     public function update(Request $request, Subject $subject): RedirectResponse
     {
-        [$data, $localIds] = $this->validatedData($request, $subject);
+        [$data, $localIds, $requestFields] = $this->validatedData($request, $subject);
 
         try {
             $subject->update($data);
             $subject->locals()->sync($localIds);
+            $this->syncRequestFields($subject, $requestFields);
         } catch (UniqueConstraintViolationException) {
             $this->duplicateNameResponse($request);
         }
@@ -115,7 +118,7 @@ class SubjectController extends Controller
     }
 
     /**
-     * @return array{0: array{classroom_id: ?int, name: string, description: ?string, url: ?string, is_active: bool}, 1: array<int, int>}
+     * @return array{0: array{classroom_id: ?int, name: string, description: ?string, url: ?string, is_active: bool}, 1: array<int, int>, 2: array<int, array{id: ?int, name: string, key: string, type: string, is_required: bool, sort_order: int}>}
      */
     private function validatedData(Request $request, ?Subject $subject = null): array
     {
@@ -129,14 +132,52 @@ class SubjectController extends Controller
             ],
             'description' => ['nullable', 'string', 'max:2000'],
             'url' => ['nullable', 'string', 'max:2000', function (string $attribute, mixed $value, \Closure $fail): void {
-                $candidate = str_replace(['[table]', '[section]'], ['1', '1'], (string) $value);
+                $candidate = preg_replace('/\[([^\]]+)\]/u', '1', (string) $value);
 
                 if (filter_var($candidate, FILTER_VALIDATE_URL) === false) {
                     $fail(__('The URL must be valid.'));
                 }
             }],
             'is_active' => ['nullable', 'boolean'],
+            'request_fields' => ['nullable', 'array'],
+            'request_fields.*.id' => ['nullable', 'integer', Rule::exists('subject_request_fields', 'id')],
+            'request_fields.*.name' => ['required', 'string', 'max:100'],
+            'request_fields.*.type' => ['required', Rule::in(SubjectRequestField::types())],
+            'request_fields.*.is_required' => ['nullable', 'boolean'],
         ]);
+
+        $validator->after(function ($validator) use ($request, $subject): void {
+            $keys = collect($request->input('request_fields', []))
+                ->filter(fn (mixed $field): bool => is_array($field))
+                ->map(fn (array $field): string => SubjectRequestField::keyForName((string) ($field['name'] ?? '')))
+                ->filter();
+
+            if ($keys->duplicates()->isNotEmpty()) {
+                $validator->errors()->add('request_fields', __('Request field names must be unique for a subject.'));
+            }
+
+            if ($subject === null) {
+                return;
+            }
+
+            $fieldIds = collect($request->input('request_fields', []))
+                ->pluck('id')
+                ->filter(fn ($id): bool => is_numeric($id))
+                ->map(fn ($id): int => (int) $id);
+
+            if ($fieldIds->isEmpty()) {
+                return;
+            }
+
+            $validCount = SubjectRequestField::query()
+                ->where('subject_id', $subject->id)
+                ->whereIn('id', $fieldIds->all())
+                ->count();
+
+            if ($validCount !== $fieldIds->unique()->count()) {
+                $validator->errors()->add('request_fields', __('This request field cannot be changed.'));
+            }
+        });
 
         if ($validator->fails()) {
             $this->validationToastResponse($request, $validator->errors()->first());
@@ -147,13 +188,82 @@ class SubjectController extends Controller
         $localIds = $this->normalizedLocalIds($validated['local_ids'] ?? []);
         $this->ensureNameIsGloballyAvailable($request, $validated['name'], $subject);
 
+        $requestFields = collect($validated['request_fields'] ?? [])
+            ->values()
+            ->map(fn (array $field, int $index): array => [
+                'id' => isset($field['id']) && is_numeric($field['id']) ? (int) $field['id'] : null,
+                'name' => trim($field['name']),
+                'key' => SubjectRequestField::keyForName($field['name']),
+                'type' => $field['type'],
+                'is_required' => (bool) ($field['is_required'] ?? false),
+                'sort_order' => $index,
+            ])
+            ->all();
+
         return [[
             'classroom_id' => $localIds[0] ?? null,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'url' => $validated['url'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? false),
-        ], $localIds];
+        ], $localIds, $requestFields];
+    }
+
+    /**
+     * @param  array<int, array{id: ?int, name: string, key: string, type: string, is_required: bool, sort_order: int}>  $requestFields
+     */
+    private function syncRequestFields(Subject $subject, array $requestFields): void
+    {
+        $keptIds = [];
+
+        foreach ($requestFields as $fieldData) {
+            $field = null;
+
+            if ($fieldData['id'] !== null) {
+                $field = SubjectRequestField::query()
+                    ->where('subject_id', $subject->id)
+                    ->whereKey($fieldData['id'])
+                    ->first();
+            }
+
+            $sameKeyField = SubjectRequestField::query()
+                ->where('subject_id', $subject->id)
+                ->where('key', $fieldData['key'])
+                ->first();
+
+            if ($sameKeyField !== null && $field?->id !== $sameKeyField->id) {
+                if ($field !== null) {
+                    $field->update(['archived_at' => now()]);
+                }
+
+                $field = $sameKeyField;
+            }
+
+            if ($field === null) {
+                $field = new SubjectRequestField([
+                    'subject_id' => $subject->id,
+                    'key' => $fieldData['key'],
+                ]);
+            }
+
+            $field->fill([
+                'name' => $fieldData['name'],
+                'key' => $fieldData['key'],
+                'type' => $fieldData['type'],
+                'is_required' => $fieldData['is_required'],
+                'sort_order' => $fieldData['sort_order'],
+                'archived_at' => null,
+            ]);
+            $field->save();
+
+            $keptIds[] = $field->id;
+        }
+
+        SubjectRequestField::query()
+            ->where('subject_id', $subject->id)
+            ->whereNull('archived_at')
+            ->when($keptIds !== [], fn ($query) => $query->whereNotIn('id', $keptIds))
+            ->update(['archived_at' => now()]);
     }
 
     /**
