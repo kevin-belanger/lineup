@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Classroom;
 use App\Models\PersonalNote;
+use App\Models\SupportRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -133,6 +134,82 @@ class NavigationTest extends TestCase
             ->assertOk()
             ->assertSeeText('Personal notes')
             ->assertSee('data-personal-notes-count', false)
+            ->assertSee('style="display: none;"', false);
+    }
+
+    public function test_teacher_navigation_shows_waiting_request_badge_outside_teacher_dashboard(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => false,
+            'is_admin' => false,
+        ]);
+        $classroom = Classroom::factory()->create();
+
+        SupportRequest::factory()->count(3)->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+        SupportRequest::factory()->create([
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        $response = $this
+            ->actingAs($teacher)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('admin.users.index'));
+
+        $response
+            ->assertOk()
+            ->assertSee('data-teacher-waiting-requests-count', false)
+            ->assertSee('>3</span>', false)
+            ->assertSee('wire:poll.2s.keep-alive="check"', false);
+    }
+
+    public function test_teacher_navigation_waiting_request_badge_is_hidden_without_selected_classroom(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => false,
+            'is_admin' => false,
+        ]);
+
+        SupportRequest::factory()->create([
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        $response = $this->actingAs($teacher)->get(route('admin.users.index'));
+
+        $response
+            ->assertOk()
+            ->assertSee('data-teacher-waiting-requests-count', false)
+            ->assertSee('style="display: none;"', false)
+            ->assertDontSee('wire:poll.2s.keep-alive="check"', false);
+    }
+
+    public function test_teacher_navigation_waiting_request_watcher_is_not_rendered_on_teacher_dashboard(): void
+    {
+        $teacher = User::factory()->teacher()->create([
+            'is_student' => false,
+            'is_admin' => false,
+        ]);
+        $classroom = Classroom::factory()->create();
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        $response = $this
+            ->actingAs($teacher)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('teacher.dashboard'));
+
+        $response
+            ->assertOk()
+            ->assertSee('data-teacher-waiting-requests-count', false)
             ->assertSee('style="display: none;"', false);
     }
 

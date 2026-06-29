@@ -9,6 +9,7 @@ use App\Livewire\Teacher\PersonalNotes;
 use App\Livewire\Teacher\RequestChangeWatcher;
 use App\Livewire\Teacher\RequestHistory;
 use App\Livewire\Teacher\WaitingQueue;
+use App\Livewire\Teacher\WaitingRequestNotification;
 use App\Models\Classroom;
 use App\Models\ClassroomOpeningHour;
 use App\Models\PersonalNote;
@@ -1294,6 +1295,87 @@ class TeacherSpaceTest extends TestCase
         $component
             ->call('check')
             ->assertDispatched('teacher-requests-updated');
+    }
+
+    public function test_teacher_waiting_request_notification_dispatches_only_when_count_changes(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        session(['current_classroom_id' => $classroom->id]);
+
+        $component = Livewire::actingAs($teacher)
+            ->test(WaitingRequestNotification::class)
+            ->call('check')
+            ->assertNotDispatched('teacher-waiting-requests-count-updated');
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        $component
+            ->call('check')
+            ->assertDispatched('teacher-waiting-requests-count-updated', fn (string $event, array $params): bool => $event === 'teacher-waiting-requests-count-updated'
+                && ($params['count'] ?? null) === 1);
+    }
+
+    public function test_teacher_waiting_request_notification_dispatches_when_list_changes_with_same_count(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $firstRequest = SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+        session(['current_classroom_id' => $classroom->id]);
+
+        $component = Livewire::actingAs($teacher)
+            ->test(WaitingRequestNotification::class);
+
+        $firstRequest->update(['status' => SupportRequest::STATUS_CANCELLED]);
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+
+        $component
+            ->call('check')
+            ->assertDispatched('teacher-waiting-requests-count-updated', fn (string $event, array $params): bool => $event === 'teacher-waiting-requests-count-updated'
+                && ($params['count'] ?? null) === 1);
+    }
+
+    public function test_teacher_waiting_request_notification_updates_page_title(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $activeStudent = User::factory()->create([
+            'first_name' => 'Alice',
+            'last_name' => 'Roy',
+        ]);
+
+        SupportRequest::factory()->count(2)->create([
+            'classroom_id' => $classroom->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'assigned_teacher_id' => null,
+        ]);
+        SupportRequest::factory()->create([
+            'student_id' => $activeStudent->id,
+            'classroom_id' => $classroom->id,
+            'assigned_teacher_id' => $teacher->id,
+            'status' => SupportRequest::STATUS_ASSIGNED,
+            'assigned_at' => now(),
+        ]);
+
+        session(['current_classroom_id' => $classroom->id]);
+
+        Livewire::actingAs($teacher)
+            ->test(WaitingRequestNotification::class)
+            ->call('updatePageTitle')
+            ->assertDispatched('teacher-page-title-updated', fn (string $event, array $params): bool => $event === 'teacher-page-title-updated'
+                && ($params['title'] ?? null) === '(2) - Alice Roy - LineUp');
     }
 
     public function test_teacher_dashboard_page_title_shows_waiting_count_and_first_active_student(): void

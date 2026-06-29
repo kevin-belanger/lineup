@@ -2,13 +2,24 @@
     $personalNotesCount = Auth::user()->is_teacher
         ? Auth::user()->personalNotes()->whereNull('archived_at')->count()
         : 0;
+    $teacherWaitingRequestsCount = Auth::user()->is_teacher && ! request()->routeIs('teacher.dashboard') && session()->has('current_classroom_id')
+        ? \App\Models\SupportRequest::query()
+            ->where('classroom_id', session('current_classroom_id'))
+            ->where('status', \App\Models\SupportRequest::STATUS_WAITING)
+            ->count()
+        : 0;
 @endphp
 
 <nav
-    x-data="{ open: false, personalNotesCount: {{ $personalNotesCount }} }"
+    x-data="{ open: false, personalNotesCount: {{ $personalNotesCount }}, teacherWaitingRequestsCount: {{ $teacherWaitingRequestsCount }} }"
     x-on:personal-notes-count-updated.window="personalNotesCount = $event.detail.count"
+    x-on:teacher-waiting-requests-count-updated.window="teacherWaitingRequestsCount = $event.detail.count"
     class="bg-white border-b border-gray-100"
 >
+    @if (Auth::user()->is_teacher && ! request()->routeIs('teacher.dashboard') && session()->has('current_classroom_id'))
+        <livewire:teacher.waiting-request-notification />
+    @endif
+
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -35,7 +46,16 @@
                     @endif
                     @if (Auth::user()->is_teacher)
                         <x-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
-                            {{ __('Teacher') }}
+                            <span class="inline-flex items-start gap-0.5">
+                                <span>{{ __('Teacher') }}</span>
+                                <span
+                                    data-teacher-waiting-requests-count
+                                    x-show="teacherWaitingRequestsCount > 0"
+                                    x-text="teacherWaitingRequestsCount"
+                                    class="-mt-0.5 ml-[3px] inline-flex h-3 min-w-3 translate-y-[-0.1rem] items-center justify-center rounded-full bg-gray-100 px-0.5 text-[10px] font-semibold leading-none text-gray-600 ring-1 ring-gray-200"
+                                    style="{{ $teacherWaitingRequestsCount > 0 ? '' : 'display: none;' }}"
+                                >{{ $teacherWaitingRequestsCount }}</span>
+                            </span>
                         </x-nav-link>
                         <x-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
                             {{ __('Priority requests') }}
@@ -154,7 +174,16 @@
                     @endif
                     @if (Auth::user()->is_teacher)
                         <x-responsive-nav-link :href="route('teacher.dashboard')" :active="request()->routeIs('teacher.dashboard')">
-                            {{ __('Teacher') }}
+                            <span class="inline-flex items-start gap-0.5">
+                                <span>{{ __('Teacher') }}</span>
+                                <span
+                                    data-teacher-waiting-requests-count
+                                    x-show="teacherWaitingRequestsCount > 0"
+                                    x-text="teacherWaitingRequestsCount"
+                                    class="-mt-0.5 ml-[3px] inline-flex h-3 min-w-3 translate-y-[-0.1rem] items-center justify-center rounded-full bg-gray-100 px-0.5 text-[10px] font-semibold leading-none text-gray-600 ring-1 ring-gray-200"
+                                    style="{{ $teacherWaitingRequestsCount > 0 ? '' : 'display: none;' }}"
+                                >{{ $teacherWaitingRequestsCount }}</span>
+                            </span>
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('teacher.priority-requests.index')" :active="request()->routeIs('teacher.priority-requests.*')">
                             {{ __('Priority requests') }}
