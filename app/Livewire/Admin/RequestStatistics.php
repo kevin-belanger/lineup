@@ -68,6 +68,15 @@ class RequestStatistics extends Component
     {
         $today = CarbonImmutable::now($timezone);
 
+        if ($this->period === 'today') {
+            $this->syncDisplayedDateRange($today->startOfDay(), $today->endOfDay());
+
+            return [
+                $today->startOfDay(),
+                $today->endOfDay(),
+            ];
+        }
+
         if ($this->period === 'month' && is_string($this->month) && preg_match('/^\d{4}-\d{2}$/', $this->month) === 1) {
             $month = CarbonImmutable::parse($this->month.'-01', $timezone);
             $this->syncDisplayedDateRange($month->startOfMonth(), $month->endOfMonth());

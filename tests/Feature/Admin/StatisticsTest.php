@@ -136,6 +136,37 @@ class StatisticsTest extends TestCase
             ->assertDontSee('10 min');
     }
 
+    public function test_statistics_can_filter_completed_requests_for_today(): void
+    {
+        Carbon::setTestNow('2026-06-22 12:00:00');
+
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+
+        SupportRequest::factory()->completed()->create([
+            'classroom_id' => $classroom->id,
+            'completed_at' => Carbon::parse('2026-06-22 09:00:00'),
+            'calculated_wait_time_minutes' => 10,
+            'calculated_response_time_minutes' => 20,
+        ]);
+        SupportRequest::factory()->completed()->create([
+            'classroom_id' => $classroom->id,
+            'completed_at' => Carbon::parse('2026-06-21 09:00:00'),
+            'calculated_wait_time_minutes' => 90,
+            'calculated_response_time_minutes' => 120,
+        ]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestStatistics::class)
+            ->assertSee('Today')
+            ->set('period', 'today')
+            ->assertSet('startDate', '2026-06-22')
+            ->assertSet('endDate', '2026-06-22')
+            ->assertSee('>1</div>', false)
+            ->assertSee('10 min')
+            ->assertDontSee('90 min');
+    }
+
     public function test_statistics_show_subject_and_request_field_breakdowns(): void
     {
         Carbon::setTestNow('2026-06-22 12:00:00');
@@ -191,12 +222,37 @@ class StatisticsTest extends TestCase
         Livewire::actingAs($teacher)
             ->test(RequestTileStatistics::class)
             ->set('selectedSubjectId', (string) $math->id)
-            ->set('selectedRequestFieldId', (string) $moodleTileField->id)
+            ->assertSet('selectedRequestFieldId', (string) $moodleTileField->id)
             ->assertSee('Subject: Mathematiques')
             ->assertSee('Request field: Tuile Moodle')
             ->assertSee('>3</td>', false)
             ->assertSee('20 min')
             ->assertSee('30 min')
             ->assertDontSee('>8</td>', false);
+    }
+
+    public function test_request_field_statistics_show_empty_state_when_subject_has_no_fields(): void
+    {
+        Carbon::setTestNow('2026-06-22 12:00:00');
+
+        $teacher = User::factory()->teacher()->create();
+        $classroom = Classroom::factory()->create();
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+            'name' => 'Francais',
+        ]);
+
+        SupportRequest::factory()->completed()->create([
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'moodle_tile_number' => null,
+            'completed_at' => Carbon::parse('2026-06-22 09:00:00'),
+        ]);
+
+        Livewire::actingAs($teacher)
+            ->test(RequestTileStatistics::class)
+            ->set('selectedSubjectId', (string) $subject->id)
+            ->assertSet('selectedRequestFieldId', '')
+            ->assertSee('No request fields.');
     }
 }

@@ -15,6 +15,7 @@
             <div>
                 <x-input-label for="statistics-period" :value="__('Period')" />
                 <select id="statistics-period" wire:model.live="period" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="today">{{ __('Today') }}</option>
                     <option value="last_30_days">{{ __('Last 30 days') }}</option>
                     <option value="month">{{ __('Month') }}</option>
                     <option value="custom">{{ __('Date or date range') }}</option>

@@ -23,10 +23,11 @@
             <div>
                 <x-input-label for="statistics-request-field" :value="__('Request field')" />
                 <select id="statistics-request-field" wire:model.live="selectedRequestFieldId" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" @disabled($requestFieldOptions->isEmpty())>
-                    <option value="">{{ __('Choose') }}</option>
-                    @foreach ($requestFieldOptions as $field)
+                    @forelse ($requestFieldOptions as $field)
                         <option value="{{ $field['field_id'] }}">{{ $field['field_name'] }}</option>
-                    @endforeach
+                    @empty
+                        <option value="">{{ __('No request fields.') }}</option>
+                    @endforelse
                 </select>
             </div>
         </div>
@@ -69,7 +70,13 @@
                 @empty
                     <tr>
                         <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">
-                            {{ $selectedSubjectId === '' || $selectedRequestFieldId === '' ? __('Choose a subject and request field to see statistics.') : __('No requests match the filters.') }}
+                            @if ($selectedSubjectId === '')
+                                {{ __('Choose a subject to see request field statistics.') }}
+                            @elseif ($requestFieldOptions->isEmpty())
+                                {{ __('No request fields.') }}
+                            @else
+                                {{ __('No requests match the filters.') }}
+                            @endif
                         </td>
                     </tr>
                 @endforelse

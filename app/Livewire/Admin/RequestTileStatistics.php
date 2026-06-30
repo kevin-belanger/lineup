@@ -30,7 +30,7 @@ class RequestTileStatistics extends Component
 
     public function updatedSelectedSubjectId(): void
     {
-        $this->selectedRequestFieldId = '';
+        $this->selectedRequestFieldId = $this->firstRequestFieldIdForSelectedSubject();
     }
 
     public function render(ApplicationSettings $settings): View
@@ -38,10 +38,12 @@ class RequestTileStatistics extends Component
         [$start, $end] = $this->dateRange($settings->timezone());
         $requests = $this->completedRequests($start, $end);
         $subjectOptions = $this->subjectRows($requests);
+        $requestFieldOptions = $this->requestFieldOptions();
+        $this->syncSelectedRequestField($requestFieldOptions);
 
         return view('livewire.admin.request-tile-statistics', [
             'subjectOptions' => $subjectOptions,
-            'requestFieldOptions' => $this->requestFieldOptions(),
+            'requestFieldOptions' => $requestFieldOptions,
             'fieldValueRows' => $this->fieldValueRows($requests),
             'selectedSubjectName' => $this->selectedSubjectName($subjectOptions),
             'selectedRequestFieldName' => $this->selectedRequestFieldName(),
@@ -54,6 +56,13 @@ class RequestTileStatistics extends Component
     private function dateRange(string $timezone): array
     {
         $today = CarbonImmutable::now($timezone);
+
+        if ($this->period === 'today') {
+            return [
+                $today->startOfDay(),
+                $today->endOfDay(),
+            ];
+        }
 
         if ($this->period === 'month' && is_string($this->month) && preg_match('/^\d{4}-\d{2}$/', $this->month) === 1) {
             $month = CarbonImmutable::parse($this->month.'-01', $timezone);
@@ -183,6 +192,37 @@ class RequestTileStatistics extends Component
                 'field_id' => $field->id,
                 'field_name' => $field->name,
             ]);
+    }
+
+    private function firstRequestFieldIdForSelectedSubject(): string
+    {
+        if (! ctype_digit($this->selectedSubjectId)) {
+            return '';
+        }
+
+        $fieldId = SubjectRequestField::query()
+            ->where('subject_id', (int) $this->selectedSubjectId)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->value('id');
+
+        return $fieldId === null ? '' : (string) $fieldId;
+    }
+
+    /**
+     * @param  Collection<int, array{field_id: int, field_name: string}>  $requestFieldOptions
+     */
+    private function syncSelectedRequestField(Collection $requestFieldOptions): void
+    {
+        if ($requestFieldOptions->isEmpty()) {
+            $this->selectedRequestFieldId = '';
+
+            return;
+        }
+
+        if (! $requestFieldOptions->contains('field_id', (int) $this->selectedRequestFieldId)) {
+            $this->selectedRequestFieldId = (string) $requestFieldOptions->first()['field_id'];
+        }
     }
 
     /**
