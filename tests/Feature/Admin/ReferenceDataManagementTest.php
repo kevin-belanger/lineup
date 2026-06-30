@@ -35,6 +35,8 @@ class ReferenceDataManagementTest extends TestCase
 
         $classroom = Classroom::query()->where('name', 'Local 301')->firstOrFail();
 
+        $this->assertTrue($classroom->requires_table_number);
+
         $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
             'name' => 'Local 302',
             'description' => 'Local renomme',
@@ -47,6 +49,33 @@ class ReferenceDataManagementTest extends TestCase
 
         $this->assertSame('Local 302', $classroom->name);
         $this->assertFalse($classroom->is_active);
+        $this->assertTrue($classroom->requires_table_number);
+    }
+
+    public function test_admin_can_toggle_classroom_table_number_requirement(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $classroom = Classroom::factory()->create([
+            'requires_table_number' => true,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
+            'name' => $classroom->name,
+            'description' => $classroom->description,
+            'is_active' => '1',
+            'requires_table_number' => '0',
+        ])->assertRedirect();
+
+        $this->assertFalse($classroom->refresh()->requires_table_number);
+
+        $this->actingAs($admin)->patch(route('admin.classrooms.update', $classroom), [
+            'name' => $classroom->name,
+            'description' => $classroom->description,
+            'is_active' => '1',
+            'requires_table_number' => '1',
+        ])->assertRedirect();
+
+        $this->assertTrue($classroom->refresh()->requires_table_number);
     }
 
     public function test_admin_can_manage_classroom_opening_hours(): void

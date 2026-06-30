@@ -177,7 +177,7 @@ class MyRequests extends Component
                 ->with('openingHours')
                 ->find($this->currentClassroomId()),
             'requests' => SupportRequest::query()
-                ->with(['student:id,first_name,last_name,deleted_at', 'subject:id,name,url', 'fieldAnswers', 'priorityRequester:id,first_name,last_name,deleted_at'])
+                ->with(['student:id,first_name,last_name,deleted_at', 'classroom:id,requires_table_number', 'subject:id,name,url', 'fieldAnswers', 'priorityRequester:id,first_name,last_name,deleted_at'])
                 ->leftJoin('teacher_active_request_orders as active_request_orders', function ($join): void {
                     $join
                         ->on('support_requests.id', '=', 'active_request_orders.support_request_id')

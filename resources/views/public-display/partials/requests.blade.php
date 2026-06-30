@@ -5,11 +5,11 @@
                 {{ $supportRequest->is_priority ? $supportRequest->priorityRequesterDisplayName() : $supportRequest->studentDisplayName() }}
             </div>
 
-            @unless ($supportRequest->is_priority)
+            @if (! $supportRequest->is_priority && $supportRequest->shouldShowTableNumber())
                 <div class="public-display__table">
                     {{ $supportRequest->table_number }}
                 </div>
-            @endunless
+            @endif
         </article>
     @empty
         <div class="public-display__empty">

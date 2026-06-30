@@ -185,7 +185,7 @@ class SupportRequestController extends Controller
     {
         return view('student.history', [
             'requests' => SupportRequest::query()
-                ->with(['classroom:id,name', 'subject:id,name,url', 'fieldAnswers', 'assignedTeacher:id,first_name,last_name,deleted_at'])
+                ->with(['classroom:id,name,requires_table_number', 'subject:id,name,url', 'fieldAnswers', 'assignedTeacher:id,first_name,last_name,deleted_at'])
                 ->where('student_id', $request->user()->id)
                 ->whereIn('status', SupportRequest::historyStatuses())
                 ->latest()
@@ -195,7 +195,7 @@ class SupportRequestController extends Controller
     }
 
     /**
-     * @return array{0: array{subject_id: int, moodle_tile_number: ?int, table_number: string, type: string, request_type: ?string, comment: ?string}, 1: array<int, array{field: SubjectRequestField, value: string}>}
+     * @return array{0: array{subject_id: int, moodle_tile_number: ?int, table_number: ?string, type: string, request_type: ?string, comment: ?string}, 1: array<int, array{field: SubjectRequestField, value: string}>}
      */
     private function validatedData(Request $request, Classroom $classroom, ?SupportRequest $supportRequest = null): array
     {
@@ -208,7 +208,11 @@ class SupportRequestController extends Controller
                 'integer',
                 Rule::exists('subjects', 'id')->where('is_active', true),
             ],
-            'table_number' => ['required', 'string', 'max:50'],
+            'table_number' => [
+                $classroom->requires_table_number ? 'required' : 'nullable',
+                'string',
+                'max:50',
+            ],
             'request_type_id' => [
                 $requestTypeRequired ? 'required' : 'nullable',
                 'integer',
@@ -245,7 +249,7 @@ class SupportRequestController extends Controller
         return [[
             'subject_id' => (int) $validated['subject_id'],
             'moodle_tile_number' => $this->legacyMoodleTileNumber($fieldAnswers),
-            'table_number' => $validated['table_number'],
+            'table_number' => $classroom->requires_table_number ? $validated['table_number'] : null,
             'type' => $requestType ?? '',
             'request_type' => $requestType,
             'comment' => $validated['comment'] ?? null,

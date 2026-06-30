@@ -16,14 +16,23 @@
                                     <x-subject-request-link :support-request="$supportRequest" />
                                 </span>
                             </div>
+                            @php
+                                $details = collect();
+                                $fieldAnswerSummary = $supportRequest->fieldAnswerSummary();
+
+                                if ($fieldAnswerSummary !== '') {
+                                    $details->push($fieldAnswerSummary);
+                                }
+
+                                if ($supportRequest->shouldShowTableNumber()) {
+                                    $details->push(__('Table :table', ['table' => $supportRequest->table_number]));
+                                }
+
+                                $details->push($supportRequest->classroom?->name ?? 'N/A');
+                            @endphp
+
                             <div class="mt-1 text-sm text-gray-600">
-                                @if ($supportRequest->fieldAnswerSummary() !== '')
-                                    {{ $supportRequest->fieldAnswerSummary() }}
-                                    ·
-                                @endif
-                                {{ __('Table :table', ['table' => $supportRequest->table_number]) }}
-                                ·
-                                {{ $supportRequest->classroom?->name ?? 'N/A' }}
+                                {{ $details->implode(' · ') }}
                             </div>
                         </div>
 

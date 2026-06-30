@@ -103,7 +103,9 @@
                                     <span><x-support-request-subject-summary :support-request="$supportRequest" /></span>
                                     <x-subject-request-link :support-request="$supportRequest" />
                                 </span>
-                                <span>{{ __('Table') }} {{ $supportRequest->table_number }}</span>
+                                @if ($supportRequest->shouldShowTableNumber())
+                                    <span>{{ __('Table') }} {{ $supportRequest->table_number }}</span>
+                                @endif
                                 @if ($supportRequest->typeLabel() !== '')
                                     <span>{{ $supportRequest->typeLabel() }}</span>
                                 @endif

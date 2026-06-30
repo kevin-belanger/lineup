@@ -186,7 +186,7 @@ class SupportRequest extends Model
 
         $values = $this->fieldPlaceholderValues();
 
-        if ($this->table_number !== null) {
+        if ($this->shouldShowTableNumber()) {
             $values['table'] = (string) $this->table_number;
         }
 
@@ -207,6 +207,11 @@ class SupportRequest extends Model
             ->filter(fn (SupportRequestFieldAnswer $answer): bool => trim((string) $answer->value) !== '')
             ->map(fn (SupportRequestFieldAnswer $answer): string => "{$answer->field_name} {$answer->value}")
             ->implode(' · ');
+    }
+
+    public function shouldShowTableNumber(): bool
+    {
+        return trim((string) $this->table_number) !== '' && ($this->classroom?->requires_table_number ?? true);
     }
 
     /**

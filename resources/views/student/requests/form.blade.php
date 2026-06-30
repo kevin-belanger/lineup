@@ -90,13 +90,15 @@
                         <x-input-error :messages="$errors->get('request_fields.*')" class="mt-2" />
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <x-input-label for="table_number" :value="__('Table number')" />
-                            <x-text-input id="table_number" name="table_number" value="{{ old('table_number', $supportRequest->table_number) }}" class="mt-1 block w-full" required />
-                            <x-input-error :messages="$errors->get('table_number')" class="mt-2" />
+                    @if ($classroom->requires_table_number)
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <x-input-label for="table_number" :value="__('Table number')" />
+                                <x-text-input id="table_number" name="table_number" value="{{ old('table_number', $supportRequest->table_number) }}" class="mt-1 block w-full" required />
+                                <x-input-error :messages="$errors->get('table_number')" class="mt-2" />
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
                     @if ($requestTypes->isNotEmpty())
                         @php

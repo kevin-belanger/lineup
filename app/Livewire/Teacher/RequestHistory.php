@@ -79,6 +79,7 @@ class RequestHistory extends Component
         $query = SupportRequest::query()
             ->with([
                 'student:id,first_name,last_name,deleted_at',
+                'classroom:id,requires_table_number',
                 'subject:id,name,url',
                 'fieldAnswers',
                 'assignedTeacher:id,first_name,last_name,deleted_at',

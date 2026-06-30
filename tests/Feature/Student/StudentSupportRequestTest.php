@@ -322,6 +322,73 @@ class StudentSupportRequestTest extends TestCase
         ]);
     }
 
+    public function test_student_request_form_hides_table_number_when_room_does_not_require_it(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create([
+            'requires_table_number' => false,
+        ]);
+        Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->get(route('student.requests.create'))
+            ->assertOk()
+            ->assertDontSee('name="table_number"', false)
+            ->assertDontSeeText('Table number');
+    }
+
+    public function test_student_can_create_support_request_without_table_number_when_room_does_not_require_it(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create([
+            'requires_table_number' => false,
+        ]);
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->post(route('student.requests.store'), [
+                'subject_id' => $subject->id,
+            ])
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertDatabaseHas('support_requests', [
+            'student_id' => $student->id,
+            'classroom_id' => $classroom->id,
+            'subject_id' => $subject->id,
+            'table_number' => null,
+            'status' => SupportRequest::STATUS_WAITING,
+        ]);
+    }
+
+    public function test_student_must_provide_table_number_when_room_requires_it(): void
+    {
+        $student = User::factory()->create();
+        $classroom = Classroom::factory()->create([
+            'requires_table_number' => true,
+        ]);
+        $subject = Subject::factory()->create([
+            'classroom_id' => $classroom->id,
+        ]);
+
+        $this
+            ->actingAs($student)
+            ->withSession(['current_classroom_id' => $classroom->id])
+            ->post(route('student.requests.store'), [
+                'subject_id' => $subject->id,
+            ])
+            ->assertSessionHasErrors('table_number');
+
+        $this->assertDatabaseCount('support_requests', 0);
+    }
+
     public function test_student_dynamic_request_fields_are_validated_and_saved(): void
     {
         $student = User::factory()->create();

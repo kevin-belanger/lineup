@@ -15,7 +15,7 @@ class ClassroomController extends Controller
     public function edit(Request $request): View
     {
         $activeRequests = $this->assignedActiveRequests($request)
-            ->with(['classroom:id,name', 'subject:id,name,url'])
+            ->with(['classroom:id,name,requires_table_number', 'subject:id,name,url'])
             ->get();
 
         $request->session()->forget('current_classroom_id');

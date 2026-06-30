@@ -115,7 +115,7 @@ class ClassroomController extends Controller
     }
 
     /**
-     * @return array{name: string, description: ?string, is_active: bool, public_enabled: bool, public_slug: ?string}
+     * @return array{name: string, description: ?string, is_active: bool, requires_table_number: bool, public_enabled: bool, public_slug: ?string}
      */
     private function validatedData(Request $request, ?Classroom $classroom = null): array
     {
@@ -123,6 +123,7 @@ class ClassroomController extends Controller
             'name' => ['required', 'string', 'max:255', Rule::unique('classrooms', 'name')->ignore($classroom)],
             'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['nullable', 'boolean'],
+            'requires_table_number' => ['nullable', 'boolean'],
             'public_enabled' => ['nullable', 'boolean'],
             'public_slug' => [
                 'exclude_unless:public_enabled,1',
@@ -151,10 +152,15 @@ class ClassroomController extends Controller
             $this->validationToastResponse($request, __('The public URL must be generated before saving.'));
         }
 
+        $requiresTableNumber = array_key_exists('requires_table_number', $validated)
+            ? (bool) $validated['requires_table_number']
+            : ($classroom?->requires_table_number ?? true);
+
         return [
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'is_active' => (bool) ($validated['is_active'] ?? false),
+            'requires_table_number' => $requiresTableNumber,
             'public_enabled' => $publicEnabled,
             'public_slug' => $publicEnabled ? $validated['public_slug'] : null,
         ];

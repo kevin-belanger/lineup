@@ -30,14 +30,21 @@
                                                 <x-subject-request-link :support-request="$supportRequest" />
                                             </span>
                                         </div>
+                                        @php
+                                            $details = collect([$supportRequest->classroom?->name ?? 'N/A']);
+                                            $fieldAnswerSummary = $supportRequest->fieldAnswerSummary();
+
+                                            if ($fieldAnswerSummary !== '') {
+                                                $details->push($fieldAnswerSummary);
+                                            }
+
+                                            if ($supportRequest->shouldShowTableNumber()) {
+                                                $details->push(__('Table :table', ['table' => $supportRequest->table_number]));
+                                            }
+                                        @endphp
+
                                         <div class="mt-1 text-sm text-gray-600">
-                                            {{ $supportRequest->classroom?->name ?? 'N/A' }}
-                                            ·
-                                            @if ($supportRequest->fieldAnswerSummary() !== '')
-                                                {{ $supportRequest->fieldAnswerSummary() }}
-                                                ·
-                                            @endif
-                                            {{ __('Table :table', ['table' => $supportRequest->table_number]) }}
+                                            {{ $details->implode(' · ') }}
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm text-gray-700">

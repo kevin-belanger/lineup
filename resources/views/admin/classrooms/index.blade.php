@@ -139,6 +139,15 @@
                             </x-primary-button>
                         </div>
 
+                        <div class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-4">
+                            <input type="hidden" name="requires_table_number" value="0">
+                            <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <input type="checkbox" name="requires_table_number" value="1" @checked(! $shouldRestoreClassroomCreateInput || old('requires_table_number', true)) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                {{ __('Ask for table number') }}
+                            </label>
+                            <p class="text-sm text-gray-500">{{ __('When disabled, students will not be asked for a table number in this room.') }}</p>
+                        </div>
+
                         <div class="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4">
                             <input type="hidden" name="public_enabled" value="0">
                             <input type="hidden" name="public_slug" x-bind:value="publicSlug">
@@ -306,6 +315,9 @@
                                             @else
                                                 <div class="text-sm text-gray-400">{{ __('No description.') }}</div>
                                             @endif
+                                            <div class="text-sm text-gray-500">
+                                                {{ $classroom->requires_table_number ? __('Table number required') : __('No table number required') }}
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 align-top text-sm">
@@ -428,6 +440,15 @@
                                                     <input type="checkbox" name="is_active" value="1" @checked($classroom->is_active) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                                     {{ __('Active') }}
                                                 </label>
+                                            </div>
+
+                                            <div class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-4">
+                                                <input type="hidden" name="requires_table_number" value="0">
+                                                <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                                    <input type="checkbox" name="requires_table_number" value="1" @checked($classroom->requires_table_number) class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                    {{ __('Ask for table number') }}
+                                                </label>
+                                                <p class="text-sm text-gray-500">{{ __('When disabled, students will not be asked for a table number in this room.') }}</p>
                                             </div>
 
                                             <div class="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4">

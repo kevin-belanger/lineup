@@ -64,7 +64,7 @@
                                         @endif
                                     @endif
                                 </div>
-                                @if (! $supportRequest->is_priority)
+                                @if (! $supportRequest->is_priority && $supportRequest->shouldShowTableNumber())
                                     <div class="mt-1 px-2 text-sm text-gray-600">
                                         {{ __('Table') }} {{ $supportRequest->table_number }}
                                     </div>
@@ -155,10 +155,12 @@
                         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Status') }}</div>
                         <div class="mt-1 text-gray-800">{{ $managedRequest->status === \App\Models\SupportRequest::STATUS_READY ? __('Ready to review') : ($statusLabels[$managedRequest->status] ?? $managedRequest->status) }}</div>
                     </div>
-                    <div>
-                        <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Table') }}</div>
-                        <div class="mt-1 text-gray-800">{{ $managedRequest->table_number }}</div>
-                    </div>
+                    @if ($managedRequest->shouldShowTableNumber())
+                        <div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Table') }}</div>
+                            <div class="mt-1 text-gray-800">{{ $managedRequest->table_number }}</div>
+                        </div>
+                    @endif
                     @if ($managedRequest->typeLabel() !== '')
                         <div class="sm:col-span-2">
                             <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('Type') }}</div>

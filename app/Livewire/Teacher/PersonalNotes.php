@@ -128,7 +128,7 @@ class PersonalNotes extends Component
     {
         $timezone = app(ApplicationSettings::class)->timezone();
         $noteRelations = [
-            'supportRequest.classroom:id,name',
+            'supportRequest.classroom:id,name,requires_table_number',
             'supportRequest.subject:id,name,url',
             'supportRequest.fieldAnswers',
             'supportRequest.student:id,first_name,last_name,deleted_at',

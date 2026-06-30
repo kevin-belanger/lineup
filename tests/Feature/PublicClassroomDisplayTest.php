@@ -108,6 +108,28 @@ class PublicClassroomDisplayTest extends TestCase
             ->assertDontSee('Tile');
     }
 
+    public function test_public_display_hides_table_number_when_room_does_not_require_it(): void
+    {
+        $classroom = Classroom::factory()->create([
+            'public_enabled' => true,
+            'public_slug' => 'nt123',
+            'requires_table_number' => false,
+        ]);
+        $student = User::factory()->create(['first_name' => 'Alice', 'last_name' => 'SansTable']);
+
+        SupportRequest::factory()->create([
+            'classroom_id' => $classroom->id,
+            'student_id' => $student->id,
+            'status' => SupportRequest::STATUS_WAITING,
+            'table_number' => '7',
+        ]);
+
+        $this->get(route('public-display.show', $classroom->public_slug))
+            ->assertOk()
+            ->assertSee('Alice SansTable')
+            ->assertDontSee('<div class="public-display__table">', false);
+    }
+
     public function test_public_display_highlights_priority_requests_without_table_number(): void
     {
         $classroom = Classroom::factory()->create([

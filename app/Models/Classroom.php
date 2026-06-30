@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'description', 'is_active', 'public_enabled', 'public_slug'])]
+#[Fillable(['name', 'description', 'is_active', 'requires_table_number', 'public_enabled', 'public_slug'])]
 class Classroom extends Model
 {
     /** @use HasFactory<ClassroomFactory> */
@@ -19,6 +19,7 @@ class Classroom extends Model
     {
         return [
             'is_active' => 'boolean',
+            'requires_table_number' => 'boolean',
             'public_enabled' => 'boolean',
         ];
     }

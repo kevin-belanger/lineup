@@ -156,7 +156,7 @@ class WaitingQueue extends Component
                 ->with('openingHours')
                 ->find($this->currentClassroomId()),
             'requests' => SupportRequest::query()
-                ->with(['student:id,first_name,last_name,deleted_at', 'subject:id,name,url', 'fieldAnswers', 'priorityRequester:id,first_name,last_name,deleted_at'])
+                ->with(['student:id,first_name,last_name,deleted_at', 'classroom:id,requires_table_number', 'subject:id,name,url', 'fieldAnswers', 'priorityRequester:id,first_name,last_name,deleted_at'])
                 ->where('classroom_id', $this->currentClassroomId())
                 ->where('status', SupportRequest::STATUS_WAITING)
                 ->orderByDesc('is_priority')
