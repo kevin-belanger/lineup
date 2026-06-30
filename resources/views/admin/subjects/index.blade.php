@@ -73,7 +73,6 @@
                                 'type' => $field['type'] ?? \App\Models\SubjectRequestField::TYPE_TEXT,
                                 'is_required' => (bool) ($field['is_required'] ?? false),
                             ])->all()),
-                            fieldTypes: @js(\App\Models\SubjectRequestField::typeLabels()),
                             nameError: '',
                             urlError: '',
                             addRequestField() {
@@ -164,7 +163,7 @@
                                     <div class="rounded-md border border-gray-200 bg-white p-3">
                                         <input type="hidden" x-bind:name="`request_fields[${index}][id]`" x-model="field.id">
 
-                                        <div class="grid grid-cols-[minmax(0,1fr)_8.5rem] items-end gap-3">
+                                        <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-end gap-3">
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-create-${index}-name`">{{ __('Name') }}</label>
                                                 <input x-bind:id="`request-field-create-${index}-name`" x-bind:name="`request_fields[${index}][name]`" x-model="field.name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -173,9 +172,9 @@
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-create-${index}-type`">{{ __('Type') }}</label>
                                                 <select x-bind:id="`request-field-create-${index}-type`" x-bind:name="`request_fields[${index}][type]`" x-model="field.type" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                                    <template x-for="(label, value) in fieldTypes" :key="value">
-                                                        <option x-bind:value="value" x-text="label"></option>
-                                                    </template>
+                                                    <option value="{{ \App\Models\SubjectRequestField::TYPE_TEXT }}">{{ __('Text') }}</option>
+                                                    <option value="{{ \App\Models\SubjectRequestField::TYPE_INTEGER }}">{{ __('Whole number') }}</option>
+                                                    <option value="{{ \App\Models\SubjectRequestField::TYPE_DECIMAL }}">{{ __('Decimal number') }}</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -446,7 +445,6 @@
                                                     'type' => $field->type,
                                                     'is_required' => $field->is_required,
                                                 ])->all()),
-                                                fieldTypes: @js(\App\Models\SubjectRequestField::typeLabels()),
                                                 nameError: '',
                                                 urlError: '',
                                                 addRequestField() {
@@ -537,7 +535,7 @@
                                                         <div class="rounded-md border border-gray-200 bg-white p-3">
                                                             <input type="hidden" x-bind:name="`request_fields[${index}][id]`" x-model="field.id">
 
-                                                            <div class="grid grid-cols-[minmax(0,1fr)_8.5rem] items-end gap-3">
+                                                            <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-end gap-3">
                                                                 <div>
                                                                     <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-edit-{{ $subject->id }}-${index}-name`">{{ __('Name') }}</label>
                                                                     <input x-bind:id="`request-field-edit-{{ $subject->id }}-${index}-name`" x-bind:name="`request_fields[${index}][name]`" x-model="field.name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -546,9 +544,9 @@
                                                                 <div>
                                                                     <label class="block text-sm font-medium text-gray-700" x-bind:for="`request-field-edit-{{ $subject->id }}-${index}-type`">{{ __('Type') }}</label>
                                                                     <select x-bind:id="`request-field-edit-{{ $subject->id }}-${index}-type`" x-bind:name="`request_fields[${index}][type]`" x-model="field.type" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                                                        <template x-for="(label, value) in fieldTypes" :key="value">
-                                                                            <option x-bind:value="value" x-text="label"></option>
-                                                                        </template>
+                                                                        <option value="{{ \App\Models\SubjectRequestField::TYPE_TEXT }}">{{ __('Text') }}</option>
+                                                                        <option value="{{ \App\Models\SubjectRequestField::TYPE_INTEGER }}">{{ __('Whole number') }}</option>
+                                                                        <option value="{{ \App\Models\SubjectRequestField::TYPE_DECIMAL }}">{{ __('Decimal number') }}</option>
                                                                     </select>
                                                                 </div>
                                                             </div>

@@ -377,6 +377,8 @@ class ReferenceDataManagementTest extends TestCase
             ->assertSee('Chapitre')
             ->assertSee('Whole number')
             ->assertSee('Required')
+            ->assertSee('value="integer"', false)
+            ->assertSee('value="decimal"', false)
             ->assertDontSee('@foreach', false)
             ->assertDontSee('{{ $subject->is_active', false)
             ->assertDontSee('requestFields->whereNull', false);
