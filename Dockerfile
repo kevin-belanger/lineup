@@ -1,55 +1,32 @@
-FROM node:22-alpine AS assets
+FROM dunglas/frankenphp:php8.4
 
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY resources ./resources
-COPY public ./public
-COPY vite.config.js postcss.config.js tailwind.config.js ./
-RUN npm run build
-
-FROM php:8.4-apache
-
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+ENV SERVER_NAME=:8000
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
-        libcurl4-openssl-dev \
-        libicu-dev \
-        libonig-dev \
-        libxml2-dev \
-        libzip-dev \
         unzip \
         zip \
-    && docker-php-ext-install -j"$(nproc)" \
+    && install-php-extensions \
         bcmath \
         curl \
         intl \
         mbstring \
         opcache \
+        pcntl \
         pdo_mysql \
+        redis \
         xml \
         zip \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && a2enmod rewrite headers \
-    && sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-COPY . .
-COPY --from=assets /app/public/build ./public/build
-
-RUN composer install --no-dev --optimize-autoloader --no-interaction \
+RUN mkdir -p storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-EXPOSE 80
+EXPOSE 8000
 
-CMD ["apache2-foreground"]
+CMD ["sh", "-lc", "until [ -f vendor/autoload.php ]; do sleep 2; done; php artisan octane:frankenphp --host=0.0.0.0 --port=8000 --workers=${OCTANE_WORKERS:-auto} --max-requests=${OCTANE_MAX_REQUESTS:-500}"]

@@ -24,9 +24,9 @@ Each backup contains:
 - `deleted-tracked-files.txt`, the tracked Git files that were deleted locally;
 - `manifest.txt`, the list of files in the backup;
 - `restore.sh`, the restore script copied from the version that created the backup;
-- `files/`, restored files and persistent Docker `storage` files.
+- `files/`, restored files and persistent Laravel `storage` files.
 
-The `files/storage/app/` directory and any `files/storage/*.key` files are copied from the running `app` container. This captures persistent Laravel storage from the real `laravel-storage` Docker volume instead of the placeholder `storage` directory in the Git checkout. Runtime files such as cache, compiled views, sessions, and logs are not backed up.
+The `files/storage/app/` directory and any `files/storage/*.key` files are copied from the running `app` container. In production, `/var/www/html` is a bind mount to the application directory on the host, so this captures the persistent Laravel storage from that host directory. Runtime files such as cache, compiled views, sessions, and logs are not backed up.
 
 The backup also includes important local files such as `.env`, `Caddyfile`, and common override files, plus local Git changes and untracked files. Large or generated paths such as `vendor/`, `node_modules/`, `backups/`, `public/build/`, `public/hot`, `public/storage`, and the local `storage/` directory are skipped.
 
@@ -62,7 +62,7 @@ TARGET.before-restore-YYYYMMDD-HHMMSS
 
 If the backup directory is inside the target path, the restore script first copies it to a temporary location so the backup remains available after the target directory is moved.
 
-Then the script clones the repository, checks out the exact saved commit from `metadata.env`, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores persistent storage files into the `app` container, starts the application, and clears Laravel caches.
+Then the script clones the repository, checks out the exact saved commit from `metadata.env`, copies the backed up files, applies deleted tracked files, starts MySQL, imports `database.sql`, restores persistent storage files, rebuilds dependencies and frontend assets, starts the application, and clears Laravel caches.
 
 The restore does not select the latest Git tag or latest GitHub Release. It restores the application to the saved backup state and does not run database migrations.
 

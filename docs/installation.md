@@ -12,11 +12,15 @@ The command sections below are an advanced reference for troubleshooting or cust
 
 The Docker setup uses:
 
-- a Laravel application container;
+- a Laravel Octane application container served by FrankenPHP;
 - a scheduler container for Laravel scheduled tasks;
 - a MySQL database container;
 - a Redis container;
 - a Caddy reverse proxy container.
+
+The production application and scheduler containers bind mount the project directory into `/var/www/html`. The host checkout under `/opt/lineup` is therefore the deployed application code, while generated paths such as `vendor/`, `node_modules/`, and `public/build/` are prepared by the install and update scripts.
+
+The application container listens internally on port `8000`. Caddy remains the public web entry point and reverse proxies requests to FrankenPHP.
 
 Caddy is the public web entry point. The default `Caddyfile` can use plain HTTP on port 80, or a public domain with automatic HTTPS through Let’s Encrypt.
 
@@ -219,7 +223,7 @@ For plain HTTP on port 80:
 
 ```caddyfile
 :80 {
-    reverse_proxy app:80
+    reverse_proxy app:8000
 }
 ```
 
@@ -227,7 +231,7 @@ For a public domain with HTTPS:
 
 ```caddyfile
 lineup.example.com {
-    reverse_proxy app:80
+    reverse_proxy app:8000
 }
 ```
 
@@ -255,7 +259,7 @@ Example:
 lineup.example.com {
     tls /etc/caddy/ssl/certificat.crt /etc/caddy/ssl/certificat.key
 
-    reverse_proxy app:80
+    reverse_proxy app:8000
 }
 ```
 
@@ -267,6 +271,24 @@ Build and start the containers:
 
 ```bash
 docker compose up -d --build
+```
+
+Install PHP dependencies into the mounted project directory:
+
+```bash
+docker compose exec app sh -lc 'COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction'
+```
+
+Build frontend assets:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" -e npm_config_cache=/tmp/.npm -v "$PWD:/app" -w /app node:22-alpine sh -lc "npm ci && npm run build"
+```
+
+Prepare writable Laravel directories:
+
+```bash
+docker compose exec app sh -lc 'mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache'
 ```
 
 Run the database migrations:

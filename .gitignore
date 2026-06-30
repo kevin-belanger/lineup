@@ -31,3 +31,7 @@ Thumbs.db
 update-local-test.sh
 Caddyfile
 Backlog
+
+**/caddy
+frankenphp
+frankenphp-worker.php

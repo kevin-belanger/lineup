@@ -3,11 +3,13 @@
 set -euo pipefail
 
 APP_SERVICE="app"
+SCHEDULER_SERVICE="scheduler"
 DB_SERVICE="mysql"
 DEFAULT_TARGET_DIR="/opt/lineup"
 RESTORE_TEMP_DIR=""
 DOCKER_CMD="docker"
 COMPOSE_CMD="docker compose"
+NODE_IMAGE="node:22-alpine"
 
 if [ "$(basename "${BASH_SOURCE[0]}")" = "restore-template.sh" ]; then
     echo "This file is a restore template and should not be run directly."
@@ -310,7 +312,7 @@ restore_storage() {
 
     local key_file
 
-    echo "Restoring persistent Docker storage files..."
+    echo "Restoring persistent Laravel storage files..."
 
     $COMPOSE_CMD up -d --build "$APP_SERVICE"
 
@@ -327,6 +329,37 @@ restore_storage() {
     $COMPOSE_CMD exec -T "$APP_SERVICE" sh -c 'chown -R www-data:www-data /var/www/html/storage/app 2>/dev/null || true; find /var/www/html/storage -maxdepth 1 -type f -name "*.key" -exec chown www-data:www-data {} +'
 }
 
+build_assets() {
+    echo "Building frontend assets..."
+
+    $DOCKER_CMD run --rm \
+        --user "$(id -u):$(id -g)" \
+        -e npm_config_cache=/tmp/.npm \
+        -v "$TARGET_DIR:/app" \
+        -w /app \
+        "$NODE_IMAGE" \
+        sh -lc "npm ci && npm run build"
+
+    if [ ! -f "$TARGET_DIR/public/build/manifest.json" ]; then
+        echo "Error: public/build/manifest.json was not created."
+        exit 1
+    fi
+}
+
+install_php_dependencies() {
+    echo "Installing PHP dependencies..."
+
+    $COMPOSE_CMD exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction'
+}
+
+prepare_writable_directories() {
+    echo "Preparing writable Laravel directories..."
+
+    $COMPOSE_CMD exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache'
+}
+
 clear_laravel_cache() {
     echo "Clearing Laravel caches..."
 
@@ -335,6 +368,12 @@ clear_laravel_cache() {
     $COMPOSE_CMD exec -T "$APP_SERVICE" php artisan route:clear
     $COMPOSE_CMD exec -T "$APP_SERVICE" php artisan view:clear
     $COMPOSE_CMD exec -T "$APP_SERVICE" php artisan storage:link
+}
+
+restart_application_services() {
+    echo "Restarting application services..."
+
+    $COMPOSE_CMD restart "$APP_SERVICE" "$SCHEDULER_SERVICE"
 }
 
 main() {
@@ -401,11 +440,15 @@ main() {
         prepare_database
         import_database
         restore_storage
+        build_assets
 
         echo "Starting LineUp..."
         $COMPOSE_CMD up -d --build
 
+        install_php_dependencies
+        prepare_writable_directories
         clear_laravel_cache
+        restart_application_services
     )
 
     echo

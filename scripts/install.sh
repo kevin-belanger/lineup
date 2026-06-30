@@ -8,6 +8,8 @@ INSTALL_DIR="/opt/lineup"
 VERSION_TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+.*$'
 
 APP_SERVICE="app"
+SCHEDULER_SERVICE="scheduler"
+NODE_IMAGE="node:22-alpine"
 DEFAULT_APP_NAME="LineUp"
 DEFAULT_ADMIN_FIRST_NAME="Administrator"
 DEFAULT_ADMIN_LAST_NAME=""
@@ -387,7 +389,7 @@ configure_caddy() {
 
         cat > Caddyfile <<EOF
 ${CADDY_DOMAIN} {
-    reverse_proxy app:80
+    reverse_proxy app:8000
 }
 EOF
 
@@ -397,7 +399,7 @@ EOF
     else
         cat > Caddyfile <<EOF
 :80 {
-    reverse_proxy app:80
+    reverse_proxy app:8000
 }
 EOF
 
@@ -479,6 +481,46 @@ start_containers() {
     $COMPOSE_CMD up -d --build
 }
 
+build_assets() {
+    echo
+    echo "Building frontend assets..."
+
+    $DOCKER_CMD run --rm \
+        --user "$(id -u):$(id -g)" \
+        -e npm_config_cache=/tmp/.npm \
+        -v "$INSTALL_DIR:/app" \
+        -w /app \
+        "$NODE_IMAGE" \
+        sh -lc "npm ci && npm run build"
+
+    if [ ! -f "public/build/manifest.json" ]; then
+        echo "Error: public/build/manifest.json was not created."
+        exit 1
+    fi
+}
+
+install_php_dependencies() {
+    echo
+    echo "Installing PHP dependencies..."
+
+    $COMPOSE_CMD exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction'
+}
+
+prepare_writable_directories() {
+    echo
+    echo "Preparing writable Laravel directories..."
+
+    $COMPOSE_CMD exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache'
+}
+
+prepare_application_files() {
+    install_php_dependencies
+    build_assets
+    prepare_writable_directories
+}
+
 wait_for_laravel_database() {
     local attempt
     local max_attempts=60
@@ -522,6 +564,11 @@ run_laravel_setup() {
     $COMPOSE_CMD exec -T "$APP_SERVICE" php artisan config:cache
     $COMPOSE_CMD exec -T "$APP_SERVICE" php artisan route:cache
     $COMPOSE_CMD exec -T "$APP_SERVICE" php artisan view:cache
+
+    echo
+    echo "Restarting application services..."
+
+    $COMPOSE_CMD restart "$APP_SERVICE" "$SCHEDULER_SERVICE"
 }
 
 show_status() {
@@ -578,6 +625,7 @@ main() {
     configure_initial_admin
     configure_mail
     start_containers
+    prepare_application_files
     run_laravel_setup
     show_status
     print_summary

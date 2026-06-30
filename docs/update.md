@@ -41,9 +41,12 @@ The update script will:
 - verify that the currently installed commit is an ancestor of the target commit;
 - switch the project to that version;
 - update the installed version in `.env`;
+- rebuild frontend assets;
 - rebuild and recreate the Docker containers so `.env` changes are loaded;
+- refresh Composer dependencies in the mounted project directory;
 - run database migrations;
-- refresh Laravel caches.
+- refresh Laravel caches;
+- restart the Octane application workers and scheduler.
 
 In stable mode, `APP_VERSION` is set to the release `tag_name`, for example:
 
@@ -104,12 +107,12 @@ The fast deploy script will:
 
 - pull the current Git branch from `origin`;
 - rebuild `public/build` with a temporary `node:22-alpine` container, without requiring `npm` on the host;
-- copy only the runtime application paths into the running `app` and `scheduler` containers: `app`, `artisan`, `bootstrap`, `composer.json`, `composer.lock`, `config`, `lang`, `public`, `resources`, and `routes`;
-- keep `.env`, `storage`, `vendor`, and `node_modules` out of the copied payload;
-- refresh Composer dependencies and Laravel caches inside the containers;
-- restart the scheduler container.
+- refresh Composer dependencies in the mounted project directory;
+- prepare writable Laravel directories;
+- refresh Laravel caches;
+- restart the Octane application workers and scheduler containers.
 
-When `SKIP_ASSETS=1` is used, the script does not rebuild or replace the `public` directory, so the already deployed `public/build` assets remain in place.
+When `SKIP_ASSETS=1` is used, the script does not rebuild `public/build`, so the already deployed assets remain in place.
 
 Use the full `update.sh` flow instead when an update includes migrations, PHP or Node dependency changes that need a fresh image, `.env` changes, Dockerfile changes, Compose changes, or any change where rebuilding the container is safer.
 

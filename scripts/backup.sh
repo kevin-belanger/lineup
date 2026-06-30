@@ -290,7 +290,7 @@ create_database_dump() {
 copy_storage_from_container() {
     local key_file
 
-    echo "Copying persistent Docker storage files..."
+    echo "Copying persistent Laravel storage files..."
 
     mkdir -p "$FILES_DIR/storage"
 

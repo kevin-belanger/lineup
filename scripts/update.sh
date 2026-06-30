@@ -8,6 +8,8 @@ cd "$PROJECT_DIR"
 
 COMPOSE_CMD=(docker compose --project-directory "$PROJECT_DIR" -f "$PROJECT_DIR/compose.yaml")
 APP_SERVICE="app"
+SCHEDULER_SERVICE="scheduler"
+NODE_IMAGE="node:22-alpine"
 VERSION_TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+.*$'
 GITHUB_LATEST_RELEASE_URL="https://api.github.com/repos/kevin-belanger/lineup/releases/latest"
 
@@ -97,6 +99,42 @@ require_docker_compose_service() {
     fi
 }
 
+restart_application_services() {
+    echo "Restarting application services..."
+    "${COMPOSE_CMD[@]}" restart "$APP_SERVICE" "$SCHEDULER_SERVICE"
+}
+
+build_assets() {
+    echo "Building frontend assets..."
+
+    docker run --rm \
+        --user "$(id -u):$(id -g)" \
+        -e npm_config_cache=/tmp/.npm \
+        -v "$PROJECT_DIR:/app" \
+        -w /app \
+        "$NODE_IMAGE" \
+        sh -lc "npm ci && npm run build"
+
+    if [ ! -f "public/build/manifest.json" ]; then
+        echo "Error: public/build/manifest.json was not created."
+        exit 1
+    fi
+}
+
+install_php_dependencies() {
+    echo "Installing PHP dependencies into the mounted project directory..."
+
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction'
+}
+
+prepare_writable_directories() {
+    echo "Preparing writable Laravel directories..."
+
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache'
+}
+
 require_forward_update() {
     local target_commit="$1"
     local current_commit
@@ -163,9 +201,13 @@ wait_for_laravel_database() {
 run_application_update() {
     require_docker_compose_service
 
+    build_assets
+
     echo "Building and recreating containers..."
     "${COMPOSE_CMD[@]}" up -d --build --force-recreate
 
+    install_php_dependencies
+    prepare_writable_directories
     wait_for_laravel_database
 
     echo "Running database migrations..."
@@ -176,6 +218,7 @@ run_application_update() {
     "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan config:cache
     "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan route:cache
     "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan view:cache
+    restart_application_services
 }
 
 run_stable_update() {

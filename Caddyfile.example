@@ -17,7 +17,7 @@
 #
 
 :80 {
-    reverse_proxy app:80
+    reverse_proxy app:8000
 }
 
 # --------------------------------------------
@@ -32,7 +32,7 @@
 # 3. Replace lineup.intranet with your own internal domain name.
 #
 # lineup.intranet {
-#     reverse_proxy app:80
+#     reverse_proxy app:8000
 # }
 
 # --------------------------------------------
@@ -54,5 +54,5 @@
 # 3. Replace lineup.example.com with your own public domain name.
 #
 # lineup.example.com {
-#     reverse_proxy app:80
+#     reverse_proxy app:8000
 # }

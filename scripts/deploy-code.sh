@@ -18,50 +18,7 @@ cd "$PROJECT_DIR"
 COMPOSE_CMD=(docker compose --project-directory "$PROJECT_DIR" -f "$PROJECT_DIR/compose.yaml")
 APP_SERVICE="app"
 SCHEDULER_SERVICE="scheduler"
-TARGET_DIR="/var/www/html"
 NODE_IMAGE="node:22-alpine"
-
-BASE_SYNC_PATHS=(
-    "app"
-    "artisan"
-    "bootstrap"
-    "composer.json"
-    "composer.lock"
-    "config"
-    "lang"
-    "resources"
-    "routes"
-)
-
-ASSET_SYNC_PATHS=(
-    "public"
-)
-
-BASE_CLEAN_PATHS=(
-    "app"
-    "artisan"
-    "bootstrap"
-    "composer.json"
-    "composer.lock"
-    "config"
-    "lang"
-    "resources"
-    "routes"
-)
-
-ASSET_CLEAN_PATHS=(
-    "public"
-)
-
-STALE_PATHS=(
-    "database"
-    "package.json"
-    "package-lock.json"
-    "postcss.config.js"
-    "scripts"
-    "tailwind.config.js"
-    "vite.config.js"
-)
 
 echo "=== LineUp code deploy ==="
 
@@ -73,8 +30,8 @@ usage() {
     echo "Environment options:"
     echo "  LINEUP_DIR=/path  Project directory. Defaults to /opt/lineup when the script is not inside the project."
     echo "  SKIP_PULL=1      Do not pull code before deploying."
-    echo "  SKIP_ASSETS=1    Do not rebuild public/build before copying code."
-    echo "  SKIP_COMPOSER=1  Do not run composer install in the containers."
+    echo "  SKIP_ASSETS=1    Do not rebuild public/build."
+    echo "  SKIP_COMPOSER=1  Do not run composer install in the app container."
     echo "  USE_HOST_NPM=1   Build assets with host npm instead of a temporary Node container."
 }
 
@@ -219,67 +176,21 @@ build_assets() {
     fi
 }
 
-clean_container_code() {
-    local service="$1"
-    local path
-    local command="set -e; cd '$TARGET_DIR';"
-
-    for path in "${BASE_CLEAN_PATHS[@]}"; do
-        command="$command rm -rf '$path';"
-    done
-
-    if [ "${SKIP_ASSETS:-0}" != "1" ]; then
-        for path in "${ASSET_CLEAN_PATHS[@]}"; do
-            command="$command rm -rf '$path';"
-        done
-    fi
-
-    for path in "${STALE_PATHS[@]}"; do
-        command="$command rm -rf '$path';"
-    done
-
-    command="$command mkdir -p bootstrap/cache storage;"
-
-    "${COMPOSE_CMD[@]}" exec -T "$service" sh -lc "$command"
-}
-
-copy_code_to_container() {
-    local service="$1"
-    local sync_paths=("${BASE_SYNC_PATHS[@]}")
-
-    if [ "${SKIP_ASSETS:-0}" != "1" ]; then
-        sync_paths+=("${ASSET_SYNC_PATHS[@]}")
-    fi
-
-    echo "Copying code to $service..."
-    clean_container_code "$service"
-
-    tar \
-        --exclude=".git" \
-        --exclude=".env" \
-        --exclude=".env.*" \
-        --exclude="bootstrap/cache/*.php" \
-        --exclude="node_modules" \
-        --exclude="public/hot" \
-        --exclude="public/storage" \
-        --exclude="storage" \
-        --exclude="vendor" \
-        -cf - "${sync_paths[@]}" \
-        | "${COMPOSE_CMD[@]}" exec -T "$service" tar -xf - -C "$TARGET_DIR"
-
-    "${COMPOSE_CMD[@]}" exec -T "$service" sh -lc "cd '$TARGET_DIR' && chown -R www-data:www-data storage bootstrap/cache"
-}
-
 install_php_dependencies() {
-    local service="$1"
-
     if [ "${SKIP_COMPOSER:-0}" = "1" ]; then
-        echo "Skipping composer install in $service."
+        echo "Skipping composer install."
         return
     fi
 
-    echo "Refreshing Composer dependencies in $service..."
-    "${COMPOSE_CMD[@]}" exec -T "$service" sh -lc "cd '$TARGET_DIR' && composer install --no-dev --optimize-autoloader --no-interaction"
+    echo_title "Refreshing PHP dependencies"
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction'
+}
+
+prepare_writable_directories() {
+    echo_title "Preparing writable Laravel directories"
+    "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" sh -lc \
+        'cd /var/www/html && mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache'
 }
 
 refresh_app_cache() {
@@ -288,14 +199,11 @@ refresh_app_cache() {
     "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan config:cache
     "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan route:cache
     "${COMPOSE_CMD[@]}" exec -T "$APP_SERVICE" php artisan view:cache
-
-    "${COMPOSE_CMD[@]}" exec -T "$SCHEDULER_SERVICE" php artisan optimize:clear
-    "${COMPOSE_CMD[@]}" exec -T "$SCHEDULER_SERVICE" php artisan config:cache
 }
 
-restart_scheduler() {
-    echo_title "Restarting scheduler"
-    "${COMPOSE_CMD[@]}" restart "$SCHEDULER_SERVICE"
+restart_services() {
+    echo_title "Restarting application services"
+    "${COMPOSE_CMD[@]}" restart "$APP_SERVICE" "$SCHEDULER_SERVICE"
 }
 
 if [ "$#" -gt 1 ]; then
@@ -305,7 +213,6 @@ if [ "$#" -gt 1 ]; then
 fi
 
 require_command git
-require_command tar
 require_command docker
 require_project_root
 require_docker_compose
@@ -318,17 +225,10 @@ echo "Project directory: $PROJECT_DIR"
 
 pull_code "${1:-}"
 build_assets
-
-echo_title "Copying application code"
-copy_code_to_container "$APP_SERVICE"
-copy_code_to_container "$SCHEDULER_SERVICE"
-
-echo_title "Refreshing PHP dependencies"
-install_php_dependencies "$APP_SERVICE"
-install_php_dependencies "$SCHEDULER_SERVICE"
-
+install_php_dependencies
+prepare_writable_directories
 refresh_app_cache
-restart_scheduler
+restart_services
 
 echo
 echo "Code deploy completed."
