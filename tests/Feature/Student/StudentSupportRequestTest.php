@@ -176,6 +176,27 @@ class StudentSupportRequestTest extends TestCase
             ->assertSee(route('student.classroom.leave'), false);
     }
 
+    public function test_app_layout_exposes_server_time_for_client_clock(): void
+    {
+        $now = Carbon::parse('2026-06-22 07:30:15', config('app.timezone'));
+        Carbon::setTestNow($now);
+
+        try {
+            $student = User::factory()->create();
+            $classroom = Classroom::factory()->create();
+
+            $this
+                ->actingAs($student)
+                ->withSession(['current_classroom_id' => $classroom->id])
+                ->get(route('student.dashboard'))
+                ->assertOk()
+                ->assertSee('name="lineup-server-time"', false)
+                ->assertSee('content="'.$now->getTimestampMs().'"', false);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_student_dashboard_shows_when_current_classroom_opens_next(): void
     {
         Carbon::setTestNow('2026-06-22 07:30:00');

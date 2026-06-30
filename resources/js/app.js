@@ -6,6 +6,7 @@ Chart.register(...registerables);
 const liveDurationSelector = '[data-live-duration][data-started-at]';
 const classroomOpeningStatusSelector = '[data-classroom-opening-status]';
 const classroomOpeningStatusRefreshMs = 5000;
+const serverTimeMetaSelector = 'meta[name="lineup-server-time"]';
 const weekdayByName = {
     Mon: 1,
     Tue: 2,
@@ -20,6 +21,42 @@ const dateKeyFormatters = new Map();
 const timeFormatters = new Map();
 const dateTimeLabelFormatters = new Map();
 const statisticsCharts = new WeakMap();
+
+function synchronizeServerClock() {
+    const serverTime = Number(document.querySelector(serverTimeMetaSelector)?.content);
+
+    if (!Number.isFinite(serverTime) || serverTime <= 0) {
+        return;
+    }
+
+    window.__lineupServerClock = {
+        serverTime,
+        clientTime: Date.now(),
+        performanceTime: typeof performance !== 'undefined' ? performance.now() : null,
+    };
+}
+
+function serverNowMs() {
+    if (!window.__lineupServerClock) {
+        synchronizeServerClock();
+    }
+
+    const clock = window.__lineupServerClock;
+
+    if (!clock) {
+        return Date.now();
+    }
+
+    if (clock.performanceTime !== null && typeof performance !== 'undefined') {
+        return clock.serverTime + (performance.now() - clock.performanceTime);
+    }
+
+    return clock.serverTime + (Date.now() - clock.clientTime);
+}
+
+function serverNow() {
+    return new Date(serverNowMs());
+}
 
 function formatterForTimezone(timezone) {
     if (!dateTimeFormatters.has(timezone)) {
@@ -178,7 +215,7 @@ function formatLiveDuration(element) {
         return null;
     }
 
-    const nowMs = Date.now();
+    const nowMs = serverNowMs();
     const schedule = openingScheduleForElement(element);
     const elapsedMinutes = schedule === null
         ? Math.max(0, Math.floor((nowMs - startedAtMs) / 60000))
@@ -204,7 +241,7 @@ function updateLiveDurations() {
 function updateClassroomOpeningStatuses() {
     document.querySelectorAll(classroomOpeningStatusSelector).forEach((element) => {
         const schedule = openingScheduleForElement(element);
-        const now = new Date();
+        const now = serverNow();
         const isOpen = schedule === null || isOpenMinute(now, schedule);
         const label = isOpen
             ? (element.dataset.openLabel || 'Room open')
@@ -237,6 +274,8 @@ function updateClassroomOpeningStatuses() {
 }
 
 function startLiveDurations() {
+    synchronizeServerClock();
+
     if (window.__lineupLiveDurationTimer) {
         updateLiveDurations();
         updateClassroomOpeningStatuses();

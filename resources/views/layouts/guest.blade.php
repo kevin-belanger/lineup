@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <x-server-time-meta />
 
         <title>{{ app(\App\Services\ApplicationSettings::class)->displayName() }}</title>
         <link rel="icon" type="image/png" href="{{ asset(app(\App\Services\ApplicationSettings::class)->faviconPath()) }}">
